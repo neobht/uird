@@ -57,6 +57,12 @@ UNION_APPEND_BUNDLES="Подключение модулей в общий кор
 COPY_TO_RAM="Копирование данных в ОЗУ, это может занять длительное время, ожидайте..."
 COPY_TO_CACHE="Копирование данных в КЭШ, это может занять длительное время, ожидайте..."
 
+# BINARY
+BIN_RSYNC=/sbin/rsync
+BIN_HTTPFS=/sbin/httpfs
+BIN_CURLFTPFS=/sbin/curlftpfs
+BIN_SSHFS=/sbin/sshfs
+
 # =================================================================
 # debug and output functions
 # =================================================================
@@ -632,7 +638,7 @@ mount_httpfs()
     debug_log "mount_httpfs" "$*"
 
     mkdir -p $2
-    /bin/httpfs $1 $2 || return
+    $BIN_HTTPFS $1 $2 || return
     if [ -f $2/$(basename $1) ] ;then
         echo $2/$(basename $1)
     else
@@ -652,7 +658,7 @@ mount_curlftpfs()
     [ "$(cmdline_value uird.netfsopt)" ] && OPTIONS="-o $(cmdline_value uird.netfsopt)"
 
     mkdir -p $2
-    /bin/curlftpfs $OPTIONS $1 $2 </dev/console >/dev/console 2>/dev/console || return
+    $BIN_CURLFTPFS $OPTIONS $1 $2 </dev/console >/dev/console 2>/dev/console || return
     if [ -f $2/$(basename $1) ] ;then
         echo $2/$(basename $1)
     else
@@ -673,7 +679,7 @@ mount_sshfs()
     mkdir -p $2
     times=3
     while [ $times -gt 0 ]; do
-        /bin/sshfs ${1/ssh:??/} $2 $OPTIONS </dev/console >/dev/console 2>/dev/console
+        $BIN_SSHFS ${1/ssh:??/} $2 $OPTIONS </dev/console >/dev/console 2>/dev/console
         ERR=$?
         [ $ERR -eq 0 ] && break
         times=$(expr $times - 1)
@@ -1532,8 +1538,12 @@ copy_to()
     TARGET=$(dirname "$MODULE" | cut -b ${#1}- | cut -b 2-)
     mkdir -p "$2/$TARGET"
     echolog $yellow"  $3 $blue<- $purple$(basename $MODULE)"
-    #      cp "$MODULE" "$2/$TARGET"
-    rsync -a "$MODULE" "$2/$TARGET"
+    if [ -f "$BIN_RSYNC" ]; then
+        rsync -a "$MODULE" "$2/$TARGET"
+    else
+        cp "$MODULE" "$2/$TARGET"
+    fi
+
     if [ $? -ne 0 ]; then fatal "Not enough memory."; fi
     #      echo $2
 done
