@@ -117,6 +117,7 @@ debug_shell
 [ "$(cmdline_value uird.cache)" ] && union_append_bundles $LAYER_CACHE "$BUNDLES" "$UNION"
 debug_shell
 [ "$(cmdline_value uird.from)" ] && union_append_bundles $LAYER_BASE "$BUNDLES" "$UNION"
+debug_shell
 
 #setup homes by using aufs
 setup_homes "$LAYER_HOMES" "$UNION/home"                                                                                                                                                      debug_shell
