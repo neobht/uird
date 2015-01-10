@@ -10,6 +10,15 @@ export TEXTDOMAIN=livekitlib.po.mo
 . i18n-lib.sh
 
 # Colors text
+#Black        0;30     Dark Gray     1;30
+#Blue         0;34     Light Blue    1;34
+#Green        0;32     Light Green   1;32
+#Cyan         0;36     Light Cyan    1;36
+#Red          0;31     Light Red     1;31
+#Purple       0;35     Light Purple  1;35
+#Brown/Orange 0;33     Yellow        1;33
+#Light Gray   0;37     White         1;37
+
 black='\033[0;30m'
 red='\033[0;31m'
 green='\033[0;32m'
@@ -23,6 +32,7 @@ white='\033[0;37m'
 purple='\033[0;35m'
 default='\033[0m'
 
+
 # Messages
 INIT_UNION="Инициализация файловой системы AUFS"
 INIT_LAYER="Инициализация:"
@@ -33,6 +43,7 @@ MOUNT_DATA_SOURCE_NOT_FOUND="    источник не удалось найти
 
 TESTING_FOR_POSIX="Тестирование файловой системы на совместимость с POSIX"
 POSIX_NOT_COMPATIBLE="    POSIX не поддерживается, используется POSIXOVL"
+POSIX_TEST="Запись не поддерживается, используется ОЗУ"
 
 SETUP_CONFIG="Поиск и инициализация файла конфигурации:"
 SETUP_CONFIG_USING="  используется файл конфигурации:"
@@ -1211,7 +1222,7 @@ init_layer()
 
 
 # Setup changes
-# $1 = changes source
+# $1 = changes mount directory
 # $2 = changes directory
 setup_changes()
 {
@@ -1239,8 +1250,8 @@ posix_test()
     # if changes can't be mounted or the filesystem is not writable,
 # fallback to the default: tmpfs
     if [ $? -ne 0 ]; then
-	echo_green_star
-	echolog "changes not used or not writable, using memory only"
+	echo -ne $blue"  * "$default
+	echolog "$POSIX_TEST"
 	fumount $2
 	fumount $1
 	mkdir -p $2 # mount_device might removed it
@@ -1271,36 +1282,60 @@ posix_test()
 
 }
 
-# $1 = machines source
-# $2 = changes directory
+# $1 = machines directory
+# $2 = machines mount directory
+# $3 = changes directory
+# $4 = changes mount directory
 setup_machines()
 {
     debug_log "setup machines" "$*"
-    local CHANGESMNT
+    local CHANGESMNT MACHINES SOURCE MNT_DIR
     
     CHANGESVAL=$(cmdline_value uird.changes)
     [ -z "$CHANGESVAL" ] && return
+    MACHINES=$(cmdline_value uird.machines)
+    [ -z "$MACHINES" ] && return
+
 #In case we using lzm|xzm as changes= parameter
     if echo "$CHANGESVAL" | grep -q [XxLl][Zz][Mm]$ ;then
     echo_green_star
     echolog "$SETUP_MACHINES" $yellow"$1"
+
+	mount_data_source $MACHINES $1 $2
 	
 	if [ "$CHANGESVAL" = "xzm" ] ;then
     	    MUID=mac-$(cat /sys/class/net/eth0/address | tr -d :)
     	    [ "$MUID" = "mac-" ] && MUID=vga-$(lspci -mm | grep -i vga | md5sum | cut -c 1-12)
-    	    [ -d "$DATAMNT/machines" ] && CHANGESMNT=$DATAMNT/machines
-    	    [ -z "$CHANGESMNT" ] && CHANGESMNT=$1/machines
+    	    [ -d "$1" ] && CHANGESMNT=$1
+
     	    if [ -f "$CHANGESMNT/static/$MUID.xzm"  ] ;then 
         	CHANGESMNT=$CHANGESMNT/static/$MUID.xzm
     	    else
         	CHANGESMNT=$CHANGESMNT/dynamic/$MUID.xzm
     	    fi
+	else
+	    echo_green_star
+	    echolog "Поиск модуля машинно-зависимых изменений:" $yellow"$CHANGESVAL"$default
+	    SOURCE=$CHANGESVAL
+	    MNT_DIR=$4
+	    if [ "$(echo $SOURCE | grep "://")" != ""  ]; then
+    		init_ifcfg
+    		echo $SOURCE | grep -iq ^"http://" && DATA_FROM=$(mount_httpfs $SOURCE $MNT_DIR)
+    		echo $SOURCE | grep -iq ^"nfs://" && DATA_FROM=$(mount_nfs $SOURCE $MNT_DIR)
+    		echo $SOURCE | grep -iq ^"ssh://" && DATA_FROM=$(mount_sshfs $SOURCE $MNT_DIR)
+    		echo $SOURCE | grep -iq ^"ftp://" && DATA_FROM=$(mount_curlftpfs $SOURCE $MNT_DIR)
+	    else
+    		DATA_FROM=$(find_data $SOURCE $MNT_DIR)
+	    fi
+
+	    CHANGESMNT=$DATA_FROM
+	
 	fi
 	if [ -f "$CHANGESMNT" ] ;then
-    	    echolog "unpacking $CHANGESMNT to memory"
-    	    unsquashfs -f -dest $2 "$CHANGESMNT" >/dev/null 2>&1
+    	    echolog "распаковка $yellow$CHANGESMNT$default в ОЗУ"
+    	    unsquashfs -f -dest $3 "$CHANGESMNT" >/dev/null 2>&1
 	fi
-    echo "$CHANGESMNT" | sed s=/machines/static/=/machines/dynamic/= > $2/.savetomodule
+	echo "$CHANGESMNT" | sed s=/machines/static/=/machines/dynamic/= > $3/.savetomodule
     fi
 
 }

@@ -15,6 +15,7 @@ UNION=$NEWROOT
 MEMORY=/memory
 BUNDLES=$MEMORY/bundles
 CHANGES=$MEMORY/changes
+MACHINES=$MEMORY/machines
 DATAMNT=$MEMORY/data
 COPY2RAM=$MEMORY/copy2ram
 LAYER_BASE=$MEMORY/layer-base
@@ -80,7 +81,7 @@ setup_config
 setup_changes $DATAMNT/changes $CHANGES
                                                                                                                                                       debug_shell
 #setting up machines
-setup_machines $DATAMNT/machines $CHANGES
+setup_machines $MACHINES $DATAMNT/machines $CHANGES $DATAMNT/changes
                                                                                                                                                       debug_shell
 
 # sync data from BASE layer to CACHE layer
