@@ -143,7 +143,7 @@ start_quickshell()
         getty -n -l /bin/autologin 9600 tty6 linux &
         automount
         clear
-        cat ./quickshell.hlp
+        cat /usr/share/quickshell.hlp
         /bin/bash autologin
         cd /
         umount /mnt/*
