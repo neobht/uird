@@ -1332,7 +1332,7 @@ setup_machines()
 	
 	fi
 	if [ -f "$CHANGESMNT" ] ;then
-    	    echolog "распаковка $yellow$CHANGESMNT$default в ОЗУ"
+    	    echolog $default"  распаковка $yellow$CHANGESMNT$default в ОЗУ"
     	    unsquashfs -f -dest $3 "$CHANGESMNT" >/dev/null 2>&1
 	fi
 	echo "$CHANGESMNT" | sed s=/machines/static/=/machines/dynamic/= > $3/.savetomodule

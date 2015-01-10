@@ -21,10 +21,5 @@ install() {
     dracut_install /usr/share/mc/help/*
     dracut_install /usr/share/mc/skins/*
     dracut_install /usr/share/mc/syntax/*
-    
-    #netfs
-#    dracut_install "$(type -p httpfs)"
-#    dracut_install "$(type -p sshfs)"
-#    dracut_install "$(type -p curlftpfs)"
 }
 
