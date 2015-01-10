@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print">
+
+    <title>Uird by neobht</title>
+  </head>
+
+  <body>
+
+    <header>
+      <div class="container">
+        <h1>Uird</h1>
+        <h2>UIRD - Unified Init Ram Disk system </h2>
+
+        <section id="downloads">
+          <a href="https://github.com/neobht/uird/zipball/master" class="btn">Download as .zip</a>
+          <a href="https://github.com/neobht/uird/tarball/master" class="btn">Download as .tar.gz</a>
+          <a href="https://github.com/neobht/uird" class="btn btn-github"><span class="icon"></span>View on GitHub</a>
+        </section>
+      </div>
+    </header>
+
+    <div class="container">
+      <section id="main_content">
+        <h3>
+<a id="Базовое-описание-основных-принципов" class="anchor" href="#%D0%91%D0%B0%D0%B7%D0%BE%D0%B2%D0%BE%D0%B5-%D0%BE%D0%BF%D0%B8%D1%81%D0%B0%D0%BD%D0%B8%D0%B5-%D0%BE%D1%81%D0%BD%D0%BE%D0%B2%D0%BD%D1%8B%D1%85-%D0%BF%D1%80%D0%B8%D0%BD%D1%86%D0%B8%D0%BF%D0%BE%D0%B2" aria-hidden="true"><span class="octicon octicon-link"></span></a>Базовое описание основных принципов</h3>
+
+<p>Поддерживаемые расширения в MagOS Linux по умолчанию:</p>
+
+<pre><code>*.ROM - RO слой
+*.RWM - RW слой
+*.XZM - RO слой с squashfs 
+
+*.RWM.ENC - RW слой криптованый
+*.ROM.ENC - RO слой криптованый
+</code></pre>
+
+<p>Ввиду множественности параметров ядра введен префикс параметров '<strong>uird</strong>'  (Unified Init Ram Disk): </p>
+
+<pre><code>uird.basecfg=           - расположение базаового конфигурационного файла basecfg.ini
+uird.config=            - расположение конфигурационного файла системы MagOS.ini
+??? uird.sgnfile=
+uird.ro=                - фильтр для модулей, которые монтируются в режиме RO
+uird.rw=                - фильтр для модулей, которые монтируются в режиме RW
+uird.copy2ram=          - фильтр для модулей, которые копируются в RAM
+uird.copy2cache=        - фильтр для модулей, которые копируются в КЭШ
+uird.ramsize=           - размер RAM
+uird.ip=                - IP:GW:MASK , если не указан, то используется DHCP
+uird.netfsopt=          - дополнительные опции монтирования сетевых ФС: sshfs,nfs,curlftpfs
+uird.load=              - фильтр для модулей, которые необходимо подключить на этапе загрузки
+uird.noload=            - фильтр для модулей, которые необходимо пропустить во время загрузки
+uird.from=              - источники, где лежат модули для системы
+uird.cache=             - источники, в которые стоит синхронизировать модули 
+uird.homes=             - источники, где хранятся домашние директории пользователей 
+uird.changes=           - источник, где хранить персистентные изменения
+uird.machines=          - источник, где храняться машинно-зависимые персистентные изменения
+</code></pre>
+
+<p>Вводится базовый уровень layer-base и соответствующий параметр uird.from=:</p>
+
+<pre><code>uird.from=/MagOS;/MagOS-Data;MagOS.iso;http://magos.sibsau.ru/repository/netlive/2014.64/MagOS;ftp://server/path/
+</code></pre>
+
+<p>Вводится уровень кеша layer-cache и соответствующий параметр uird.cache=. Служит для синхронизации удаленных репозиториев в локальные или частные (INTRANET) репозитории, а также для обновления системы.</p>
+
+<pre><code>uird.cache=/MagOS/cache;/MagOS-Data/cache;/MagOS-Data/netlive
+</code></pre>
+
+<p>Вводится уровень домашних директорий пользователя layer-homes и соответствующий параметр uird.homes=:</p>
+
+<pre><code>uird.homes=/MagOS-Data/homes;/MagOS-Data/home.img;nfs://magos.sibsau.ru/homes/n/e/neobht;ftp://server/path/
+</code></pre>
+
+<p>Все директории пользователя из различных источников каскадно-объединяются посредством AUFS и монтируются в /home. Более приоритетным является самый первый источник, затем в порядке перечисления уменьшается приоритет.</p>
+
+<h3>
+<a id="Типы-источников" class="anchor" href="#%D0%A2%D0%B8%D0%BF%D1%8B-%D0%B8%D1%81%D1%82%D0%BE%D1%87%D0%BD%D0%B8%D0%BA%D0%BE%D0%B2" aria-hidden="true"><span class="octicon octicon-link"></span></a>Типы источников</h3>
+
+<ul>
+<li>    <strong>/path/dir</strong>   - директория на любом доступном носителе</li>
+<li>    <strong>/dev/[..]/path/dir</strong>   - директория на заданном носителе</li>
+<li>    <strong>file-dvd.iso, file.img</strong>   - образ диска (ISO, образ блочного устройства)</li>
+<li>    <strong>http://server/path/...</strong>   - источник доступный по HTTP (используется httpfs) </li>
+<li>    <strong>ssh://server/path/...</strong>   - источник доступный по SSH (используется sshfs)</li>
+<li>    <strong>ftp://server/path/...</strong>   - источник доступный по FTP (используется curlftpfs)</li>
+<li>    <strong>nfs://server/path/...</strong>   - источник доступный по NFS </li>
+</ul>
+
+<h3>
+<a id="Порядок-инициализации-системы" class="anchor" href="#%D0%9F%D0%BE%D1%80%D1%8F%D0%B4%D0%BE%D0%BA-%D0%B8%D0%BD%D0%B8%D1%86%D0%B8%D0%B0%D0%BB%D0%B8%D0%B7%D0%B0%D1%86%D0%B8%D0%B8-%D1%81%D0%B8%D1%81%D1%82%D0%B5%D0%BC%D1%8B" aria-hidden="true"><span class="octicon octicon-link"></span></a>Порядок инициализации системы</h3>
+
+<ol>
+<li>Осуществляется поиск конфигурационного файла по пути, указанному в параметре uird.basecfg=</li>
+<li>Устанавливаются параметры из конфигурационного файла, которые еще не установлены в параметрах ядра</li>
+<li>Происходит монтирование источников <strong>base</strong>-уровня в порядке, указанном в параметре uird.from= </li>
+<li>Происходит монтирование источников <strong>cache</strong>-уровня в порядке, указанном в параметре uird.cache= </li>
+<li>Происходит монтирование источников <strong>homes</strong>-уровня в порядке, указанном в параметре uird.homes= </li>
+<li>Происходит подключение в самый <em>верхний</em> уровень AUFS источника персистентных изменений, указанного в параметре uird.changes=</li>
+<li>
+<p>Осуществляется синхронизация base-уровня в cache-уровень с учетом параметра uird.copy2cache=, а также соответствия подуровней. Если подуровней cache-уровня меньше, чем base-уровня, то оставшиеся подуровни синхронизируются в RAM.</p>
+
+<pre><code>    ├── layer-base       ==&gt;      ├── layer-cache
+    │   ├── 0            --&gt;      │   ├── 0
+    │   ├── 1            --&gt;      │   ├── 1
+    │   ├── ...          --&gt;      │   └── ...
+    │   └── ...          --&gt;      │   RAM
+</code></pre>
+</li>
+<li><p>Осуществляется синхронизация base,cache-уровней в RAM с учетом параметра uird.copy2ram=</p></li>
+<li>Осуществляется поиск модулей в RAM, cache-уровне, base-уровне и подключение их на <em>[верхний-1]</em> уровень AUFS с учетом фильтров, указанных в параметрах uird.load=,uird.noload=,uird.ro=,uird.rw=.</li>
+<li>Осуществляется каскадное объединение источников homes-уровня и подключение их в /home</li>
+<li>Выполняются скрипты rc.preinit</li>
+</ol>
+
+<h3>
+<a id="Структура-конфигурационного-файла-basecfgini-по-умолчанию" class="anchor" href="#%D0%A1%D1%82%D1%80%D1%83%D0%BA%D1%82%D1%83%D1%80%D0%B0-%D0%BA%D0%BE%D0%BD%D1%84%D0%B8%D0%B3%D1%83%D1%80%D0%B0%D1%86%D0%B8%D0%BE%D0%BD%D0%BD%D0%BE%D0%B3%D0%BE-%D1%84%D0%B0%D0%B9%D0%BB%D0%B0-basecfgini-%D0%BF%D0%BE-%D1%83%D0%BC%D0%BE%D0%BB%D1%87%D0%B0%D0%BD%D0%B8%D1%8E" aria-hidden="true"><span class="octicon octicon-link"></span></a>Структура конфигурационного файла basecfg.ini по умолчанию</h3>
+
+<pre><code>uird.config=MagOS.ini
+uird.ramsize=70%
+uird.ro=*.xzm;*.rom;*.rom.enc;*.pfs;*.sfs
+uird.rw=*.rwm;*.rwm.enc
+uird.load=*
+uird.noload=/optional/;/machines/;/cache/;/homes/,/changes/
+uird.from=/MagOS;/MagOS-Data
+uird.changes=/MagOS-Data/changes
+uird.cache=/MagOS-Data/cache
+uird.machines=/MagOS-Data/machines
+uird.homes=/MagOS-Data/homes
+</code></pre>
+
+<p>!!! Если параметр uird.basecfg= не задан, то используется /basecfg.ini внутри initrd (не реализовано, пока используется только конфиг внутри initrd).</p>
+
+<h3>
+<a id="Структура-системной-директории" class="anchor" href="#%D0%A1%D1%82%D1%80%D1%83%D0%BA%D1%82%D1%83%D1%80%D0%B0-%D1%81%D0%B8%D1%81%D1%82%D0%B5%D0%BC%D0%BD%D0%BE%D0%B9-%D0%B4%D0%B8%D1%80%D0%B5%D0%BA%D1%82%D0%BE%D1%80%D0%B8%D0%B8" aria-hidden="true"><span class="octicon octicon-link"></span></a>Структура системной директории</h3>
+
+<pre><code>  /memory/
+  ├── bundles                   - точка монтирования модулей
+  │   ├── 00-kernel.xzm
+  │   ├── 01-firmware.xzm
+  │   ├── 10-core.xzm
+  │   ├── 80-eepm-1.5.2.xzm
+  │   └── ...                   - и т.д.
+  ├── changes                   - точка монтирования для хранения изменений 
+  │   ├── etc
+  │   ├── home
+  │   ├── memory
+  │   ├── run
+  │   ├── var
+  │   └── ...                   - и т.д.
+  ├── data                      - точка монтирования источников
+  │   ├── cache                     - кеш уровня
+  │   ├── homes                     - homes уровня
+  │   ├── machines                  - (зарезервировано)
+  │   └── from                      - базового уровня
+  ├── layer-base                - точка монтирования базового уровня
+  │   ├── 0                         - ресурс первого источника
+  │   ├── 1                         - ресурс второго источника (в порядке перечисления в uird.from=)
+  │   └── ...                       - и т.д.
+  ├── layer-cache               - точка монтирования кеш уровня
+  │   ├── 0                         - ресурс первого источника
+  │   ├── 1                         - ресурс второго источника (в порядке перечисления в uird.cache=)
+  │   └── ...                       - и т.д.
+  ├── layer-homes               - точка монтирования homes уровня
+  │   ├── 0                         - ресурс первого источника
+  │   ├── 1                         - ресурс второго источника (в порядке перечисления в uird.homes=)
+  │   └── ...                       - и т.д.
+  ├── cmdline                   - системный файл для хранения дополнительных параметров командной строки
+  └── MagOS.ini.gz              - системный файл для хранения конфигурационного файла
+</code></pre>
+
+<h3>
+<a id="Реализация" class="anchor" href="#%D0%A0%D0%B5%D0%B0%D0%BB%D0%B8%D0%B7%D0%B0%D1%86%D0%B8%D1%8F" aria-hidden="true"><span class="octicon octicon-link"></span></a>Реализация</h3>
+
+<p>В основе реализации лежит набор скриптов инициализации dracut (модули base , busybox ) и скрипты uird (livekitlib+uird-init).</p>
+
+<pre><code>cmdline-hook: parse-root-uird.sh (проверяет параметр root=uird:)
+mount-hook: mount-uird.sh (выполняет скрипт uird-init)
+</code></pre>
+
+<ul>
+<li>
+<a href="https://github.com/magos-linux/magos-linux/blob/master/make_initrd/modules.d/97uird/livekit/livekitlib">livekitlib</a> - содержит библиотеку функций системы инициализации.</li>
+<li>
+<a href="https://github.com/magos-linux/magos-linux/blob/master/make_initrd/modules.d/97uird/livekit/uird-init">uird-init</a> - последовательно выполняет набор функций из livekitlib и осуществляет каскадно-блочное монтирование модулей системы в единый корень AUFS в директорию указанную в переменной dracut $NEWROOT.</li>
+</ul>
+      </section>
+    </div>
+
+    
+  </body>
+</html>
