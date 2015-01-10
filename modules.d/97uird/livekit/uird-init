@@ -1,0 +1,156 @@
+#!/bin/sh
+#
+# UIRD Init script
+# Author: Anton Goroshkin <http://magos-linux.ru>
+#
+
+. /livekitlib
+
+#. /lib/magos-lib.sh
+
+#transfer_initramfs
+
+UNION=$NEWROOT
+
+MEMORY=/memory
+BUNDLES=$MEMORY/bundles
+CHANGES=$MEMORY/changes
+DATAMNT=$MEMORY/data
+COPY2RAM=$MEMORY/copy2ram
+LAYER_BASE=$MEMORY/layer-base
+LAYER_CACHE=$MEMORY/layer-cache
+LAYER_HOMES=$MEMORY/layer-homes
+MOUNTDIR=$DATAMNT
+
+LIVEKITNAME="MagOS"
+
+echo "0" >/proc/sys/kernel/printk
+
+#loadfont < /usr/lib/consolefonts/UniCyr_8x14.psf
+loadfont < /usr/lib/consolefonts/ter-u16n.psf
+loadkeys /usr/lib/kbd/ru.map
+
+header "Starting UIRD init <http://magos-linux.ru/>"
+
+debug_start
+                                                                                                                                                      debug_shell
+
+
+# start quickshell
+start_quickshell
+                                                                                                                                                      debug_shell
+
+# Resume from swsuspend
+resume_from_suspend
+                                                                                                                                                      debug_shell
+
+mkdir -p $MEMORY
+
+echo getcmdline >/memory/cmdline
+cat /basecfg.ini >/memory/basecfg.ini 2>/dev/null
+
+RAMSIZE=$(cmdline_value uird.ramsize)
+if [ "$RAMSIZE" = "" ]; then RAMSIZE="70%"; fi
+mount -t tmpfs -o "size=$RAMSIZE" tmpfs $MEMORY
+
+mkdir -p $MOUNTDIR $CHANGES
+
+getcmdline >/memory/cmdline
+cat /basecfg.ini >/memory/basecfg.ini 2>/dev/null
+
+
+# find data dir with filesystem bundles
+#DATA="$(find_data 60 "$DATAMNT")"
+
+#init BASE layer
+[ "$(cmdline_value uird.from)" ] && init_layer $DATAMNT/from $LAYER_BASE uird.from
+                                                                                                                                                      debug_shell
+# init CACHE layer
+[ "$(cmdline_value uird.cache)" ] && init_layer $DATAMNT/cache $LAYER_CACHE uird.cache
+																	              debug_shell
+# init HOMES layer
+[ "$(cmdline_value uird.homes)" ] && init_layer $DATAMNT/homes $LAYER_HOMES uird.homes
+																	              debug_shell
+
+#setting up config
+setup_config
+                                                                                                                                                      debug_shell
+
+#setting up source for changes
+setup_changes $DATAMNT/changes $CHANGES
+                                                                                                                                                      debug_shell
+#setting up machines
+setup_machines $DATAMNT/machines $CHANGES
+                                                                                                                                                      debug_shell
+
+# sync data from BASE layer to CACHE layer
+for d_dirs in "$LAYER_BASE" ;do
+    # copy to CACHE if needed (uird.copy2cache=)
+    copy_to_cache $d_dirs "$LAYER_CACHE"
+done
+                                                                                                                                                      debug_shell
+# sync data from BASE,CACHE layers to RAM
+for d_dirs in "$LAYER_BASE" "$LAYER_CACHE" ;do
+    # copy to RAM if needed (uird.copy2ram=)
+    copy_to_ram $d_dirs "$COPY2RAM"
+done
+                                                                                                                                                      debug_shell
+# setup persistent changes, if possible
+#persistent_changes "$DATA" "$CHANGES"
+#                                                                                                                                                      debug_shell
+
+# init aufs filesystem
+init_aufs
+
+# init aufs union
+init_union "$CHANGES" "$UNION"
+
+                                                                                                                                                      debug_shell
+# add data to union
+#for d_dirs in "$COPY2RAM" "$LAYER_CACHE" "$LAYER_BASE"  ;do
+#    union_append_bundles $d_dirs "$BUNDLES" "$UNION"
+#done
+
+[ "$(cmdline_value uird.copy2ram)$(cmdline_parameter uird.copy2ram)" ] && union_append_bundles $COPY2RAM "$BUNDLES" "$UNION"
+                                                                                                                                                      debug_shell
+[ "$(cmdline_value uird.cache)" ] && union_append_bundles $LAYER_CACHE "$BUNDLES" "$UNION"
+                                                                                                                                                      debug_shell
+[ "$(cmdline_value uird.from)" ] && union_append_bundles $LAYER_BASE "$BUNDLES" "$UNION"
+
+#setup homes by using aufs
+setup_homes "$LAYER_HOMES" "$UNION/home"                                                                                                                                                      debug_shell
+                                                                                                                                                      debug_shell
+
+# rootcopy
+#copy_rootcopy_content "$DATA" "$UNION"
+
+echo_green_star
+echolog "Обновление файла /etc/fstab и директории /mnt "
+touch $UNION/etc/fstab
+rmdir $UNION/mnt/* 2>/dev/null
+fstab_update $UNION
+                                                                                                                                                      debug_shell
+
+# old compatibility
+mkdir -p $UNION/mnt/live 
+cp liblinuxlive $UNION/mnt/live/liblinuxlive
+ln -s /memory/data $UNION/mnt/livemedia
+                                                                                                                                                      debug_shell
+
+cd $UNION
+echo_green_star
+echolog "Выполняются  rc.preinit скрипты"
+[ -x "etc/rc.d/rc.preinit" ] && /bin/bash etc/rc.d/rc.preinit
+                                                                                                                                                      debug_shell
+
+
+#need for usable_root of dracut
+mkdir -p $UNION/proc $UNION/sys $UNION/dev $UNION/$MEMORY
+
+#need TODO
+mount --move $MEMORY $UNION/$MEMORY
+
+header "UIRD init done, starting $LIVEKITNAME"
+                                                                                                                                                      debug_shell
+
+shell_cmd

@@ -1,0 +1,1686 @@
+#!/bin/sh
+
+# Functions library :: for Linux Live Kit scripts & UIRD init
+# Author: Tomas M. <http://www.linux-live.org>
+#
+# Author: Mikhail Zaripov <http://magos-linux.ru>
+# Author: Anton Goroshkin <http://magos-linux.ru>
+
+export TEXTDOMAIN=livekitlib.po.mo
+. i18n-lib.sh
+
+# Colors text
+black='\033[0;30m'
+red='\033[0;31m'
+green='\033[0;32m'
+yellow='\033[1;33m'
+brown='\033[0;33m'
+blue='\033[0;34m'
+light_blue='\033[1;34m'
+magenta='\033[1;35m'
+cyan='\033[0;36m'
+white='\033[0;37m'
+purple='\033[0;35m'
+default='\033[0m'
+
+# Messages
+INIT_UNION="Инициализация файловой системы AUFS"
+INIT_LAYER="Инициализация:"
+
+MOUNT_DATA_SOURCE="Поиск и инициализация источника:"
+MOUNT_DATA_SOURCE_USING="    используется источник:"
+MOUNT_DATA_SOURCE_NOT_FOUND="    источник не удалось найти или инициализировать"
+
+TESTING_FOR_POSIX="Тестирование файловой системы на совместимость с POSIX"
+POSIX_NOT_COMPATIBLE="    POSIX не поддерживается, используется POSIXOVL"
+
+SETUP_CONFIG="Поиск и инициализация файла конфигурации:"
+SETUP_CONFIG_USING="  используется файл конфигурации:"
+SETUP_CHANGES="Инициализация источника для персистентных изменений:"
+SETUP_CHANGES_USING="  используется для изменений:"
+SETUP_MACHINES="Инициализация источника для машинно-зависимых изменений:"
+SETUP_HOMES="Подключение источников для домашних директорий:"
+
+INIT_IFCFG="Инициализация сетевых сервисов"
+UNION_APPEND_BUNDLES="Подключение модулей в общий корень:"
+COPY_TO_RAM="Копирование данных в ОЗУ, это может занять длительное время, ожидайте..."
+COPY_TO_CACHE="Копирование данных в КЭШ, это может занять длительное время, ожидайте..."
+
+# =================================================================
+# debug and output functions
+# =================================================================
+debug_start()
+{
+    # global variable
+    DEBUG_IS_ENABLED=$(cat /proc/cmdline 2>/dev/null | grep debug)
+}
+
+debug_log()
+{
+   if [ "$DEBUG_IS_ENABLED" ]; then
+      echo "- debug: $*" >&2
+      log "- debug: $*"
+   fi
+}
+
+# header
+# $1 = text to show
+#
+header()
+{
+   echo -e "\\033[0;1m""$@""\\033[0;0m"
+}
+
+
+# echo green star
+#
+echo_green_star()
+{
+   echo -ne $green"* "$default
+}
+
+# log - store given text in /var/log/livedbg
+log()
+{
+   echo "$@" 2>/dev/null >>/var/log/livedbg
+}
+
+echolog()
+{
+   i18n_display "$@"
+   log "$@"
+}
+
+# show information about the debug shell
+show_debug_banner()
+{
+   echo
+   echo "====="
+   echo ": Debugging started. Here is the root shell for you."
+   echo ": Type your desired commands or hit Ctrl+D to continue booting."
+   echo
+}
+
+# debug_shell
+# executed when debug boot parameter is present
+#
+debug_shell()
+{
+   if [ "$DEBUG_IS_ENABLED" ]; then
+      show_debug_banner
+      setsid sh -c 'exec sh < /dev/tty1 >/dev/tty1 2>&1'
+      echo
+   fi
+}
+# start shell
+shell_cmd()
+{
+   if [ "$(cmdline_parameter qs)" ]; then 
+      echo "============== SHELL MODE ============="
+      setsid sh -c 'exec sh < /dev/tty1 >/dev/tty1 2>&1'
+      echo
+   fi
+}
+# start quickshell
+start_quickshell()
+{
+    if [ "$(cmdline_parameter quickshell)$(cmdline_parameter qsb)" ] ; then
+	getty -n -l /bin/autologin 9600 tty2 linux &
+	getty -n -l /bin/autologin 9600 tty3 linux &
+	getty -n -l /bin/autologin 9600 tty4 linux &
+	getty -n -l /bin/autologin 9600 tty5 linux &
+	getty -n -l /bin/autologin 9600 tty6 linux &
+	automount
+	clear
+	cat ./quickshell.hlp
+	/bin/bash autologin
+	cd /
+	umount /mnt/*
+	export LANG=""
+	echo "continue...."
+    fi
+}
+
+# Resume from swsuspend
+resume_from_suspend()
+{
+    if [ -z $(cmdline_parameter noresume) ] ; then
+	RESUME_DEV=$(blkid.real | grep -m1 swsuspend | awk -F: '{print $1}')
+	[ -z "$RESUME_DEV" ] || resume -r $RESUME_DEV
+    fi
+}
+
+fatal()
+{
+   echolog
+   header "Fatal error occured - $1"
+   echolog "Something went wrong and we can't continue. This should never happen."
+   echolog "Please reboot your computer with Ctrl+Alt+Delete ..."
+   echolog
+   setsid sh -c 'exec sh < /dev/tty1 >/dev/tty1 2>&1'
+}
+
+# look into cmdline and echo $1 back if $1 is set
+# $1 = value name, case sensitive, for example 'debug'
+#
+cmdline_parameter()
+{
+   debug_log "cmdline_parameter" "$*"
+   log "searching for bootparam: $1"
+   ADDFILE=/memory/cmdline
+   BASECFG=/memory/basecfg.ini
+#   [ -f /livekitlib ] || ADDFILE=/mnt/live$ADDFILE 
+   echo -n " " | cat - /proc/cmdline $ADDFILE $BASECFG 2>/dev/null | egrep -m1 -o "(^|[[:space:]])$1([[:space:]]|\$)" | tr -d " "
+}
+
+# look into cmdline and echo value of $1 option
+# $1 = value name, case sensitive, for example 'changes'
+#
+cmdline_value()
+{
+   debug_log "cmdline_value" "$*"
+   log "searching for bootparam value: $1"
+   ADDFILE=/memory/cmdline
+   BASECFG=/memory/basecfg.ini
+#   [ -f /livekitlib ] || ADDFILE=/mnt/$ADDFILE
+   echo -n " " | cat - /proc/cmdline $ADDFILE $BASECFG 2>/dev/null | egrep -m1 -o "(^|[[:space:]])$1=[^[:space:]]+" | cut -d "=" -f 2-
+}
+
+
+# test if the script is started by root user. If not, exit
+#
+allow_only_root()
+{
+  if [ "0$UID" -ne 0 ]; then
+     echolog "Only root can run" "$(basename $0)"; exit 1
+  fi
+}
+
+# Create bundle
+# call mksquashfs with apropriate arguments
+# $1 = directory which will be compressed to squashfs bundle
+# $2 = output file
+# $3..$9 = optional arguments like -keep-as-directory or -b 123456789
+#
+create_bundle()
+{
+   debug_log "create_module" "$*"
+   rm -f "$2" # overwrite, never append to existing file
+   mksquashfs "$1" "$2" -comp xz -b 512K $3 $4 $5 $6 $7 $8 $9>/dev/null
+}
+
+setup_config()
+{
+    debug_log "setup config" "$*"
+    INIFILE=$(cmdline_value uird.config)
+    echo_green_star
+    echolog "$SETUP_CONFIG" $brown"$INIFILE"
+    
+    [ -z "$INIFILE" ] && INIFILE=$LIVEKITNAME.ini
+    [ -f "$LAYER_BASE/0/$INIFILE" ] && PATHINI="$LAYER_BASE/0/$INIFILE"
+    [ -f "$DATAMNT/0/$INIFILE" ] && PATHINI="$DATAMNT/0/$INIFILE"
+    [ -z "$PATHINI" ] || echolog "$SETUP_CONFIG_USING" $yellow"$PATHINI"
+    [ -z "$PATHINI" ] && PATHINI=/dev/null
+    egrep -v '^#|^$' "$PATHINI" | sed s-\\\\r-- | gzip > /memory/$LIVEKITNAME.ini.gz
+    grep '^CMDLINE=' "$PATHINI" | sed s/^CMDLINE=// | tr -d [:cntrl:]\'\" >>/memory/cmdline
+    chmod 400 /memory/$LIVEKITNAME.ini.gz /memory/cmdline 2>/dev/null
+}
+
+# Move entire initramfs tree to tmpfs mount.
+# It's a bit tricky but is necessray to enable pivot_root
+# even for initramfs boot image
+#
+transfer_initramfs()
+{
+   if [ ! -r /lib/initramfs_escaped ]; then
+      echo "switch root from initramfs to ramfs"
+      SWITCH=/m # one letter directory
+      mkdir -p $SWITCH
+      mount -t tmpfs -o size="100%" tmpfs $SWITCH
+      cp -a /??* $SWITCH 2>/dev/null # only copy two-and-more-letter directories
+      cd $SWITCH
+      echo "This file indicates that we successfully escaped initramfs" > $SWITCH/lib/initramfs_escaped
+      exec switch_root -c /dev/console . $0
+   fi
+}
+
+# mount virtual filesystems like proc etc
+#
+init_proc_sysfs()
+{
+   debug_log "init_proc_sysfs" "$*"
+   mkdir -p /proc /sys /etc $MEMORY
+   mount -n -t proc proc /proc
+   echo "0" >/proc/sys/kernel/printk
+   mount -n -t sysfs sysfs /sys
+   mount -n -o remount,rw rootfs /
+   ln -sf /proc/mounts /etc/mtab
+}
+
+# make sure some devices are there
+init_devs()
+{
+   debug_log "init_devs" "$*"
+   echo /sbin/mdev > /proc/sys/kernel/hotplug
+   mdev -s
+   modprobe zram 2>/dev/null
+   modprobe loop 2>/dev/null
+   modprobe squashfs 2>/dev/null
+   modprobe fuse 2>/dev/null
+}
+
+# Activate zram (auto-compression of RAM)
+# Compressed RAM consumes 1/2 or even 1/4 of original size
+# Setup static size of 500MB
+#
+init_zram()
+{
+   debug_log "init_zram" "$*"
+   echo_green_star
+   echolog "Setting dynamic RAM compression using ZRAM"
+   echo 536870912 > /sys/block/zram0/disksize # 512MB
+   mkswap /dev/zram0 >/dev/null
+   swapon /dev/zram0 -p 32767
+   echo 100 > /proc/sys/vm/swappiness
+}
+
+# load the AUFS kernel module if needed
+#
+init_aufs()
+{
+   debug_log "init_aufs" "$*"
+   # TODO maybe check here if aufs support is working at all
+   # and produce useful error message if user has no aufs
+   modprobe aufs 2>/dev/null
+}
+
+# Setup empty union
+# $1 = changes directory (ramfs or persistent changes)
+# $2 = union directory where to mount the union
+#
+init_union()
+{
+   debug_log "init_union" "$*"
+
+   echo_green_star
+   echolog "$INIT_UNION"
+   mkdir -p "$1"
+   mkdir -p "$2"
+#   mount -t aufs -o xino="/tmp/.xino",trunc_xino,br="$1" aufs "$2"
+   mount -t aufs -o br="$1" aufs "$2"
+}
+
+# Make sure the part of a script after 'mutex_lock' call is atomic,
+# that means the 'locked' part of the script can never be execuetd 
+# from several processes at the same time, in parallel.
+# Every script waits until it gathers the lock.
+# The lock directory is saved in /dev instead of /tmp, because /tmp may be
+# readonly at the time when the lock is needed (eg. when udev is starting)
+# $1 = name of the lock
+#
+mutex_lock()
+{
+   debug_log "mutex_lock" "$*"
+   while ! mkdir "/dev/ll-mutex-lock-$1" 2>/dev/null; do
+      usleep 100000;
+   done
+}
+
+# Unlock the lock so another waiting process can reusse it and continue
+# $1 = name of the lock
+#
+mutex_unlock()
+{
+   debug_log "mutex_unlock" "$*"
+   rmdir "/dev/ll-mutex-lock-$1" 2>/dev/null
+}
+
+
+# modprobe module $1, including all dependencies, suppress all messages
+# This was own function, because modprobe in busybox didn't support
+# neither gzipped modules nor dependencies. Seems to be fixed now, though.
+# $1 = module name, eg. ehci-hcd
+# $* = optional arguments
+#
+modprobe_module()
+{
+   debug_log "modprobe_module" "$*"
+   local MODULE
+
+   MODULE="$1"
+   shift
+
+   if [ ! "$MODULE" ]; then return 1; fi
+   modprobe "$MODULE" $* 2>/dev/null
+}
+
+# mknod next loop device
+# - find biggest loop device in /dev/loop/, assume it to be used
+# - preallocate (mknod) 20 more loop devices in one round
+mknod_next_loop_dev()
+{
+   debug_log "mknod_next_loop_dev" "$*"
+   local i NR END PFX
+
+   mutex_lock mknod_next_loop_dev
+
+   if [ -d /dev/loop ]; then
+      NR=$(find /dev/loop/ -maxdepth 1 | sed -r 's/[^0-9]+//' | sort -n | tail -n 1)
+      PFX="/"
+   else
+      NR=$(find /dev/ -maxdepth 1 | grep loop | sed -r 's/[^0-9]+//' | sort -n | tail -n 1)
+      PFX=""
+   fi
+   NR=$(expr 0$NR + 1)
+   END=$(expr 0$NR + 20)
+   for i in $(seq $NR $END); do
+      mknod /dev/loop$PFX$i b 7 $i 2>/dev/null
+   done
+   echo /dev/loop$PFX$NR
+
+   mutex_unlock mknod_next_loop_dev
+}
+
+
+
+
+# List all CD-ROMs
+# by using /proc entries
+#
+list_cdrom_devices()
+{
+   debug_log "list_cdrom_devices" "$*"
+   local CDDEVICE
+
+   for CDDEVICE in $(cat /proc/sys/dev/cdrom/info 2>/dev/null | head -n 3 | tail -n 1 | cut -d ":" -f 2); do
+      echo "/dev/$CDDEVICE"
+   done
+}
+
+# List all mounted directories
+#
+list_mounted_directories()
+{
+   debug_log "list_mounted_directories" "$*"
+   if [ "$MOUNTDIR" ]; then
+      ls -1 $MOUNTDIR | while read DIR; do
+         if ismountpoint $MOUNTDIR/$DIR; then echo $DIR; fi
+      done
+   fi
+}
+
+# List all devices with filesystems
+# Return empty result when nohd parameter was given.
+#
+list_partition_devices()
+{
+   debug_log "list_partition_devices" "$*"
+   if [ "$(cmdline_parameter nohd)" != "" ]; then return 1; fi
+   egrep -v 'loop|major|^$| [0-9] [a-z]' /proc/partitions | sed -r "s:^[0-9 ]+:/dev/:"
+   if [ -e /dev/mapper/control ]; then # list LVM partitions if available
+      ls -1 /dev/mapper/ | grep -v "^control\$" | sed -r "s:^:/dev/mapper/:"
+   fi
+}
+
+# List all disk devices
+#
+list_disk_devices()
+{
+   debug_log "list_disk_devices" "$*"
+   list_partition_devices | egrep -v "[0-9]"
+}
+
+# List all partitions marked as Linux Swap
+#
+list_swap_devices()
+{
+   debug_log "list_swap_devices" "$*"
+   if [ "$(cmdline_parameter nohd)" != "" -o "$(cmdline_parameter noswap)" != "" ]; then return 1; fi
+   blkid.real -t TYPE="swap" -o device
+}
+
+# List all block devices
+#
+list_block_devices()
+{
+   debug_log "list_block_devices" "$*"
+   if [ "$(cmdline_parameter nocd)" = "" ]; then
+      list_cdrom_devices
+   fi
+   list_partition_devices
+}
+
+# discover filesystem used on the given device
+# Use vfat for msdos filesystem. Use ntfs-3g for ntfs if ntfsmount exists.
+# $1 = device, eg. /dev/hda1
+#
+device_filesystem()
+{
+   debug_log "device_filesystem" "$*"
+   local NTFS
+
+   if [ -e /bin/ntfsmount ]; then NTFS="ntfs-3g"; else NTFS="ntfs"; fi
+   blkid.real -s TYPE "$1" -o value | sed "s/msdos/vfat/" | sed "s/ntfs/$NTFS/"
+}
+
+# tell us if the given filesystem is supported
+# (eg. it's in /proc/filesystems or we know it)
+# $1 = filesystem name
+#
+is_supported_filesystem()
+{
+   debug_log "is_supported_filesystem" "$*"
+
+   if [ -e /bin/ntfsmount -a "$1" = "ntfs-3g" ]; then
+      return 0
+   fi
+
+   # the following command will set the return value
+   egrep -q "[[:space:]]$1\$" /proc/filesystems
+}
+
+# Check device on demand. Only block devices and *.img loop files  can be checked
+# $1 = /dev device, eg. /dev/hda1, or loop file
+# $2 = optional filesystem name, in order to skip autodetection
+fsck_device()
+{
+  [ -b "$1" -o -f "$1" ] || return
+  if [ -f "$1" ] ;then
+     echo $1 | grep -q ".img$" || return
+  fi
+  echo_green_star
+  echolog "Checking filesystem on" "$1 $2"  >/dev/console 2>/dev/console
+  FS=
+  if [ "$2" = "ntfs" ] ;then
+     /usr/bin/ntfsfix "$1" </dev/console >/dev/console 2>/dev/console
+  else
+     /usr/bin/fsck -a $([ "$2" ] && echo "-t $2") $1  </dev/console >/dev/console 2>/dev/console
+  fi
+}
+
+# unmount all parameters. If the parameter is not mountpoint but
+# it's a file or directory, umount the device where the file/dir is stored.
+#
+# First try normal umount, if that fails then remount read-only
+# If -l parameter is specified, do lazy-umount when normal umount fails
+# $1..$n = files/directories/devices to be unmounted
+#
+fumount()
+{
+   debug_log "fumount" "$*"
+   local TARGET LAZY LOOPDEVICE
+
+   while [ "$1" ]; do
+      if [ "$1" = "-l" ]; then LAZY="yes"; shift; fi
+      TARGET=$(readlink -f "$1")
+      if ! ismountpoint "$TARGET"; then
+         if [ -f "$TARGET" -o -d "$TARGET" ]; then
+            TARGET=$(df "$TARGET" | tail -n 1 | tr -s " " | cut -d " " -f 6)
+         fi
+      fi
+
+      if [ "$TARGET" != "" ]; then
+         LOOPDEVICE=$(grep '/dev/loop.* '"$TARGET " /proc/mounts | awk '{print $1}' )
+         umount -n "$TARGET" >/dev/null 2>&1
+         if [ $? -ne 0 ]; then
+            mount -n -o remount,ro -t ignored ignored "$TARGET" >/dev/null 2>&1
+            if [ "$LAZY" ]; then umount -n -l "$TARGET" >/dev/null 2>&1; fi
+         fi
+         [ "$LOOPDEVICE" = "" ] || losetup -d "$LOOPDEVICE"
+      fi
+      shift
+   done
+}
+
+
+# Mount device $1 to $2
+# If the device is using vfat or ntfs filesystem, use iocharset as a mount option
+# $1 = /dev device to mount, eg. /dev/hda1, or loop file, or directory
+# $2 = mountpoint, eg. /mnt/hda1
+# $3 = optional mount options, for example "ro", or "remount,rw"
+# $4 = optional filesystem name, in order to skip autodetection
+#
+mount_device()
+{
+   debug_log "mount_device" "$*"
+   local FS DEV LOOPDEV OPTIONS FILESYSTEM ERR
+
+   # make sure we have enough arguments
+   if [ "$2" = "" ]; then return 1; fi
+   if [ "$1" = "" ]; then rmdir "$2" 2>/dev/null; return 1; fi
+   # skipping MBR
+   echo $(basename $1) | grep -q [a-z]$ && grep -q $(basename $1)[0-9] /proc/partitions  && return 1
+
+   mkdir -p "$2"
+
+   DEV="$1"
+   if [ "$4" != "" ]; then FS="$4"; else FS=$(device_filesystem "$1"); fi
+   if [ "$FS" ]; then OPTIONS=$(fs_options $FS mount); FS="-t $FS"; fi
+   if [ "$OPTIONS" ]; then OPTIONS="$OPTIONS"; else OPTIONS=""; fi
+   if [ -f "$DEV" ]; then OPTIONS="$OPTIONS,loop"; fi
+   if [ -d "$DEV" ]; then OPTIONS="$OPTIONS,rbind"; fi
+   if [ "$3" ]; then OPTIONS="$OPTIONS,$3"; fi
+   OPTIONS=$(echo "$OPTIONS" | sed -r "s/^,+//")
+
+   if [ "$FS" = "-t ntfs-3g" ]; then
+      [ $(cmdline_parameter fsck) ] && fsck_device "$DEV" ntfs
+      ntfsmount "$DEV" "$2" -o $OPTIONS >/dev/null 2>&1
+      ERR=$?
+   else
+      [ $(cmdline_parameter fsck) ] && fsck_device "$DEV" $(echo $FS| sed "s/-t //" )
+      mount -n -o $OPTIONS $FS "$DEV" "$2" >/dev/null 2>&1
+      ERR=$?
+   fi
+
+   if [ $ERR -ne 0 ] && [ -f "$DEV" ] && echo "$DEV" | grep -q .enc$ ; then
+       LOOPDEV=$(losetup -f)
+       [ -z "$LOOPDEV" ] && LOOPDEV=$(mknod_next_loop_dev)
+       OPTIONS=$(echo "$OPTIONS" | sed -r "s/,loop//g")
+       echolog "Mounting encrypted filesystem" "$DEV" >/dev/console 2>/dev/console
+       times=3
+       while [ $times -gt 0 ]; do
+          /usr/bin/losetup.real -e AES256 "$LOOPDEV" "$DEV" >/dev/console </dev/console 2>/dev/console
+          [ $(cmdline_parameter fsck) ] && fsck_device "$LOOPDEV"
+          mount -n -o $OPTIONS "$LOOPDEV" "$2" >/dev/null 2>&1
+          ERR=$?
+          [ $ERR -eq 0 ] && break
+          /usr/bin/losetup.real -d "$LOOPDEV"
+          times=$(expr $times - 1)
+       done
+   fi
+
+   # not enough loop devices? try to create one.
+   if [ $ERR -eq 2 ]; then
+       LOOPDEV=$(mknod_next_loop_dev)
+       OPTIONS=$(echo "$OPTIONS" | sed -r "s/,loop//g")
+       losetup "$LOOPDEV" "$DEV" 2>/dev/null # busybox's losetup doesn't support -r
+       if [ $? -ne 0 ]; then
+          losetup -r "$LOOPDEV" "$DEV" 2>/dev/null # force read-only in case of error
+       fi
+       mount -n -o $OPTIONS $FS "$LOOPDEV" "$2" >/dev/null 2>&1
+       ERR=$?
+   fi
+
+   # if nothing works, try to force read-only mount
+   if [ $ERR -ne 0 ]; then
+       mount -n -r -o $OPTIONS $FS "$DEV" "$2" >/dev/null 2>&1
+       ERR=$?
+   fi
+
+   if [ $ERR -ne 0 ]; then rmdir $2 2>/dev/null; fi
+   return $ERR
+}
+
+
+# Mount http filesystem from the given server
+# $1 = server
+# $2 = mountdir
+#
+mount_httpfs()
+{
+   debug_log "mount_httpfs" "$*"
+
+   mkdir -p $2
+   /bin/httpfs $1 $2 || return
+   if [ -f $2/$(basename $1) ] ;then
+      echo $2/$(basename $1)
+   else
+      echo $2
+   fi
+}
+
+# Mount curlftpfs filesystem from the given server
+# $1 = server
+# $2 = mountdir
+#
+mount_curlftpfs()
+{
+   local OPTIONS
+   debug_log "mount_curlftpfs" "$*"
+   OPTIONS=
+   [ "$(cmdline_value uird.netfsopt)" ] && OPTIONS="-o $(cmdline_value uird.netfsopt)"
+
+   mkdir -p $2
+   /bin/curlftpfs $OPTIONS $1 $2 </dev/console >/dev/console 2>/dev/console || return
+   if [ -f $2/$(basename $1) ] ;then
+      echo $2/$(basename $1)
+   else
+      echo $2
+   fi
+}
+
+# Mount sshfs filesystem from the given server
+# $1 = server
+# $2 = mountdir
+#
+mount_sshfs()
+{
+   local OPTIONS
+   debug_log "mount_sshfs" "$*"
+   OPTIONS=
+   [ "$(cmdline_value uird.netfsopt)" ] && OPTIONS="-o $(cmdline_value uird.netfsopt)"
+   mkdir -p $2
+   times=3
+   while [ $times -gt 0 ]; do
+     /bin/sshfs ${1/ssh:??/} $2 $OPTIONS </dev/console >/dev/console 2>/dev/console
+     ERR=$?
+     [ $ERR -eq 0 ] && break
+     times=$(expr $times - 1)
+   done
+   [ $ERR -eq 0 ] || return
+   if [ -f $2/$(basename $1) ] ;then
+      echo $2/$(basename $1)
+   else
+      echo $2
+   fi
+}
+
+# Mount nfs filesystem from the given server
+# $1 = server
+# $2 = mountdir
+#
+mount_nfs()
+{
+   debug_log "mount_nfs" "$*"
+   OPTIONS="nolock,rsize=4096,wsize=4096"
+   [ "$(cmdline_value uird.netfsopt)" ] && OPTIONS="$OPTIONS,$(cmdline_value uird.netfsopt)"
+   mkdir -p $2
+   modprobe nfs
+   local SHARE=`echo $1 | sed s-^nfs://-- `
+   if mount -t nfs $SHARE $2 -o $OPTIONS 2>/dev/null ;then
+      echo $2
+   elif mount -t nfs $(dirname $SHARE) $2 -o nolock,rsize=4096,wsize=4096 2>/dev/null ;then
+      echo $2/$(basename $SHARE)
+   fi
+}
+
+# Format mountdir for device. This function used to append _cdrom or _removable
+# suffix to the directory name so KDE was able to assign a nice icon for evey
+# device, but this should be done using HAL in KDE nowadays, so we do not
+# support these stupid suffixes anymore. Many people will be happy :)
+# $1 = device full path, eg. /dev/hda1
+#
+device_mountdir()
+{
+   debug_log "device_mountdir" "$*"
+   if ! [ -b "$1" ] ;then
+      echo "/$MOUNTDIR/$(basename "$1")" | tr -s /
+   else
+      if grep -q "^$1 " /proc/mounts ;then
+         grep "^$1 " /proc/mounts | awk '{print $2}' | head -1 |  tr -s /
+      else
+         if [ "$2" = "" ];then
+            echo "/$MOUNTDIR/$(basename "$1")" | tr -s /
+         else
+            echo "$2" | tr -s /
+         fi
+      fi
+   fi
+}
+
+# ismountpoint exits with 0 if $1 is mountpoint, else exits with 1
+# $1 = directory or loop_file
+#
+ismountpoint()
+{
+   debug_log "ismountpoint" "$*"
+   local MDIR
+
+   MDIR=$(readlink -f "$1")
+   cat /proc/mounts | cut -d " " -f 2 | egrep "^$MDIR\$" >/dev/null 2>&1
+}
+
+
+# Find file-path on given device
+# First it mounts the device read-only. If then the 'path' is found, 
+# then remount without RO flag (causes it to be mounted read-write if possible)
+# and return the path, else unmount and exit.
+# If the device/dev_directory is already mounted, preserve it mounted
+# $1 = device
+# $2 = path/filename
+# $3 = device mountpoint
+#
+find_filepath()
+{
+   debug_log "find_filepath" "$*"
+   local DIR FOUND PRESERVE
+
+   DIR=$(device_mountdir $1 $3)
+   
+   ismountpoint $DIR
+   if [ $? -eq 0 ]; then
+      PRESERVE="true"
+   else
+      mount_device $1 $DIR ro
+      if [ $? -ne 0 ]; then rmdir $DIR 2>/dev/null; return 1; fi
+      PRESERVE=""
+   fi
+
+   FOUND=$(ls -A1d $DIR/$2 2>/dev/null | head -n 1 | tr -s '/')
+
+#   if [ "$FOUND" ] && echo "$2" | grep -q "$LIVECDNAME/$LIVECDNAME.sgn$"  ;then
+#      grep -q "`head -1 /VERSION`" $DIR/$LIVECDNAME/[Vv][Ee][Rr][Ss][Ii][Oo][Nn] 2>/dev/null || FOUND=""
+#   fi
+   if [ "$FOUND" = "" ]; then
+      if [ "$PRESERVE" != "true" ]; then
+         fumount $DIR
+         rmdir $DIR 2>/dev/null
+      fi
+      return 1
+   else
+      # remount without the 'ro' option now, so use rw or defaults
+      # Only in the case it was not mounted already before.
+      if [ "$PRESERVE" != "true" ]; then
+         fumount $DIR
+         mount_device $1 $DIR rw
+         if [ $? -ne 0 ]; then
+            rmdir $DIR 2>/dev/null
+            return 2
+         fi
+      fi
+      echo "$FOUND"
+      return 0
+   fi
+}
+
+# Find file in computer by mounting disks or other storage devices
+# and searching for $1 in the mounted directory
+# $1 = filename or device-path or devicepath/filename
+# $2 = device mountpoint
+#
+find_file()
+{
+   debug_log "find_file" "$*"
+   local FIND DEVICE DEVPART PATHPART
+
+   # allow using /mnt/... as well as /dev/...
+   FIND=$(echo "$1" | sed -r "s:^/mnt/:/dev/:")
+
+   # if parameter is just a device, echo it and exit
+   if [ -b "$FIND" -o -c "$FIND" -o "$FIND" = "" ]; then echo "$FIND"; return; fi
+
+   # If path doesn't start with /dev/, try to find the exact path on all devices
+   # First, split DEV/PATH parts
+   DEVPART=$(echo "$FIND" | egrep -o "^/dev/[^/]+")
+
+   if [ "$DEVPART" = "" ]; then
+      # no device is specified. Search all devices for filename $FIND
+      PATHPART="$FIND";
+      for DEVICE in $(list_mounted_directories) $(list_block_devices); do
+         if ! grep -q ":$DEVICE@$PATHPART:" /tmp/_findfile 2>/dev/null; then
+            find_filepath "$DEVICE" "$PATHPART" "$2"
+            if [ $? -eq 0 ]; then return 0; fi
+            echo ":$DEVICE@$PATHPART:" >>/tmp/_findfile
+         fi
+      done
+   else
+      # try to find PATHPART only on the given device
+      PATHPART=$(echo "$FIND" | sed -r 's:^/dev/[^/]+(.*):\1:') #'
+      find_filepath "$DEVPART" "$PATHPART" "$2"
+   fi
+}
+
+# Find Data
+# use 'find_file' function to find the given file/dir
+# if nothing found, sleep for a while to allow devices to settle and try again.
+# (is there any way to find out if there are devices queued through /sys?)
+# $1 = file or directory to find
+# $2 = device mountpoint
+#
+find_data()
+{
+   debug_log "find_in_computer" "$*"
+   local TIMEOUT RESULT
+
+   TIMEOUT=$(cmdline_value scantimeout | sed -r 's/[^0-9]*([0-9]+).*/\1/') #'
+   if [ "$TIMEOUT" = "" ]; then TIMEOUT=10; fi
+
+   RESULT=$(find_file "$1" "$2")
+
+   while [ $TIMEOUT -gt 0 -a "$RESULT" = "" ]; do
+      echo -ne "- wait a while\r" >&2
+      sleep 1
+      TIMEOUT=$((TIMEOUT-1))
+      RESULT=$(find_file "$1" "$2")
+   done
+
+   echo $RESULT
+}
+
+
+# Return device mounted for given directory
+# $1 = directory
+#
+mounted_device()
+{
+   debug_log "mounted_device" "$*"
+
+   local MNT TARGET
+   MNT="$1"
+   while [ "$MNT" != "/" -a "$MNT" != "." -a "$MNT" != "" ]; do
+      TARGET="$(grep -F " $MNT " /proc/mounts | cut -d " " -f 1)"
+      if [ "$TARGET" != "" ]; then
+         echo "$TARGET"
+         return
+      fi
+      MNT="$(dirname "$MNT")"
+   done
+}
+
+# Return mounted dir for given directory
+# $1 = directory
+#
+mounted_dir()
+{
+   debug_log "mounted_dir" "$*"
+
+   local MNT
+   MNT="$1"
+   while [ "$MNT" != "/" -a "$MNT" != "." -a "$MNT" != "" ]; do
+      if mountpoint -q "$MNT" 2>/dev/null; then
+         echo "$MNT"
+         return
+      fi
+      MNT="$(dirname "$MNT")"
+   done
+}
+
+# Make sure to mount FAT12/16/32 using vfat
+# in order to support long filenames
+# $1 = device
+#
+device_bestfs()
+{
+   debug_log "device_bestfs" "$*"
+   local FS
+
+   FS="$(blkid.real "$1" | sed -r "s/.*TYPE=//" | tr -d '"' | tr [A-Z] [a-z])"
+   if [ "$FS" = "msdos" -o "$FS" = "fat" -o "$FS" = "vfat" ]; then
+      FS="vfat"
+   elif [ "$FS" = "ntfs" ]; then
+      FS="ntfs-3g"
+   fi
+   echo "-t $FS"
+}
+
+# Find out what locale is requested
+# If no locale is given, use the firts one available (if any)
+# $1 = locale (optional argument, if exists, no autodetection is made)
+locale_id()
+{
+   debug_log "locale_id" "$*"
+   local LOCALE i
+
+   # first try to find out locale from boot parameters
+   LOCALE="$1"
+   if [ "$LOCALE" = "" ]; then LOCALE=$(cmdline_value locale); fi
+   if [ "$LOCALE" = "" ]; then LOCALE=$(cmdline_value language); fi
+   if [ "$LOCALE" = "" ]; then LOCALE=$(cmdline_value lang); fi
+
+   # if not found, set it to locale from usr/lib/locale,
+   # but only if there is just ONE directory, nothing more
+   # (so we are sure which one to use)
+   if [ "$LOCALE" = "" ]; then
+      LOCALE=ru_RU
+   fi
+
+   if [ "$LOCALE" != "" ]; then
+      cat /usr/share/locale/locale.alias | sed -r "s/#.*//" | egrep "$LOCALE|$LOCALE""_" | tail -n 1 | tr -s "[[:space:]]" " " | cut -d " " -f 2- | tr -d " "
+   fi
+}
+
+# Find out what iocharset to use
+iocharset()
+{
+   debug_log "iocharset" "$*"
+   local CHARSET IOCHARSET
+
+   # if iocharset is explicitly set at the boot prompt,
+   # return it regardless the locale settings
+   IOCHARSET=$(cmdline_value iocharset)
+   if [ "$IOCHARSET" = "" ]; then IOCHARSET=utf8 ;fi
+   echo $IOCHARSET
+   return 0;
+}
+
+# Find out what codepage to use
+codepage()
+{
+   debug_log "codepage" "$*"
+   local CHARSET CODEPAGE
+
+   # if codepage is explicitly set at the boot prompt,
+   # return it regardless the locale settings
+   CODEPAGE=$(cmdline_value codepage)
+   if [ "$CODEPAGE" = "" ]; then CODEPAGE=866 ;fi
+   echo $CODEPAGE
+   return 0;
+}
+
+# Get filesystem options
+# $1 = filesystem or '-t filesystem'
+# $2 = 'fstab' or 'mount' ... 'auto'/'noauto' string is enabled (fstab) or disabled (mount)
+#
+
+fs_options()
+{
+   debug_log "fs_options" "$*"
+
+   if [ "$1" = "-t" ]; then
+      shift
+   fi
+
+   local NOAUTO IOCHARSET CODEPAGE
+
+   NOAUTO=$(cmdline_parameter noauto)
+   if [ "$NOAUTO" = "" ]; then NOAUTO="auto"; fi
+   if [ "$2" = "fstab" ]; then echo -n "$NOAUTO," ; fi
+   if [ "$1" = "swap" ]; then echo "defaults,pri=1"; return 0; fi
+   
+   if [ "$1" != "btrfs" ];then
+       echo -n "noatime,suid,dev,exec"
+   fi
+   
+   IOCHARSET=$(iocharset)
+   CODEPAGE=$(codepage)
+
+   MUID=$(cmdline_value users | awk -F: '{print $2}')
+   [ "$MUID" = "" ] && MUID=500
+
+
+   if [ "$1" = "vfat" ]; then
+      echo -n ",quiet,umask=0,check=s,shortname=mixed,uid=$MUID,gid=$MUID"
+      if [ "$IOCHARSET" ]; then
+         echo ",codepage=$CODEPAGE,iocharset=$IOCHARSET"
+      fi
+   fi
+
+   if [ "$1" = "iso9660" ]; then
+      echo -n ",ro"
+      if [ "$IOCHARSET" ]; then
+         echo ",iocharset=$IOCHARSET"
+      fi
+   fi
+
+   if [ "$1" = "ntfs" ]; then
+      echo -n ",ro"
+      if [ "$IOCHARSET" ]; then
+         echo ",nls=$IOCHARSET"
+      fi
+   fi
+
+   if [ "$1" = "ntfs-3g" ]; then
+      echo ",locale=$(locale_id),uid=$MUID,gid=$MUID"
+   fi
+
+   if [ "$1" = "squashfs" ]; then
+      echo -n ",ro"
+   fi
+
+}
+
+
+# Modprobe network kernel modules until a working driver is found.
+# These drivers are (or used to be) probed in Slackware's initrd.
+# The function returns the first device found, yet it doesn't have
+# to be a working one, eg. if the computer has two network interfaces
+# and ethernet cable is plugged only to one of them.
+#
+init_network_dev()
+{
+   debug_log "init_network_dev" "$*"
+   local MODULE ETH
+
+   for MODULE in 3c59x acenic de4x5 e1000 e1000e e100 epic100 hp100 \
+   ne2k-pci pcnet32 8139too 8139cp tulip via-rhine r8169 atl1e yellowfin \
+   tg3 dl2k ns83820 atl1 b44 bnx2 skge sky2 tulip depca 3c501 3c503 \
+   3c505 3c507 3c509 3c515 ac3200 at1700 cosa cs89x0 de600 de620 e2100 \
+   eepro eexpress eth16i ewrk3 forcedeth hostess_sv11 hp-plus hp ni52 \
+   ni65 sb1000 sealevel smc-ultra sis900 smc9194 wd; do
+      modprobe $MODULE 2>/dev/null
+      ETH="$(cat /proc/net/dev | grep : | grep -v lo: | cut -d : -f 1 | tr -d " " | head -n 1)"
+      if [ "$ETH" != "" ]; then
+         echo $ETH
+         return 0
+      fi
+      rmmod $MODULE 2>/dev/null
+   done
+
+   # If we are here, none of the above specified modules worked.
+   # As a last chance, try to modprobe everything.
+   find /lib/modules/ | xargs -n 1 modprobe
+   cat /proc/net/dev | grep : | grep -v lo: | cut -d : -f 1 | tr -d " " | head -n 1
+}
+
+# Setup ip address
+# ip=CLIENT:GW:MASK
+# or DHCP lease
+# Ex.: ip=192.168.0.3:192.168.0.1:255.255.255.0
+init_ifcfg()
+{
+   debug_log "init_ifcfg" "$*"
+   local CLIENT GW MASK ETH
+   
+   echo_green_star
+   echolog "$INIT_IFCFG"
+   
+   modprobe af_packet 2>/dev/null
+   
+   IP=$(cmdline_value uird.ip)
+   [ "$IP" = "" ] && IP=::
+    
+   echo $IP | while IFS=":" read CLIENT GW MASK; do
+      ETH=$(init_network_dev)
+
+      # set IP address as given by boot parameter
+      if [ "$CLIENT" != "" -a "$MASK" != "" ]; then
+         ifconfig $ETH "$CLIENT" netmask "$MASK"
+         route add default gw "$GW"
+      # well known IP address of Google public DNS service
+    	 echo nameserver 8.8.8.8 >> /etc/resolv.conf
+      else
+         # if client ip is unknown, try to get a DHCP lease
+	 ifconfig $ETH up
+         udhcpc -i $ETH -f -q
+      fi
+
+      done
+}
+
+# Download data from tftp
+# $1 = target (store downloaded files there)
+#
+download_data_pxe()
+{
+   debug_log "download_data_pxe" "$*"
+   local CMD CLIENT SERVER GW MASK PORT ETH PROTOCOL
+
+   mkdir -p "$1/$LIVEKITNAME"
+
+   cmdline_value ip | while IFS=":" read CLIENT SERVER GW MASK PORT; do
+      echo_green_star >&2
+      echo "Downloading files from $SERVER ..." >&2
+
+      ETH=$(init_network_dev)
+      if [ "$PORT" = "" ]; then PORT="7529"; fi
+
+      # set IP address as given by boot paramter
+      if [ "$CLIENT" != "" -a "$MASK" != "" ]; then
+         ifconfig $ETH "$CLIENT" netmask "$MASK"
+         route add default gw "$GW"
+      else
+         # if client ip is unknown, try to get a DHCP lease
+         udhcpc -i $ETH -f -q
+      fi
+
+      # well known IP address of Google public DNS service
+      echo nameserver 8.8.8.8 >> /etc/resolv.conf
+
+
+      PROTOCOL=http
+      wget -q -O "$1/PXEFILELIST" "http://$SERVER:$PORT/PXEFILELIST?$(uname -r):$(uname -m)"
+      if [ $? -ne 0 ]; then
+         echo "Error downloading from http://$SERVER:$PORT, trying TFTP" >&2
+         PROTOCOL=tftp
+         tftp -g -r PXEFILELIST -l "$1/PXEFILELIST" $SERVER
+      fi
+
+      cat "$1/PXEFILELIST" | while read FILE; do
+         if [ "$PROTOCOL" = "http" ]; then
+            wget -O "$1/$LIVEKITNAME/$FILE" "http://$SERVER:$PORT/$FILE"
+         else
+            echo "* $FILE ..." >&2
+            tftp -g -r $FILE -l "$1/$LIVEKITNAME/$FILE" $SERVER
+         fi
+      done
+   done
+
+   echo "$1/$LIVEKITNAME"
+}
+
+
+# mount data source to destination directory using mount point directory
+# $1 = source
+# $2 = destination directory
+# $3 = mount point directory
+mount_data_source()
+{
+    debug_log "mount_data_source" "$*"
+    SOURCE=$1
+    DST_DIR=$2
+    MNT_DIR=$3
+	
+	echo -ne $blue"  * "$default
+	
+	echolog "$MOUNT_DATA_SOURCE" $yellow"$SOURCE"$default
+	
+	mkdir -p $DST_DIR
+
+	if [ "$(echo $SOURCE | grep "://")" != ""  ]; then
+    	    init_ifcfg
+    	    echo $SOURCE | grep -iq ^"http://" && DATA_FROM=$(mount_httpfs $SOURCE $MNT_DIR)
+    	    echo $SOURCE | grep -iq ^"nfs://" && DATA_FROM=$(mount_nfs $SOURCE $MNT_DIR)
+    	    echo $SOURCE | grep -iq ^"ssh://" && DATA_FROM=$(mount_sshfs $SOURCE $MNT_DIR)
+    	    echo $SOURCE | grep -iq ^"ftp://" && DATA_FROM=$(mount_curlftpfs $SOURCE $MNT_DIR)
+	else
+    	    DATA_FROM=$(find_data $SOURCE $MNT_DIR)
+    	    [ -b "$DATA_FROM" ] && mount_device $DATA_FROM $DST_DIR # mount block device
+	fi
+   
+	if [ -r "$DATA_FROM" ] ;then
+    	    [ -d "$DATA_FROM" ] && mount_device $DATA_FROM $DST_DIR # mount dir
+    	    [ -f "$DATA_FROM" ] && mount_device $DATA_FROM $DST_DIR # mount again, it may be loop device
+    	    echolog "$MOUNT_DATA_SOURCE_USING" $yellow$DATA_FROM
+	else
+    	    echolog $red"$MOUNT_DATA_SOURCE_NOT_FOUND"
+    	    rmdir $DST_DIR
+	fi
+
+}
+
+# Initialization layer
+# $1 = data directory
+# $2 = layer directory
+# $3 = cmdline param name
+init_layer()
+{
+    debug_log "init_layer" "$*"
+    
+    echo_green_star
+    echolog "$INIT_LAYER" $brown$(basename $2) " -> " $1
+    
+    local NUM_SUBL FROM CMD_PARAM ARR_FROM DATAFROM DATA DATAMNTM
+    NUM_SUBL=0
+    CMD_PARAM=$3
+    FROM=$(cmdline_value $CMD_PARAM)
+    ARR_FROM=$(echo $FROM | tr -s ";," " ")
+    for DATAFROM in $ARR_FROM; do
+        if [ "$DATAFROM" ]; then
+            DATA=$2/$NUM_SUBL
+            DATAMNTM=$1/$NUM_SUBL
+	    mount_data_source $DATAFROM $DATA $DATAMNTM
+            #   [ -d "$DATA/$LIVEKITNAME" ] && DATA="$DATA/$LIVEKITNAME"
+            #   [ -f "$DATA/$SGN" ] || DATA=""
+            #   grep -q "`head -1 /VERSION`" $DATA/[Vv][Ee][Rr][Ss][Ii][Oo][Nn] 2>/dev/null || DATA=""
+        fi
+
+        NUM_SUBL=$((NUM_SUBL+1))
+    done
+
+}
+
+
+# Setup changes
+# $1 = changes source
+# $2 = changes directory
+setup_changes()
+{
+    debug_log "setup changes" "$*"
+    
+    CHANGESVAL=$(cmdline_value uird.changes)
+    [ -z "$CHANGESVAL" ] && return
+    
+    echo_green_star
+    echolog "$SETUP_CHANGES" $brown"$2"
+
+    if [ "$CHANGESVAL" -a "$CHANGESVAL" != "xzm" ]; then
+	mount_data_source $CHANGESVAL $2 $1
+    else
+	rmdir $2
+    fi
+    posix_test $1 $2
+}
+
+posix_test()
+{
+    # test if the filesystem is writable so changes can be stored to it
+    touch $2/empty 2>/dev/null && \
+    rm -f $2/empty 2>/dev/null
+    # if changes can't be mounted or the filesystem is not writable,
+# fallback to the default: tmpfs
+    if [ $? -ne 0 ]; then
+	echo_green_star
+	echolog "changes not used or not writable, using memory only"
+	fumount $2
+	fumount $1
+	mkdir -p $2 # mount_device might removed it
+
+    else
+   # So it is writable, we will keep the filesystem mounted.
+   # Check if it supports links and chmod.
+   # If not, overmount CHANGES using posixovl
+	echo -ne $blue"  * "$default
+	echolog "$TESTING_FOR_POSIX"
+	touch $2/.empty1 && \
+	ln -sf $2/.empty1 $2/.empty2 2>/dev/null && \
+	chmod +x $2/.empty1 2>/dev/null  && \
+	test -x $2/.empty1 && \
+	chmod -x $2/.empty1 2>/dev/null  && \
+	test ! -x $2/.empty1 && \
+	rm $2/.empty1 $2/.empty2 2>/dev/null
+
+	if [ $? -ne 0 ]; then
+    	    echolog $red"$POSIX_NOT_COMPATIBLE"
+    	    rm $2/.empty1 $2/.empty2 2>/dev/null
+    	    mkdir -p $1
+    	    posixovl -F $1 -- -o attr_timeout=300,entry_timeout=300,negative_timeout=300,kernel_cache,allow_other
+    	    find $1 >/dev/null 2>&1 # cache everything now
+	fi
+    fi
+
+
+}
+
+# $1 = machines source
+# $2 = changes directory
+setup_machines()
+{
+    debug_log "setup machines" "$*"
+    local CHANGESMNT
+    
+    CHANGESVAL=$(cmdline_value uird.changes)
+    [ -z "$CHANGESVAL" ] && return
+#In case we using lzm|xzm as changes= parameter
+    if echo "$CHANGESVAL" | grep -q [XxLl][Zz][Mm]$ ;then
+    echo_green_star
+    echolog "$SETUP_MACHINES" $yellow"$1"
+	
+	if [ "$CHANGESVAL" = "xzm" ] ;then
+    	    MUID=mac-$(cat /sys/class/net/eth0/address | tr -d :)
+    	    [ "$MUID" = "mac-" ] && MUID=vga-$(lspci -mm | grep -i vga | md5sum | cut -c 1-12)
+    	    [ -d "$DATAMNT/machines" ] && CHANGESMNT=$DATAMNT/machines
+    	    [ -z "$CHANGESMNT" ] && CHANGESMNT=$1/machines
+    	    if [ -f "$CHANGESMNT/static/$MUID.xzm"  ] ;then 
+        	CHANGESMNT=$CHANGESMNT/static/$MUID.xzm
+    	    else
+        	CHANGESMNT=$CHANGESMNT/dynamic/$MUID.xzm
+    	    fi
+	fi
+	if [ -f "$CHANGESMNT" ] ;then
+    	    echolog "unpacking $CHANGESMNT to memory"
+    	    unsquashfs -f -dest $2 "$CHANGESMNT" >/dev/null 2>&1
+	fi
+    echo "$CHANGESMNT" | sed s=/machines/static/=/machines/dynamic/= > $2/.savetomodule
+    fi
+
+}
+
+
+# Setup homes
+# $1 = homes-layer
+# $2 = mount directory
+setup_homes()
+{
+    debug_log "setup homes" "$*"
+    
+    local MNT_HOME LAYER_HOMES HOMES_BR HOMES
+    
+    HOMES=$(cmdline_value uird.homes)
+    [ -z "$HOMES" ] && return
+    
+    LAYER_HOMES=$1
+    MNT_HOME=$2
+
+    echo_green_star
+    echolog "$SETUP_HOMES" $brown"$(basename $LAYER_HOMES)" " -> " "$MNT_HOME"
+
+    for d_dirs in "$LAYER_HOMES"/*; do
+	if [ -z $HOMES_BR ];then
+	    HOMES_BR="$d_dirs=rw" 
+	else
+	    HOMES_BR="$HOMES_BR:$d_dirs=rw"
+	fi
+    done
+    mount -t aufs -o br=$HOMES_BR aufs $MNT_HOME
+}
+
+# Activate persistent changes
+# $1 = data directory
+# $2 = target changes directory
+#
+persistent_changes()
+{
+   debug_log "persistent_changes" "$*"
+
+   local CHANGES T1 T2
+
+   CHANGES="$1/$(basename "$2")"
+   T1="$CHANGES/.empty"
+   T2="$T1"2
+
+   # Setup the directory anyway, it will be used in all cases
+   mkdir -p "$2"
+
+   # If persistent changes are not requested, end here
+   if grep -vq perch /proc/cmdline; then
+      return
+   fi
+
+   # check if changes directory exists and is writable
+   touch "$T1" 2>/dev/null && rm -f "$T1" 2>/dev/null
+
+   # if not, simply return back
+   if [ $? -ne 0 ]; then
+      echolog "Persistent changes not writable or not used"
+      return
+   fi
+
+   echo_green_star
+   echolog "Testing persistent changes for posix compatibility"
+   touch "$T1" && ln -sf "$T1" "$T2" 2>/dev/null && \
+   chmod +x "$T1" 2>/dev/null && test -x "$T1" && \
+   chmod -x "$T1" 2>/dev/null && test ! -x "$T1" && \
+   rm "$T1" "$T2" 2>/dev/null
+
+   if [ $? -ne 0 ]; then
+      echo_green_star
+      echolog "Activating dynamic sized storage for persistent changes"
+      rm "$T1" "$T2" 2>/dev/null
+
+      mount.dynfilefs "$CHANGES/changes.dat" 4000 "$2"
+      if [ "$(device_bestfs "$2/loop.fs" | tr -d " ")" = "-t" ]; then
+         mke2fs -F "$2/loop.fs" >/dev/null
+      fi
+      mount -o loop,sync "$2/loop.fs" "$2"
+      rmdir "$2/lost+found" 2>/dev/null
+   else
+      echo_green_star
+      echolog "Activating native persistent changes"
+      mount --bind "$CHANGES" "$2"
+   fi
+}
+
+# Find uird.ro=,uird.rw= modules in given dir
+# $1 = layer directory 
+#
+find_modules()
+{
+   debug_log "find_modules" "$*"
+   ARR_FILTER=$(echo $(cmdline_value uird.rw)","$(cmdline_value uird.ro) | tr -s ";," " ")
+   for filter in $ARR_FILTER; do
+        find "$1" -path "$filter"  2>/dev/null | sort
+
+   done
+}
+
+# List all modules in all directories
+# and filter out
+# separator for uird.load and uird.noload arguments is "," or ";"
+# $1 = layer directory
+
+list_modules()
+{
+   debug_log "list_modules" "$*"
+   local LOAD NOLOAD
+
+   LOAD=$(cmdline_value uird.load | sed -r 's/\?/./g' |  sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')
+   NOLOAD=$(cmdline_value uird.noload | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')
+   find_modules "$1" | while read LINE; do
+      MODNAME=$(echo $LINE | cut -b ${#1}- | cut -b 2-)
+#      if [ "$(echo $LINE | grep /optional/)" ]; then
+#         if [ ! "$LOAD" -o ! "$(echo $MODNAME | egrep -i "$LOAD")" ]; then continue; fi
+#      fi
+      if [ "$LOAD" -a "$(echo $MODNAME | egrep -i "$LOAD")" ]; then 
+          if [ "$NOLOAD" -a "$(echo $MODNAME | egrep -i "$NOLOAD")" ]; then continue; fi
+          echo $LINE
+      fi
+   done
+}
+
+# Mount squashfs filesystem bundles
+# and add them to union
+# $1 = directory where to search for bundles
+# $2 = directory where to mount bundles
+# $3 = directory where union is mounted
+#
+union_append_bundles()
+{
+   debug_log "union_append_bundles" "$*"
+
+   local BUN MOD RW RO FS OPTIONS
+   
+   RW=$(cmdline_value uird.rw | sed -r 's/\?/./g' |  sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')
+   RO=$(cmdline_value uird.ro | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')
+
+   echo_green_star
+   echolog "$UNION_APPEND_BUNDLES" $brown$1 
+   list_modules "$1" | while read BUNDLE; do
+      BUN="$(basename "$BUNDLE")"
+      mkdir -p "$2/$BUN"
+      
+      if [ "$RW" -a "$(echo $BUNDLE | egrep -i "$RW")" ]; then
+        MOD=rw
+      else
+        MOD=ro
+      fi
+      FS="$(device_bestfs "$BUNDLE")"
+      OPTIONS="$(fs_options $FS mount)"
+      
+      ismountpoint "$2/$BUN"
+      if [ $? -eq 0 ]; then
+        PRESERVE="true"
+      else
+        echolog "  $blue-->" $purple"$BUNDLE"$default
+        mount -o $OPTIONS $FS "$BUNDLE" "$2/$BUN"
+        mount -o remount,add:1:"$2/$BUN"="$MOD" aufs "$3"
+      fi
+   done
+}
+
+# Copy content of rootcopy directory to union
+# $1 = data directory
+# $2 = union directory
+copy_rootcopy_content()
+{
+   debug_log "copy_rootcopy_content" "$*"
+
+   if [ "$(ls -1 "$1/rootcopy/" 2>/dev/null)" != "" ]; then
+      echo_green_star
+      echolog "Copying content of rootcopy directory..."
+      cp -a "$1"/rootcopy/* "$2"
+   fi
+}
+
+# Copy modules to directory
+# $1 = data directory
+# $2 = target directory
+# $3 = target name
+# $4 = cmdline param
+copy_to()
+{
+   debug_log "copy_to" "$*"
+   local C2PARAM MODNAME
+   C2PARAM="$(echo $4 | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')"
+   list_modules "$1" | while read MODULE; do
+      MODNAME=$(echo $MODULE | cut -b ${#1}- | cut -b 2-)
+      [ "$C2PARAM" ] && ! [ "$(echo $MODNAME | egrep -i $C2PARAM )" ] && continue
+      TARGET=$(dirname "$MODULE" | cut -b ${#1}- | cut -b 2-)
+      mkdir -p "$2/$TARGET"
+      echolog $yellow"  $3 $blue<- $purple$(basename $MODULE)"
+#      cp "$MODULE" "$2/$TARGET"
+      rsync -a "$MODULE" "$2/$TARGET"
+      if [ $? -ne 0 ]; then fatal "Not enough memory."; fi
+#      echo $2
+   done
+}
+
+# Copy modules to RAM directory
+# $1 = data directory
+# $2 = target directory in RAM
+#
+copy_to_ram()
+{
+    debug_log "copy_to_ram" "$*"
+    if [ "$(cmdline_parameter toram)$(cmdline_value toram)$(cmdline_parameter uird.copy2ram)$(cmdline_value uird.copy2ram)" ]; then
+        echo_green_star
+        echolog "$COPY_TO_RAM"
+        [ "$2" = "" ] && return
+        copy_to $1 $2 RAM "$(cmdline_value uird.copy2ram)$(cmdline_value toram)"
+    fi
+}
+
+# Copy modules to CACHE directory
+# $1 = data directory
+# $2 = target directory in LOCAL_REP
+#
+copy_to_cache()
+{
+    debug_log "copy_to_cache" "$*"
+    if [ "$(cmdline_parameter uird.copy2cache)$(cmdline_value uird.copy2cache)" ]; then
+        [ "$2" = "" ] && return
+        echo_green_star
+        echolog "$COPY_TO_CACHE"
+        copy_to $1 $2 CACHE "$(cmdline_value uird.copy2cache)"
+    fi
+}
+
+
+# Create empty fstab properly
+# $1 = root directory
+#
+fstab_create()
+{
+   debug_log "fstab_create" "$*"
+
+   local FSTAB
+   FSTAB="$1/etc/fstab"
+   echo aufs / aufs defaults 0 0 > $FSTAB
+   echo proc /proc proc defaults 0 0 >> $FSTAB
+   echo sysfs /sys sysfs defaults 0 0 >> $FSTAB
+   echo devpts /dev/pts devpts gid=5,mode=620 0 0 >> $FSTAB
+   echo tmpfs /dev/shm tmpfs defaults 0 0 >> $FSTAB
+}
+
+# ===========================================================
+# FSTAB functions
+# ===========================================================
+
+# $1 = fstab file
+# $2 = device name
+dev_is_in_fstab()
+{
+   debug_log "dev_is_in_fstab" "$*"
+   cat "$1" | sed -r "s/#.*//" | grep -v "^[[:space:]]*none[[:space:]]" | grep -v "^[[:space:]]*tmpfs[[:space:]]" |  egrep -q "^[[:space:]]*$2[[:space:]]"
+}
+
+# update given line in fstab, add new values only if the device is not found
+# $1 = fstab file to parse
+# $2 = device name
+# $3 = mountpoint
+# $4 = filesystem
+# $5 = mount options
+#
+fstab_add_line()
+{
+   debug_log "fstab_add_line" "$*"
+   local DIR
+
+   if [ "$4" != "swap" ]; then DIR="$3"; else DIR="none"; fi
+   if ! dev_is_in_fstab "$1" "$2"; then
+      echo "$2" "$DIR" "$4" "$5" 0 0 "$FSTABLLFLAG" >>$1
+   fi
+}
+
+# create correct fstab file in $1/etc/fstab and create apropriate
+# mount directories in $1/mnt. This function is only calld once,
+# during liveCD startup (even before init from the distro is started).
+# $1 = root directory (union)
+#
+fstab_update()
+{
+   debug_log "fstab_update" "$*"
+   local FSTAB FSTABTMP
+
+   FSTAB="$1/etc/fstab"
+   FSTABTMP=$FSTAB$$
+   mkdir -p $1/etc $1/mnt
+   cat $FSTAB 2>/dev/null | grep -v "$FSTABLLFLAG" >$FSTABTMP
+
+   if [ $(cmdline_parameter unionfs) ]; then
+        fstab_add_line $FSTABTMP unionfs / unionfs defaults
+    else
+	fstab_add_line $FSTABTMP aufs / aufs defaults
+   fi
+   fstab_add_line $FSTABTMP proc /proc proc defaults
+   fstab_add_line $FSTABTMP sysfs /sys sysfs defaults
+   fstab_add_line $FSTABTMP devpts /dev/pts devpts gid=5,mode=620
+#   if [ "$XINO" != "$MEMORY" ] ;then
+#      fstab_add_line $FSTABTMP tmpfs /dev/shm tmpfs defaults
+#      fstab_add_line $FSTABTMP tmpfs /tmp tmpfs defaults
+#   fi
+
+# need to fix for UIRD
+   for a in "/$MOUNTDIR/$LIVEMEDIA" "/$MOUNTDIR/$LIVECHANGES" "/$LOOPMOUNT" "/$LIVEREPOSITORY" "/$MOUNTDIR/$LIVEHOME" ;do
+      grep -q " $a " /proc/mounts || continue
+      fstab_add_line $FSTABTMP $(grep " $a " /proc/mounts | head -1 | awk '{ print $1 " " $2 " " $3 " noauto," $4 }')
+   done
+
+   mv -f $FSTABTMP $FSTAB ; return
+
+   list_cdrom_devices | while read DEVICE; do
+      MNT=$(device_mountdir $DEVICE)
+      FS=$(device_filesystem $DEVICE)
+      if [ "$FS" = "" ]; then FS=iso9660; fi
+      mkdir -p "$1/$MNT"
+      fstab_add_line $FSTABTMP $DEVICE $MNT $FS $(fs_options $FS fstab)
+   done
+   list_partition_devices | while read DEVICE; do
+      MNT=$(device_mountdir $DEVICE)
+      FS=$(device_filesystem $DEVICE)
+      OPT=$(fs_options $FS fstab)
+
+      if [ "$FS" = "swap" ]; then
+         fstab_add_line $FSTABTMP $DEVICE $MNT $FS $OPT
+      fi
+
+      # If the partition has a valid filesystem, add it to fstab
+      if is_supported_filesystem "$FS"; then
+         fstab_add_line $FSTABTMP $DEVICE $MNT $FS $OPT
+         mkdir -p "$1/$MNT"
+      fi
+   done
+
+   mv -f $FSTABTMP $FSTAB
+}
+
+
+
+# Change root and execute init
+# $1 = where to change root
+#
+change_root()
+{
+   debug_log "change_root" "$*"
+
+   umount /proc
+   umount /sys
+
+   cd "$1"
+
+   # make sure important device files and directories are in union
+   mkdir -p boot dev proc sys tmp mnt run
+   chmod 1777 tmp
+   if [ ! -e dev/console ]; then mknod dev/console c 5 1; fi
+   if [ ! -e dev/tty ]; then mknod dev/tty c 5 0; fi
+   if [ ! -e dev/tty0 ]; then mknod dev/tty0 c 4 0; fi
+   if [ ! -e dev/tty1 ]; then mknod dev/tty1 c 4 1; fi
+   if [ ! -e dev/null ]; then mknod dev/null c 1 3; fi
+   if [ ! -e sbin/fsck.aufs ]; then ln -s /bin/true sbin/fsck.aufs; fi
+
+   # find chroot and init
+   if [ -x bin/chroot ]; then  CHROOT=bin/chroot; fi
+   if [ -x sbin/chroot ]; then  CHROOT=sbin/chroot; fi
+   if [ -x usr/bin/chroot ]; then  CHROOT=usr/bin/chroot; fi
+   if [ -x usr/sbin/chroot ]; then CHROOT=usr/sbin/chroot; fi
+   if [ "$CHROOT" = "" ]; then fatal "Can't find executable chroot command"; fi
+
+   if [ -x bin/init ]; then INIT=bin/init; fi
+   if [ -x sbin/init ]; then INIT=sbin/init; fi
+   if [ "$INIT" = "" ]; then fatal "Can't find executable init command"; fi
+
+   mkdir -p mnt/live
+   mount -n -o remount,ro aufs .
+   pivot_root . mnt/live
+   exec $CHROOT . $INIT < dev/console > dev/console 2>&1
+}
+

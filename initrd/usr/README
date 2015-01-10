@@ -1,0 +1,2 @@
+Place your big files here in ./usr,
+as this directory will be compressed before adding into initrd
