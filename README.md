@@ -16,6 +16,7 @@
     ??? uird.sgnfile=
     uird.ro=                - фильтр для модулей, которые монтируются в режиме RO
     uird.rw=                - фильтр для модулей, которые монтируются в режиме RW
+    uird.cp=                - фильтр для модулей, содержимое которых копируется в корень
     uird.copy2ram=          - фильтр для модулей, которые копируются в RAM
     uird.copy2cache=        - фильтр для модулей, которые копируются в КЭШ
     uird.ramsize=           - размер RAM
@@ -31,7 +32,7 @@
 
 Вводится базовый уровень layer-base и соответствующий параметр uird.from=:
 
-    uird.from=/MagOS;/MagOS-Data;MagOS.iso;http://magos.sibsau.ru/repository/netlive/2014.64/MagOS;ftp://server/path/
+    uird.from=/MagOS;/MagOS-Data;MagOS.iso;http://magos.sibsau.ru/repository/netlive/2014.64/MagOS
 
 Вводится уровень кеша layer-cache и соответствующий параметр uird.cache=. Служит для синхронизации удаленных репозиториев в локальные или частные (INTRANET) репозитории, а также для обновления системы.
 
@@ -39,7 +40,7 @@
 
 Вводится уровень домашних директорий пользователя layer-homes и соответствующий параметр uird.homes=:
 
-    uird.homes=/MagOS-Data/homes;/MagOS-Data/home.img;nfs://magos.sibsau.ru/homes/n/e/neobht;ftp://server/path/
+    uird.homes=/MagOS-Data/homes;/MagOS-Data/home.img;nfs://magos.sibsau.ru/homes/n/e/neobht
 
 Все директории пользователя из различных источников каскадно-объединяются посредством AUFS и монтируются в /home. Более приоритетным является самый первый источник, затем в порядке перечисления уменьшается приоритет.
 
@@ -53,6 +54,7 @@
 *     **ssh://server/path/...**   - источник доступный по SSH (используется sshfs)
 *     **ftp://server/path/...**   - источник доступный по FTP (используется curlftpfs)
 *     **nfs://server/path/...**   - источник доступный по NFS 
+*     **cifs://server/path/...**   - источник доступный по CIFS 
 
 ### Порядок инициализации системы
 
@@ -73,7 +75,7 @@
 
 
 8. Осуществляется синхронизация base,cache-уровней в RAM с учетом параметра uird.copy2ram=
-9. Осуществляется поиск модулей в RAM, cache-уровне, base-уровне и подключение их на _[верхний-1]_ уровень AUFS с учетом фильтров, указанных в параметрах uird.load=,uird.noload=,uird.ro=,uird.rw=.
+9. Осуществляется поиск модулей в RAM, cache-уровне, base-уровне и подключение их на _[верхний-1]_ уровень AUFS или копирование в корень (с учетом фильтров, указанных в параметрах uird.load=,uird.noload=,uird.ro=,uird.rw=,uird.cp=).
 10. Осуществляется каскадное объединение источников homes-уровня и подключение их в /home
 11. Выполняются скрипты rc.preinit
 
@@ -83,8 +85,9 @@
     uird.ramsize=70%
     uird.ro=*.xzm;*.rom;*.rom.enc;*.pfs;*.sfs
     uird.rw=*.rwm;*.rwm.enc
+    uird.cp=*.xzm.cp
     uird.load=*
-    uird.noload=/optional/;/machines/;/cache/;/homes/,/changes/
+    uird.noload=/optional/;/cache/;/homes/,/changes/
     uird.from=/MagOS;/MagOS-Data
     uird.changes=/MagOS-Data/changes
     uird.cache=/MagOS-Data/cache
