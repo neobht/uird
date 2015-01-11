@@ -1,5 +1,0 @@
-msgid "Initialization:"
-msgstr "Инициализация:"
-
-msgid ""
-msgstr ""

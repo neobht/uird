@@ -42,41 +42,21 @@ installkernel() {
 }
 
 install() {
-    #kernel modules
-#    inst_hook cmdline 01 "/usr/lib/dracut/modules.d/90kernel-modules/parse-kernel.sh"
-#    inst_hook pre-pivot 20 "/usr/lib/dracut/modules.d/90kernel-modules/kernel-cleanup.sh"
-#    inst_simple "/usr/lib/dracut/modules.d/90kernel-modules/insmodpost.sh" /sbin/insmodpost.sh
-
-#    for _f in modules.builtin.bin modules.builtin; do
-#        [[ $srcmods/$_f ]] && break
-#    done || {
-#        dfatal "No modules.builtin.bin and modules.builtin found!"
-#        return 1
-#    }
-
-#    for _f in modules.builtin.bin modules.builtin modules.order; do
-#        [[ $srcmods/$_f ]] && inst_simple "$srcmods/$_f" "/lib/modules/$kernel/$_f"
-#    done
-    
-    
-    inst /sbin/blkid /sbin/blkid.real
-    inst /sbin/losetup /sbin/losetup.real
-    
     #uird 
-#    inst /mnt/livemedia/MagOS/VERSION /VERSION
     inst "$moddir/livekit/livekitlib" "/livekitlib"
     inst "$moddir/livekit/uird-init" "/uird-init"
-#    inst "$moddir/magos-lib.sh" "/lib/magos-lib.sh"
     inst "$moddir/livekit/liblinuxlive" "/liblinuxlive"
     
-#    inst "$moddir/livekit/basecfg.ini" "/basecfg.ini"
-
-    inst "$moddir/livekit/i18n-lib.sh" "/i18n-lib.sh"
-    inst $(type -p gettext)
-    inst $(type -p loadkeys)
-    inst "$moddir/livekit/locale/ru/LC_MESSAGES/livekitlib.po.mo" "/locale/ru/LC_MESSAGES/livekitlib.po.mo"
-     
-    inst $(type -p rsync) /sbin/rsync
+    inst $(type -p busybox.static) /usr/bin/busybox
+    ln_r /usr/bin/busybox /bin/sh
+    inst $(type -p dialog) /sbin/dialog
+#    inst $(type -p bash) /bin/bash
+    inst $(type -p blkid) /sbin/blkid.real
+    inst $(type -p losetup) /sbin/losetup.real
+#    inst $(type -p gettext) /sbin/gettext
+    inst $(type -p loadkeys) /sbin/loadkeys
+    inst $(type -p resume) /sbin/resume
+#    inst $(type -p rsync) /sbin/rsync
     
     inst_hook cmdline 95 "$moddir/parse-root-uird.sh"
     inst_hook mount 99 "$moddir/mount-uird.sh"

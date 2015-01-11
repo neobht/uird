@@ -6,8 +6,6 @@
 # Author: Mikhail Zaripov <http://magos-linux.ru>
 # Author: Anton Goroshkin <http://magos-linux.ru>
 
-export TEXTDOMAIN=livekitlib.po.mo
-. i18n-lib.sh
 
 # Colors text
 #Black        0;30     Dark Gray     1;30
@@ -62,6 +60,7 @@ BIN_RSYNC=/sbin/rsync
 BIN_HTTPFS=/sbin/httpfs
 BIN_CURLFTPFS=/sbin/curlftpfs
 BIN_SSHFS=/sbin/sshfs
+BIN_GETTEXT=/sbin/gettext
 
 # =================================================================
 # debug and output functions
@@ -96,16 +95,19 @@ echo_green_star()
     echo -ne $green"* "$default
 }
 
-# log - store given text in /var/log/livedbg
+# log - store given text in /var/log/uird.dbg.log
 log()
 {
-    echo "$@" 2>/dev/null >>/var/log/livedbg
+    echo "$@" 2>/dev/null >>/var/log/uird.dbg.log
 }
 
 echolog()
 {
-    i18n_display "$@"
+    local key
     log "$@"
+    key="$1"
+    shift
+    [ -f $BIN_GETTEXT ] && echo -e "$(gettext -s "$key") $@" || echo -e "$key" $@
 }
 
 # show information about the debug shell
@@ -230,6 +232,7 @@ setup_config()
 {
     debug_log "setup config" "$*"
     INIFILE=$(cmdline_value uird.config)
+    [ -z $INIFILE ] && return
     echo_green_star
     echolog "$SETUP_CONFIG" $brown"$INIFILE"
 
@@ -706,10 +709,29 @@ mount_nfs()
     local SHARE=`echo $1 | sed s-^nfs://-- `
     if mount -t nfs $SHARE $2 -o $OPTIONS 2>/dev/null ;then
         echo $2
-    elif mount -t nfs $(dirname $SHARE) $2 -o nolock,rsize=4096,wsize=4096 2>/dev/null ;then
+    elif mount -t nfs $(dirname $SHARE) $2 -o $OPTIONS 2>/dev/null ;then
         echo $2/$(basename $SHARE)
     fi
 }
+# Mount cifs filesystem from the given server
+# $1 = server
+# $2 = mountdir
+#
+mount_cifs()
+{
+    debug_log "mount_cifs" "$*"
+    OPTIONS=""
+    [ "$(cmdline_value uird.netfsopt)" ] && OPTIONS="$(cmdline_value uird.netfsopt)"
+    mkdir -p $2
+    modprobe cifs
+    local SHARE=`echo $1 | sed s-^cifs://-- `
+    if mount -t cifs $SHARE $2 -o $OPTIONS 2>/dev/null ;then
+        echo $2
+    elif mount -t cifs $(dirname $SHARE) $2 -o $OPTIONS 2>/dev/null ;then
+        echo $2/$(basename $SHARE)
+    fi
+}
+
 
 # Format mountdir for device. This function used to append _cdrom or _removable
 # suffix to the directory name so KDE was able to assign a nice icon for evey
@@ -1054,19 +1076,19 @@ init_network_dev()
         3c505 3c507 3c509 3c515 ac3200 at1700 cosa cs89x0 de600 de620 e2100 \
         eepro eexpress eth16i ewrk3 forcedeth hostess_sv11 hp-plus hp ni52 \
         ni65 sb1000 sealevel smc-ultra sis900 smc9194 wd; do
-    modprobe $MODULE 2>/dev/null
-    ETH="$(cat /proc/net/dev | grep : | grep -v lo: | cut -d : -f 1 | tr -d " " | head -n 1)"
-    if [ "$ETH" != "" ]; then
-        echo $ETH
-        return 0
-    fi
-    rmmod $MODULE 2>/dev/null
-done
+            modprobe $MODULE 2>/dev/null
+            ETH="$(cat /proc/net/dev | grep : | grep -v lo: | cut -d : -f 1 | tr -d " " | head -n 1)"
+            if [ "$ETH" != "" ]; then
+                echo $ETH
+                return 0
+            fi
+            rmmod $MODULE 2>/dev/null
+    done
 
-# If we are here, none of the above specified modules worked.
-# As a last chance, try to modprobe everything.
-find /lib/modules/ | xargs -n 1 modprobe
-cat /proc/net/dev | grep : | grep -v lo: | cut -d : -f 1 | tr -d " " | head -n 1
+    # If we are here, none of the above specified modules worked.
+    # As a last chance, try to modprobe everything.
+    find /lib/modules/ | xargs -n 1 modprobe
+    cat /proc/net/dev | grep : | grep -v lo: | cut -d : -f 1 | tr -d " " | head -n 1
 }
 
 # Setup ip address
@@ -1078,7 +1100,7 @@ init_ifcfg()
     debug_log "init_ifcfg" "$*"
     local CLIENT GW MASK ETH
 
-    echo_green_star
+    echo -ne $blue"  * "$default
     echolog "$INIT_IFCFG"
 
     modprobe af_packet 2>/dev/null
@@ -1115,8 +1137,8 @@ download_data_pxe()
     mkdir -p "$1/$LIVEKITNAME"
 
     cmdline_value ip | while IFS=":" read CLIENT SERVER GW MASK PORT; do
-    echo_green_star >&2
-    echo "Downloading files from $SERVER ..." >&2
+    echo_green_star 
+    echo "Downloading files from $SERVER ..."
 
     ETH=$(init_network_dev)
     if [ "$PORT" = "" ]; then PORT="7529"; fi
@@ -1177,6 +1199,7 @@ mount_data_source()
         init_ifcfg
         echo $SOURCE | grep -iq ^"http://" && DATA_FROM=$(mount_httpfs $SOURCE $MNT_DIR)
         echo $SOURCE | grep -iq ^"nfs://" && DATA_FROM=$(mount_nfs $SOURCE $MNT_DIR)
+        echo $SOURCE | grep -iq ^"cifs://" && DATA_FROM=$(mount_cifs $SOURCE $MNT_DIR)
         echo $SOURCE | grep -iq ^"ssh://" && DATA_FROM=$(mount_sshfs $SOURCE $MNT_DIR)
         echo $SOURCE | grep -iq ^"ftp://" && DATA_FROM=$(mount_curlftpfs $SOURCE $MNT_DIR)
     else
@@ -1328,6 +1351,7 @@ setup_machines()
                 init_ifcfg
                 echo $SOURCE | grep -iq ^"http://" && DATA_FROM=$(mount_httpfs $SOURCE $MNT_DIR)
                 echo $SOURCE | grep -iq ^"nfs://" && DATA_FROM=$(mount_nfs $SOURCE $MNT_DIR)
+		echo $SOURCE | grep -iq ^"cifs://" && DATA_FROM=$(mount_cifs $SOURCE $MNT_DIR)
                 echo $SOURCE | grep -iq ^"ssh://" && DATA_FROM=$(mount_sshfs $SOURCE $MNT_DIR)
                 echo $SOURCE | grep -iq ^"ftp://" && DATA_FROM=$(mount_curlftpfs $SOURCE $MNT_DIR)
             else
@@ -1437,7 +1461,7 @@ persistent_changes()
 find_modules()
 {
     debug_log "find_modules" "$*"
-    ARR_FILTER=$(echo $(cmdline_value uird.rw)","$(cmdline_value uird.ro) | tr -s ";," " ")
+    ARR_FILTER=$(echo $(cmdline_value uird.rw)","$(cmdline_value uird.ro)","$(cmdline_value uird.cp) | tr -s ";," " ")
     for filter in $ARR_FILTER; do
         find "$1" -path "$filter"  2>/dev/null | sort
 
@@ -1478,10 +1502,11 @@ union_append_bundles()
 {
     debug_log "union_append_bundles" "$*"
 
-    local BUN MOD RW RO FS OPTIONS
+    local BUN MOD RW RO CP FS OPTIONS PRESERVE
 
     RW=$(cmdline_value uird.rw | sed -r 's/\?/./g' |  sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')
     RO=$(cmdline_value uird.ro | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')
+    CP=$(cmdline_value uird.cp | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')
 
     echo_green_star
     echolog "$UNION_APPEND_BUNDLES" $brown$1 
@@ -1489,18 +1514,28 @@ union_append_bundles()
     BUN="$(basename "$BUNDLE")"
     mkdir -p "$2/$BUN"
 
-    if [ "$RW" -a "$(echo $BUNDLE | egrep -i "$RW")" ]; then
-        MOD=rw
-    else
-        MOD=ro
-    fi
-    FS="$(device_bestfs "$BUNDLE")"
-    OPTIONS="$(fs_options $FS mount)"
-
     ismountpoint "$2/$BUN"
     if [ $? -eq 0 ]; then
         PRESERVE="true"
     else
+        FS="$(device_bestfs "$BUNDLE")"
+        OPTIONS="$(fs_options $FS mount)"
+
+        if [ "$CP" -a "$(echo $BUNDLE | egrep -i "$CP")" ]; then
+            echolog "  $blue-->" $purple"$BUNDLE"$green" [режим CP] "$default
+            #if [ "$FS" = "-t squashfs" ]; then
+            #    unsquashfs $BUNDLE $3
+            #else    
+            mount -o $OPTIONS $FS "$BUNDLE" "$2/$BUN"
+            cp -a "$2/$BUN"/* $3 2>/dev/null
+            fumount "$2/$BUN"
+            #fi
+            return
+        elif [ "$RW" -a "$(echo $BUNDLE | egrep -i "$RW")" ]; then
+            MOD=rw
+        else
+            MOD=ro
+        fi
         echolog "  $blue-->" $purple"$BUNDLE"$default
         mount -o $OPTIONS $FS "$BUNDLE" "$2/$BUN"
         mount -o remount,add:1:"$2/$BUN"="$MOD" aufs "$3"
@@ -1566,7 +1601,7 @@ copy_to_ram()
 
 # Copy modules to CACHE directory
 # $1 = data directory
-# $2 = target directory in LOCAL_REP
+# $2 = target directory in CACHE
 #
 copy_to_cache()
 {

@@ -1,5 +1,0 @@
-msgid "Welcome"
-msgstr "Welcome"
-
-msgid "Hi"
-msgstr "Hello"
