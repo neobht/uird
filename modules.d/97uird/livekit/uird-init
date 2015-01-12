@@ -36,6 +36,8 @@ header "Запускается UIRD init <http://magos-linux.ru/>"
 debug_start
 debug_shell
 
+init_devs
+debug_shell
 
 # start quickshell
 start_quickshell
