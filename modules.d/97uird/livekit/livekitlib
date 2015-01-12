@@ -1461,10 +1461,9 @@ persistent_changes()
 find_modules()
 {
     debug_log "find_modules" "$*"
-    ARR_FILTER=$(echo $(cmdline_value uird.rw)","$(cmdline_value uird.ro)","$(cmdline_value uird.cp) | tr -s ";," " ")
+    ARR_FILTER=$(echo $(cmdline_value uird.ro)","$(cmdline_value uird.rw)","$(cmdline_value uird.cp) | tr -s ";," " ")
     for filter in $ARR_FILTER; do
-        find "$1" -path "$filter"  2>/dev/null | sort
-
+        find "$1" -path "$filter"  2>/dev/null | sort 
     done
 }
 
@@ -1480,7 +1479,7 @@ list_modules()
 
     LOAD=$(cmdline_value uird.load | sed -r 's/\?/./g' |  sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')
     NOLOAD=$(cmdline_value uird.noload | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')
-    find_modules "$1" | while read LINE; do
+    find_modules "$1" | sort | while read LINE; do
     MODNAME=$(echo $LINE | cut -b ${#1}- | cut -b 2-)
     #      if [ "$(echo $LINE | grep /optional/)" ]; then
     #         if [ ! "$LOAD" -o ! "$(echo $MODNAME | egrep -i "$LOAD")" ]; then continue; fi
