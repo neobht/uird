@@ -228,23 +228,6 @@ create_bundle()
     mksquashfs "$1" "$2" -comp xz -b 512K $3 $4 $5 $6 $7 $8 $9>/dev/null
 }
 
-setup_config()
-{
-    debug_log "setup config" "$*"
-    INIFILE=$(cmdline_value uird.config)
-    [ -z $INIFILE ] && return
-    echo_green_star
-    echolog "$SETUP_CONFIG" $brown"$INIFILE"
-
-    [ -z "$INIFILE" ] && INIFILE=$LIVEKITNAME.ini
-    [ -f "$LAYER_BASE/0/$INIFILE" ] && PATHINI="$LAYER_BASE/0/$INIFILE"
-    [ -f "$DATAMNT/0/$INIFILE" ] && PATHINI="$DATAMNT/0/$INIFILE"
-    [ -z "$PATHINI" ] || echolog "$SETUP_CONFIG_USING" $yellow"$PATHINI"
-    [ -z "$PATHINI" ] && PATHINI=/dev/null
-    egrep -v '^#|^$' "$PATHINI" | sed s-\\\\r-- | gzip > /memory/$LIVEKITNAME.ini.gz
-    grep '^CMDLINE=' "$PATHINI" | sed s/^CMDLINE=// | tr -d [:cntrl:]\'\" >>/memory/cmdline
-    chmod 400 /memory/$LIVEKITNAME.ini.gz /memory/cmdline 2>/dev/null
-}
 
 # Move entire initramfs tree to tmpfs mount.
 # It's a bit tricky but is necessray to enable pivot_root
@@ -1248,29 +1231,7 @@ init_layer()
     done
 
 }
-
-
-# Setup changes
-# $1 = changes mount directory
-# $2 = changes directory
-setup_changes()
-{
-    debug_log "setup changes" "$*"
-
-    CHANGESVAL=$(cmdline_value uird.changes)
-    [ -z "$CHANGESVAL" ] && return
-
-    echo_green_star
-    echolog "$SETUP_CHANGES" $brown"$2"
-
-    if [ "$CHANGESVAL" -a "$CHANGESVAL" != "xzm" ]; then
-        mount_data_source $CHANGESVAL $2 $1
-    else
-        rmdir $2
-    fi
-    posix_test $1 $2
-}
-
+# Test filesystem POSIX compatible
 posix_test()
 {
     # test if the filesystem is writable so changes can be stored to it
@@ -1310,6 +1271,50 @@ posix_test()
 
 
 }
+# Setup config
+#
+setup_config()
+{
+    debug_log "setup config" "$*"
+    INIFILE=$(cmdline_value uird.config)
+    [ -z $INIFILE ] && return
+    echo_green_star
+    echolog "$SETUP_CONFIG" $brown"$INIFILE"$default
+
+    [ -z "$INIFILE" ] && INIFILE=$LIVEKITNAME.ini
+    [ -f "$LAYER_BASE/0/$INIFILE" ] && PATHINI="$LAYER_BASE/0/$INIFILE"
+    [ -f "$LAYER_BASE/1/$INIFILE" ] && PATHINI="$LAYER_BASE/1/$INIFILE"
+    [ -f "$LAYER_BASE/2/$INIFILE" ] && PATHINI="$LAYER_BASE/2/$INIFILE"
+#    [ -f "$DATAMNT/0/$INIFILE" ] && PATHINI="$DATAMNT/0/$INIFILE"
+    [ -z "$PATHINI" ] || echolog "$SETUP_CONFIG_USING" $yellow"$PATHINI"
+    [ -z "$PATHINI" ] && PATHINI=/dev/null
+    egrep -v '^#|^$' "$PATHINI" | sed s-\\\\r-- | gzip > /memory/$LIVEKITNAME.ini.gz
+    grep '^CMDLINE=' "$PATHINI" | sed s/^CMDLINE=// | tr -d [:cntrl:]\'\" >>/memory/cmdline
+    chmod 400 /memory/$LIVEKITNAME.ini.gz /memory/cmdline 2>/dev/null
+}
+
+
+# Setup changes
+# $1 = changes mount directory
+# $2 = changes directory
+setup_changes()
+{
+    debug_log "setup changes" "$*"
+
+    CHANGESVAL=$(cmdline_value uird.changes)
+    [ -z "$CHANGESVAL" ] && return
+
+    echo_green_star
+    echolog "$SETUP_CHANGES" $brown"$2"
+
+    if [ "$CHANGESVAL" -a "$CHANGESVAL" != "xzm" ]; then
+        mount_data_source $CHANGESVAL $2 $1
+    else
+        rmdir $2
+    fi
+    posix_test $1 $2
+}
+
 
 # $1 = machines directory
 # $2 = machines mount directory
@@ -1527,9 +1532,9 @@ union_append_bundles()
             #else    
             mount -o $OPTIONS $FS "$BUNDLE" "$2/$BUN"
             cp -a "$2/$BUN"/* $3 2>/dev/null
-            fumount "$2/$BUN"
+            #fumount "$2/$BUN"
             #fi
-            return
+            continue
         elif [ "$RW" -a "$(echo $BUNDLE | egrep -i "$RW")" ]; then
             MOD=rw
         else

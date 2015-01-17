@@ -53,10 +53,10 @@ install() {
 #    inst $(type -p bash) /bin/bash
     inst $(type -p blkid) /sbin/blkid.real
     inst $(type -p losetup) /sbin/losetup.real
-#    inst $(type -p gettext) /sbin/gettext
+    inst $(type -p gettext) /sbin/gettext
     inst $(type -p loadkeys) /sbin/loadkeys
     inst $(type -p resume) /sbin/resume
-#    inst $(type -p rsync) /sbin/rsync
+    inst $(type -p rsync) /sbin/rsync
     
     inst_hook cmdline 95 "$moddir/parse-root-uird.sh"
     inst_hook mount 99 "$moddir/mount-uird.sh"

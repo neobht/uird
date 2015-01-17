@@ -19,7 +19,17 @@ install() {
     dracut_install /usr/share/mc/*
     dracut_install /usr/share/mc/examples/macros.d/*
     dracut_install /usr/share/mc/help/*
+    dracut_install /usr/share/mc/hints/*
     dracut_install /usr/share/mc/skins/*
     dracut_install /usr/share/mc/syntax/*
+    dracut_install /usr/shere/loacale/LC_MESSAGES/ru/mc.mo
+    dracut_install /etc/mc/*
+    dracut_install /etc/profile.d/mc.sh
+    dracut_install /usr/lib64/mc/*
+    dracut_install /usr/lib64/mc/ext.d/*
+    dracut_install /usr/lib64/mc/extfs.d/*
+    dracut_install /usr/lib64/mc/fish/*
+    
+    
 }
 
