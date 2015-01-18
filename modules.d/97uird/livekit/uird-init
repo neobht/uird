@@ -66,7 +66,7 @@ cat /basecfg.ini >/memory/basecfg.ini 2>/dev/null
 #DATA="$(find_data 60 "$DATAMNT")"
 
 #init BASE layer
-[ "$(cmdline_value uird.from)" ] && init_layer $DATAMNT/from $LAYER_BASE uird.from
+[ "$(cmdline_value uird.from)" ] && init_layer $DATAMNT/from $LAYER_BASE uird.from "check_SGN"
 debug_shell
 # init CACHE layer
 [ "$(cmdline_value uird.cache)" ] && init_layer $DATAMNT/cache $LAYER_CACHE uird.cache
