@@ -55,7 +55,7 @@ UNION_APPEND_BUNDLES="Подключение модулей в общий кор
 COPY_TO_RAM="Копирование данных в ОЗУ, это может занять длительное время, ожидайте..."
 COPY_TO_CACHE="Копирование данных в КЭШ, это может занять длительное время, ожидайте..."
 
-FIND_DATA="-n - подождите, идет поиск и подключение источника\r"
+FIND_DATA=" - подождите, идет поиск и подключение источника\r"
 
 # BINARY
 BIN_RSYNC=/sbin/rsync
@@ -784,10 +784,15 @@ find_filepath()
     
     if [ "$(cmdline_value uird.sgnfiles)" -a "$4" != "" ] ; then
         SGN_FILES="$(cmdline_value uird.sgnfiles)"
-        ARR_SGN_FILES=$(echo $SGN_FILES | tr -s ";," " ")
-        SGN_FILE=$(echo $ARR_SGN_FILES | cut -d " " -f $(($(basename $3)+1)))
+        ARR_SGN_FILES=$(echo $SGN_FILES | tr -s "," ";")
+        SGN_FILE=$(echo $ARR_SGN_FILES | cut -d ";" -f "$4")
 
-        [ -f "$DIR/$2/$SGN_FILE" ] || FOUND=""
+        if [ -f "$DIR/$2/$SGN_FILE" ]; then
+            FOUND=$FOUND
+        else
+            #echolog "=====>$SGN_FILE<==$4==$ARR_SGN_FILES===="
+            [ "$SGN_FILE" ] && FOUND=""
+        fi
     #      grep -q "`head -1 /VERSION`" $DIR/$LIVECDNAME/[Vv][Ee][Rr][Ss][Ii][Oo][Nn] 2>/dev/null || FOUND=""
     fi
     if [ "$FOUND" = "" ]; then
@@ -1232,7 +1237,7 @@ init_layer()
         if [ "$DATAFROM" ]; then
             DATA=$2/$NUM_SUBL
             DATAMNTM=$1/$NUM_SUBL
-            mount_data_source $DATAFROM $DATA $DATAMNTM "$4"
+            mount_data_source $DATAFROM $DATA $DATAMNTM "$( [ $4 ] && echo $(($NUM_SUBL+1)) || echo '')"
             #   [ -d "$DATA/$LIVEKITNAME" ] && DATA="$DATA/$LIVEKITNAME"
             #   [ -f "$DATA/$SGN" ] || DATA=""
             #   grep -q "`head -1 /VERSION`" $DATA/[Vv][Ee][Rr][Ss][Ii][Oo][Nn] 2>/dev/null || DATA=""
@@ -1549,7 +1554,7 @@ union_append_bundles()
         elif [ "$RW" -a "$(echo $BUNDLE | egrep -i "$RW")" ]; then
             MOD=rw
         else
-            MOD=ro
+            MOD=ro+wh
         fi
         echolog "  $blue-->" $purple"$BUNDLE"$default
         mount -o $OPTIONS $FS "$BUNDLE" "$2/$BUN"
