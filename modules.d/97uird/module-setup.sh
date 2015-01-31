@@ -47,10 +47,10 @@ install() {
     inst "$moddir/livekit/uird-init" "/uird-init"
     inst "$moddir/livekit/liblinuxlive" "/liblinuxlive"
     
+    inst $(type -p bash) /bin/bash
     inst $(type -p busybox.static) /usr/bin/busybox
     ln_r /usr/bin/busybox /bin/sh
     inst $(type -p dialog) /sbin/dialog
-#    inst $(type -p bash) /bin/bash
     inst $(type -p blkid) /sbin/blkid.real
     inst $(type -p losetup) /sbin/losetup.real
     inst $(type -p gettext) /sbin/gettext

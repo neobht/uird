@@ -22,13 +22,18 @@ install() {
     dracut_install /usr/share/mc/hints/*
     dracut_install /usr/share/mc/skins/*
     dracut_install /usr/share/mc/syntax/*
-    dracut_install /usr/shere/loacale/LC_MESSAGES/ru/mc.mo
+    dracut_install /usr/share/locale/LC_MESSAGES/ru/mc.mo
+    dracut_install /usr/share/locale/ru/LC_MESSAGES/mc.mo
     dracut_install /etc/mc/*
     dracut_install /etc/profile.d/mc.sh
     dracut_install /usr/lib64/mc/*
     dracut_install /usr/lib64/mc/ext.d/*
     dracut_install /usr/lib64/mc/extfs.d/*
     dracut_install /usr/lib64/mc/fish/*
+    dracut_install /usr/lib/mc/*
+    dracut_install /usr/lib/mc/ext.d/*
+    dracut_install /usr/lib/mc/extfs.d/*
+    dracut_install /usr/lib/mc/fish/*
     
     
 }

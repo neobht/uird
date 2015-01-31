@@ -311,8 +311,8 @@ init_union()
     echolog "$INIT_UNION"
     mkdir -p "$1"
     mkdir -p "$2"
-    #   mount -t aufs -o xino="/tmp/.xino",trunc_xino,br="$1" aufs "$2"
-    mount -t aufs -o br="$1" aufs "$2"
+    mount -t aufs -o xino="/memory/.xino_union",trunc_xino,br="$1" aufs "$2"
+#    mount -t aufs -o br="$1" aufs "$2"
 }
 
 # Make sure the part of a script after 'mutex_lock' call is atomic,
@@ -1395,6 +1395,7 @@ setup_machines()
 # Setup homes
 # $1 = homes-layer
 # $2 = mount directory
+# $3 = home directory
 setup_homes()
 {
     debug_log "setup homes" "$*"
@@ -1406,7 +1407,7 @@ setup_homes()
 
     LAYER_HOMES=$1
     MNT_HOME=$2
-
+    
     echo_green_star
     echolog "$SETUP_HOMES" $brown"$(basename $LAYER_HOMES)" " -> " "$MNT_HOME"
 
@@ -1417,7 +1418,8 @@ setup_homes()
             HOMES_BR="$HOMES_BR:$d_dirs=rw"
         fi
     done
-    mount -t aufs -o br=$HOMES_BR aufs $MNT_HOME
+    #   mount -t aufs -o xino="/tmp/.xino",trunc_xino,br="$1" aufs "$2"
+    mount -t aufs -o xino="/memory/.xino",trunc_xino,br=$HOMES_BR aufs $MNT_HOME
 }
 
 # Activate persistent changes
@@ -1482,6 +1484,7 @@ persistent_changes()
 find_modules()
 {
     debug_log "find_modules" "$*"
+    local ARR_FILTER filter
     ARR_FILTER=$(echo $(cmdline_value uird.ro)","$(cmdline_value uird.rw)","$(cmdline_value uird.cp) | tr -s ";," " ")
     for filter in $ARR_FILTER; do
         find "$1" -path "$filter"  2>/dev/null | sort 
@@ -1496,7 +1499,7 @@ find_modules()
 list_modules()
 {
     debug_log "list_modules" "$*"
-    local LOAD NOLOAD
+    local LOAD NOLOAD MODNAME LINE
 
     LOAD=$(cmdline_value uird.load | sed -r 's/\?/./g' |  sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')
     NOLOAD=$(cmdline_value uird.noload | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')
@@ -1612,9 +1615,9 @@ copy_to_ram()
 {
     debug_log "copy_to_ram" "$*"
     if [ "$(cmdline_parameter toram)$(cmdline_value toram)$(cmdline_parameter uird.copy2ram)$(cmdline_value uird.copy2ram)" ]; then
+        [ "$2" = "" ] && return
         echo_green_star
         echolog "$COPY_TO_RAM"
-        [ "$2" = "" ] && return
         copy_to $1 $2 RAM "$(cmdline_value uird.copy2ram)$(cmdline_value toram)"
     fi
 }
