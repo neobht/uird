@@ -87,16 +87,20 @@ setup_machines $MACHINES $DATAMNT/machines $CHANGES $DATAMNT/changes
 debug_shell
 
 # sync data from BASE layer to CACHE layer
-for d_dirs in "$LAYER_BASE" ;do
+#for d_dirs in "$LAYER_BASE" ;do
     # copy to CACHE if needed (uird.copy2cache=)
-    copy_to_cache $d_dirs "$LAYER_CACHE"
-done
+#    copy_to_cache $d_dirs "$LAYER_CACHE"
+#done
+[ "$(cmdline_value uird.from)" ] && copy_to_cache $LAYER_BASE "$LAYER_CACHE"
 debug_shell
 # sync data from BASE,CACHE layers to RAM
-for d_dirs in "$LAYER_BASE" "$LAYER_CACHE" ;do
+#for d_dirs in "$LAYER_BASE" "$LAYER_CACHE" ;do
     # copy to RAM if needed (uird.copy2ram=)
-    copy_to_ram $d_dirs "$COPY2RAM"
-done
+#    copy_to_ram $d_dirs "$COPY2RAM"
+#done
+[ "$(cmdline_value uird.from)" ] && copy_to_ram $LAYER_BASE "$COPY2RAM"
+debug_shell
+[ "$(cmdline_value uird.cache)" ] && copy_to_ram $LAYER_CACHE "$COPY2RAM"
 debug_shell
 # setup persistent changes, if possible
 #persistent_changes "$DATA" "$CHANGES"

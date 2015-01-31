@@ -45,6 +45,7 @@ POSIX_TEST="Запись не поддерживается, использует
 
 SETUP_CONFIG="Поиск и инициализация файла конфигурации:"
 SETUP_CONFIG_USING="  используется файл конфигурации:"
+SETUP_CONFIG_NOTFOUND="  конфигурационный файл не удалось найти, используются параметры по-умолчанию"
 SETUP_CHANGES="Инициализация источника для персистентных изменений:"
 SETUP_CHANGES_USING="  используется для изменений:"
 SETUP_MACHINES="Инициализация источника для машинно-зависимых изменений:"
@@ -1302,7 +1303,7 @@ setup_config()
     [ -f "$LAYER_BASE/1/$INIFILE" ] && PATHINI="$LAYER_BASE/1/$INIFILE"
     [ -f "$LAYER_BASE/2/$INIFILE" ] && PATHINI="$LAYER_BASE/2/$INIFILE"
 #    [ -f "$DATAMNT/0/$INIFILE" ] && PATHINI="$DATAMNT/0/$INIFILE"
-    [ -z "$PATHINI" ] || echolog "$SETUP_CONFIG_USING" $yellow"$PATHINI"
+    [ -z "$PATHINI" ] && echolog $red"$SETUP_CONFIG_NOTFOUND" || echolog "$SETUP_CONFIG_USING" $yellow"$PATHINI"
     [ -z "$PATHINI" ] && PATHINI=/dev/null
     egrep -v '^#|^$' "$PATHINI" | sed s-\\\\r-- | gzip > /memory/$LIVEKITNAME.ini.gz
     grep '^CMDLINE=' "$PATHINI" | sed s/^CMDLINE=// | tr -d [:cntrl:]\'\" >>/memory/cmdline
@@ -1595,9 +1596,9 @@ copy_to()
     [ "$C2PARAM" ] && ! [ "$(echo $MODNAME | egrep -i $C2PARAM )" ] && continue
     TARGET=$(dirname "$MODULE" | cut -b ${#1}- | cut -b 2-)
     mkdir -p "$2/$TARGET"
-    echolog $yellow"  $3 $blue<- $purple$(basename $MODULE)"
+    echolog $yellow"  $3 $blue<- $purple$(basename $MODULE)"$green
     if [ -f "$BIN_RSYNC" ]; then
-        rsync -a "$MODULE" "$2/$TARGET"
+        rsync --progress -a "$MODULE" "$2/$TARGET"
     else
         cp "$MODULE" "$2/$TARGET"
     fi
