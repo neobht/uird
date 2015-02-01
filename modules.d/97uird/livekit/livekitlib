@@ -205,7 +205,7 @@ cmdline_value()
     ADDFILE=/memory/cmdline
     BASECFG=/memory/basecfg.ini
     #   [ -f /livekitlib ] || ADDFILE=/mnt/$ADDFILE
-    echo -n " " | cat - /proc/cmdline $ADDFILE $BASECFG 2>/dev/null | egrep -m1 -o "(^|[[:space:]])$1=[^[:space:]]+" | cut -d "=" -f 2-
+    echo -n " " | cat - /proc/cmdline $ADDFILE $BASECFG 2>/dev/null | egrep -m1 -o "(^|[[:space:]])$1=[^[:space:]]+" | cut -d "=" -f 2- | head -n1
 }
 
 

@@ -49,7 +49,7 @@ debug_shell
 
 mkdir -p $MEMORY
 
-echo getcmdline >/memory/cmdline
+getcmdline >/memory/cmdline
 cat /basecfg.ini >/memory/basecfg.ini 2>/dev/null
 
 RAMSIZE=$(cmdline_value uird.ramsize)
@@ -139,10 +139,12 @@ rmdir $UNION/mnt/* 2>/dev/null
 fstab_update $UNION
 debug_shell
 
-# old compatibility
-mkdir -p $UNION/mnt/live 
+# old compatibility to linuxlive init
+mkdir -p $UNION/mnt/live/memory
 cp liblinuxlive $UNION/mnt/live/liblinuxlive
-ln -s /memory/data $UNION/mnt/livemedia
+[ -d "/memory/data/from/0" ] && ln -sf /memory/data/from/0 $UNION/mnt/livemedia
+[ -d "/memory/data/from/1" ] && ln -sf /memory/data/from/1 $UNION/mnt/livedata
+[ -d "/memory/bundles" ] && ln -sf /memory/bundles $UNION/mnt/live/memory/images
 debug_shell
 
 cd $UNION
