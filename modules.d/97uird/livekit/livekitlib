@@ -202,10 +202,13 @@ cmdline_value()
 {
     debug_log "cmdline_value" "$*"
     log "searching for bootparam value: $1"
+    local ADDFILE BASECFG VALUE ADD_VALUE
     ADDFILE=/memory/cmdline
     BASECFG=/memory/basecfg.ini
     #   [ -f /livekitlib ] || ADDFILE=/mnt/$ADDFILE
-    echo -n " " | cat - /proc/cmdline $ADDFILE $BASECFG 2>/dev/null | egrep -m1 -o "(^|[[:space:]])$1=[^[:space:]]+" | cut -d "=" -f 2- | head -n1
+    VALUE=$(echo -n " " | cat - /proc/cmdline $ADDFILE $BASECFG 2>/dev/null | egrep -m1 -o "(^|[[:space:]])$1=[^[:space:]]+" | cut -d "=" -f 2- | head -n1)
+    ADD_VALUE=$(echo -n " " | cat - /proc/cmdline $ADDFILE $BASECFG 2>/dev/null | egrep -m1 -o "(^|[[:space:]])$1\+=[^[:space:]]+" | cut -d "=" -f 2- | head -n1)
+    [ -z $ADD_VALUE ]  && echo "$VALUE" || echo "$VALUE;$ADD_VALUE"
 }
 
 
