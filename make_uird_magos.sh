@@ -6,10 +6,10 @@ dracut  -N  -f -m "base uird uird-network ntfs kernel-modules"  \
 	-d "loop cryptoloop aes-generic aes-i586 pata_acpi ata_generic ahci xhci-hcd \
 	    usb-storage uhci-hcd hid usbhid ehci-hcd ohci-hcd ehci-pci ehci-platform hid-generic \
 	    sr_mod sd_mod scsi_mod \ 
-	    nls_cp866 nls_utf8 nfs nfs_acl jbd jbd2 lockd \
+	     jbd jbd2 lockd \
 	    af_packet \
-	    =ide =ata =ethernet =usb/storage =usb/host" \
-        --filesystems "aufs squashfs vfat msdos iso9660 isofs xfs ext3 ext4 fuse nfs cifs udf" \
+	    =ide =ata =ethernet =usb/storage =usb/host =nfs" \
+        --filesystems "aufs squashfs vfat msdos iso9660 isofs xfs ext3 ext4 fuse nfs cifs udf nls_cp866 nls_utf8 " \
         --confdir "dracut.conf.d" \
         -i initrd / \
         --kernel-cmdline "uird.from=/MagOS,/MagOS-Data uird.ro=*.xzm,*.rom,*.rom.enc,*.pfs,*.sfs uird.rw=*.rwm,*.rwm.enc uird.cp=*.xzm.cp uird.load=* uird.noload=/optional/,/machines/,/homes/,/cache/ uird.machines=/MagOS-Data/machines uird.config=MagOS.ini" \

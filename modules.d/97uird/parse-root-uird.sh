@@ -25,7 +25,7 @@ uird_to_var() {
 [ -z "$root" ] && root=$(getarg root=)
 
 # If it's not magos we don't continue
-[ "${root%%:*}" = "uird" ] || return
+#[ "${root%%:*}" = "uird" ] || return
 
 # Check required arguments
 #uird_to_var $root
