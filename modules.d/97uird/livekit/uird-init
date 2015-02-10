@@ -143,7 +143,7 @@ debug_shell
 # old compatibility to linuxlive init
 mkdir -p $UNION/mnt/live/memory $UNION/mnt/live/etc
 cp liblinuxlive $UNION/mnt/live/liblinuxlive
-cp /etc/resolv.conf $UNION/mnt/live/etc/
+cp /etc/resolv.conf $UNION/mnt/live/etc/ 2>/dev/null
 [ -d "/memory/data/from/0" ] && ln -sf /memory/data/from/0 $UNION/mnt/livemedia
 [ -d "/memory/data/from/1" ] && ln -sf /memory/data/from/1 $UNION/mnt/livedata
 [ -d "/memory/bundles" ] && ln -sf /memory/bundles $UNION/mnt/live/memory/images
@@ -154,7 +154,7 @@ echo_green_star
 echolog "Выполняются  rc.preinit скрипты"
 [ -x "etc/rc.d/rc.preinit" ] && /bin/bash etc/rc.d/rc.preinit
 debug_shell
-mv /var/log/magos $UNION/var/log/ >/dev/null
+mv /var/log/magos $UNION/var/log/ 2>/dev/null
 
 #need for usable_root of dracut
 mkdir -p $UNION/proc $UNION/sys $UNION/dev $UNION/$MEMORY

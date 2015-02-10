@@ -939,7 +939,7 @@ device_bestfs()
     elif [ "$FS" = "ntfs" ]; then
         FS="ntfs-3g"
     fi
-    echo "-t $FS"
+    [ -z "$FS" ] || echo "-t $FS"
 }
 
 # Find out what locale is requested
@@ -1016,7 +1016,9 @@ fs_options()
     if [ "$2" = "fstab" ]; then echo -n "$NOAUTO," ; fi
     if [ "$1" = "swap" ]; then echo "defaults,pri=1"; return 0; fi
 
-    if [ "$1" != "btrfs" ];then
+    if [ "$1" = "mount" ]; then
+        echo -n "bind"
+    elif [ "$1" != "btrfs" ];then
         echo -n "noatime,suid,dev,exec"
     fi
 
@@ -1553,6 +1555,7 @@ union_append_bundles()
             #if [ "$FS" = "-t squashfs" ]; then
             #    unsquashfs $BUNDLE $3
             #else    
+            #echo "==============$OPTIONS======$FS+++++++++"
             mount -o $OPTIONS $FS "$BUNDLE" "$2/$BUN"
             cp -a "$2/$BUN"/* $3 2>/dev/null
             #fumount "$2/$BUN"
