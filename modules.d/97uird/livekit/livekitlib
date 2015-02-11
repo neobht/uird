@@ -1550,6 +1550,8 @@ union_append_bundles()
         FS="$(device_bestfs "$BUNDLE")"
         OPTIONS="$(fs_options $FS mount)"
 
+        [ "$OPTION" = "bind" -a -f "$BUNDLE" ] && continue
+        
         if [ "$CP" -a "$(echo $BUNDLE | egrep -i "$CP")" ]; then
             echolog "  $blue-->" $purple"$BUNDLE"$green" [режим CP] "$default
             #if [ "$FS" = "-t squashfs" ]; then
