@@ -29,8 +29,8 @@ LIVEKITNAME="MagOS"
 echo "0" >/proc/sys/kernel/printk
 
 #loadfont < /usr/lib/consolefonts/UniCyr_8x14.psf
-loadfont < /usr/lib/consolefonts/ter-u16n.psf
-loadkeys /usr/lib/kbd/ru.map
+loadfont < /usr/lib/consolefonts/ter-u16n.psf >/dev/null
+loadkeys /usr/lib/kbd/ru.map >/dev/null
 
 header "Запускается UIRD init <http://magos-linux.ru/>"
 
@@ -135,7 +135,7 @@ debug_shell
 
 echo_green_star
 echolog "Обновление файла /etc/fstab и директории /mnt "
-touch $UNION/etc/fstab
+touch $UNION/etc/fstab >/dev/null
 rmdir $UNION/mnt/* 2>/dev/null
 fstab_update $UNION
 debug_shell
