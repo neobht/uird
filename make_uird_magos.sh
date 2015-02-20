@@ -3,7 +3,7 @@ rm -rf /usr/lib/dracut/modules.d/97uird /usr/lib/dracut/modules.d/98uird-network
 cp -pRf modules.d/* /usr/lib/dracut/modules.d
 echo $(pwd)
 dracut  -N  -f -m "base uird uird-network ntfs kernel-modules"  \
-	-d "loop cryptoloop aes-generic aes-i586 pata_acpi ata_generic ahci xhci-hcd \
+	-d "loop cryptoloop zram aes-generic aes-i586 pata_acpi ata_generic ahci xhci-hcd \
 	    usb-storage uhci-hcd hid usbhid ehci-hcd ohci-hcd ehci-pci ehci-platform hid-generic \
 	    sr_mod sd_mod scsi_mod \ 
 	     jbd jbd2 lockd \
