@@ -57,6 +57,8 @@ install() {
     inst $(type -p loadkeys) /sbin/loadkeys
     inst $(type -p resume) /sbin/resume
     inst $(type -p rsync) /sbin/rsync
+    inst $(type -p fsck) /usr/bin/fsck
+    inst $(type -p ntfsfix) /usr/bin/ntfsfix
     
     inst_hook cmdline 95 "$moddir/parse-root-uird.sh"
     inst_hook mount 99 "$moddir/mount-uird.sh"

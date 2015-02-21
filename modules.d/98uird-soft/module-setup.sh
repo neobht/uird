@@ -35,7 +35,7 @@ install() {
     dracut_install /usr/lib/mc/extfs.d/*
     dracut_install /usr/lib/mc/fish/*
 
-    dracut_install /usr/bin/mplayer    
+#    dracut_install /usr/bin/mplayer    
     
 }
 
