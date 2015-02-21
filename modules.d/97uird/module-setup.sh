@@ -57,8 +57,15 @@ install() {
     inst $(type -p loadkeys) /sbin/loadkeys
     inst $(type -p resume) /sbin/resume
     inst $(type -p rsync) /sbin/rsync
-    inst $(type -p fsck) /usr/bin/fsck
-    inst $(type -p ntfsfix) /usr/bin/ntfsfix
+    
+    inst $(type -p fsck) /sbin/fsck
+    inst $(type -p fsck.ext2) /sbin/fsck.ext2
+    inst $(type -p fsck.ext3) /sbin/fsck.ext3
+    inst $(type -p fsck.ext4) /sbin/fsck.ext4
+    inst $(type -p fsck.exfat) /sbin/fsck.exfat
+    inst $(type -p fsck.vfat) /sbin/fsck.vfat
+    inst $(type -p fsck.ext4) /sbin/fsck.ext4
+    inst $(type -p ntfsfix) /sbin/ntfsfix
     
     inst_hook cmdline 95 "$moddir/parse-root-uird.sh"
     inst_hook mount 99 "$moddir/mount-uird.sh"

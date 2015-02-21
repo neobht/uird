@@ -64,6 +64,8 @@ BIN_HTTPFS=/sbin/httpfs
 BIN_CURLFTPFS=/sbin/curlftpfs
 BIN_SSHFS=/sbin/sshfs
 BIN_GETTEXT=/sbin/gettext
+BIN_NTFSFIX=/sbin/ntfsfix
+BIN_FSCK=/sbin/fsck
 
 # =================================================================
 # debug and output functions
@@ -501,9 +503,9 @@ fsck_device()
     echolog "Checking filesystem on" "$1 $2"  >/dev/console 2>/dev/console
     FS=
     if [ "$2" = "ntfs" ] ;then
-        /usr/bin/ntfsfix "$1" </dev/console >/dev/console 2>/dev/console
+        $BIN_NTFSFIX "$1" </dev/console >/dev/console 2>/dev/console
     else
-        /usr/bin/fsck -a $([ "$2" ] && echo "-t $2") $1  </dev/console >/dev/console 2>/dev/console
+        $BIN_FSCK -a $([ "$2" ] && echo "-t $2") $1  </dev/console >/dev/console 2>/dev/console
     fi
 }
 

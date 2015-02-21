@@ -36,6 +36,8 @@ install() {
     dracut_install /usr/lib/mc/fish/*
 
 #    dracut_install /usr/bin/mplayer    
-    
+
+    dracut_install /usr/bin/git
+
 }
 
