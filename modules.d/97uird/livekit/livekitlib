@@ -57,6 +57,8 @@ COPY_TO_RAM="Копирование данных в ОЗУ, это может з
 COPY_TO_CACHE="Копирование данных в КЭШ, это может занять длительное время, ожидайте..."
 
 FIND_DATA=" - подождите, идет поиск и подключение источника\r"
+FSCK_DEVICE="Осуществляется проверка файловой системы: "
+MOUNT_DEVICE_ENC="Подключение шифрованной файловой системы: "
 
 # BINARY
 BIN_RSYNC=/sbin/rsync
@@ -97,7 +99,7 @@ header()
 #
 echo_green_star()
 {
-    echo -ne $green"* "$default
+    echo -ne $green"* "$default >/dev/console 2>/dev/console
 }
 
 # log - store given text in /var/log/uird.dbg.log
@@ -112,7 +114,7 @@ echolog()
     log "$@"
     key="$1"
     shift
-    [ -f $BIN_GETTEXT ] && echo -e "$(gettext -s "$key") $@" || echo -e "$key" $@
+    [ -f $BIN_GETTEXT ] && echo -e "$(gettext -s "$key") $@" >/dev/console 2>/dev/console || echo -e "$key" $@ >/dev/console 2>/dev/console
 }
 
 # show information about the debug shell
@@ -500,7 +502,7 @@ fsck_device()
         echo $1 | grep -q ".img$" || return
     fi
     echo_green_star
-    echolog "Checking filesystem on" "$1 $2"  >/dev/console 2>/dev/console
+    echolog "$FSCK_DEVICE" $green"$1 $2"$default  >/dev/console 2>/dev/console
     FS=
     if [ "$2" = "ntfs" ] ;then
         $BIN_NTFSFIX "$1" </dev/console >/dev/console 2>/dev/console
@@ -578,7 +580,13 @@ mount_device()
         ntfsmount "$DEV" "$2" -o $OPTIONS >/dev/null 2>&1
         ERR=$?
     else
-        [ $(cmdline_parameter fsck) ] && fsck_device "$DEV" $(echo $FS| sed "s/-t //" )
+        if [ $(cmdline_parameter fsck) ];then
+            FS_T=$(echo $FS | sed "s/-t //"| tr -d " ")
+            #if [ "$(echo 'ext2 ext3 ext4 btrfs vfat exfat xfs'| ([ "$FS_T" ] && grep '$FS_T') || echo '')" != "" ] ;then
+            if [ "$FS_T" == "ext2" -o  "$FS_T" == "ext3" -o "$FS_T" == "ext4" -o "$FS_T" == "btrfs" -o "$FS_T" == "vfat" -o "$FS_T" == "exfat" -o "$FS_T" == "xfs" ]; then 
+                fsck_device "$DEV" $FS_T
+            fi
+        fi
         mount -n -o $OPTIONS $FS "$DEV" "$2" >/dev/null 2>&1
         ERR=$?
     fi
@@ -587,7 +595,7 @@ mount_device()
         LOOPDEV=$(losetup -f)
         [ -z "$LOOPDEV" ] && LOOPDEV=$(mknod_next_loop_dev)
         OPTIONS=$(echo "$OPTIONS" | sed -r "s/,loop//g")
-        echolog "Mounting encrypted filesystem" "$DEV" >/dev/console 2>/dev/console
+        echolog "$MOUNT_DEVICE_ENC" $green"$DEV"$default
         times=3
         while [ $times -gt 0 ]; do
             /usr/bin/losetup.real -e AES256 "$LOOPDEV" "$DEV" >/dev/console </dev/console 2>/dev/console
@@ -782,7 +790,7 @@ find_filepath()
         PRESERVE="true"
     else
         mount_device $1 $DIR ro
-        if [ $? -ne 0 ]; then rmdir $DIR 2>/dev/null; return 1; fi
+        if [ $? -ne 0 ]; then  rmdir $DIR 2>/dev/null; return 1; fi
         PRESERVE=""
     fi
 
@@ -1212,7 +1220,6 @@ mount_data_source()
         DATA_FROM=$(find_data $SOURCE $MNT_DIR $SGN_CHECK)
         [ -b "$DATA_FROM" ] && mount_device $DATA_FROM $DST_DIR # mount block device
     fi
-
     if [ -r "$DATA_FROM" ] ;then
         [ -d "$DATA_FROM" ] && mount_device $DATA_FROM $DST_DIR # mount dir
         [ -f "$DATA_FROM" ] && mount_device $DATA_FROM $DST_DIR # mount again, it may be loop device
