@@ -68,6 +68,7 @@ BIN_SSHFS=/sbin/sshfs
 BIN_GETTEXT=/sbin/gettext
 BIN_NTFSFIX=/sbin/ntfsfix
 BIN_FSCK=/sbin/fsck
+BIN_BTRFSCK=/sbin/btrfsck
 
 # =================================================================
 # debug and output functions
@@ -506,6 +507,8 @@ fsck_device()
     FS=
     if [ "$2" = "ntfs" ] ;then
         $BIN_NTFSFIX "$1" </dev/console >/dev/console 2>/dev/console
+    elif [ "$2" = "btrfs" ] ;then
+        $BIN_BTRFSCK "$1" </dev/console >/dev/console 2>/dev/console
     else
         $BIN_FSCK -a $([ "$2" ] && echo "-t $2") $1  </dev/console >/dev/console 2>/dev/console
     fi

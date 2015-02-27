@@ -66,6 +66,7 @@ install() {
     inst $(type -p fsck.vfat) /sbin/fsck.vfat
     inst $(type -p fsck.xfs) /sbin/fsck.xfs
     inst $(type -p fsck.btrfs) /sbin/fsck.btrfs
+    inst $(type -p btrfsck) /sbin/btrfsck
     inst $(type -p ntfsfix) /sbin/ntfsfix
     
     inst_hook cmdline 95 "$moddir/parse-root-uird.sh"
