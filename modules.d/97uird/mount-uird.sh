@@ -12,7 +12,9 @@ mount_root() {
 
 }
 
-if [ -n "$root" -a -z "${root%%uird:*}" ]; then
-    mount_root
-fi
+mount_root
+
+#if [ -n "$root" -a -z "${root%%uird:*}" ]; then
+#    mount_root
+#fi
 

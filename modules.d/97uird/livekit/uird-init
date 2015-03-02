@@ -51,29 +51,35 @@ debug_shell
 mkdir -p $MEMORY
 
 getcmdline >/memory/cmdline
-cat /basecfg.ini >/memory/basecfg.ini 2>/dev/null
 
-RAMSIZE=$(cmdline_value uird.ramsize)
+BASECFG=$(cmdline_value $UIRD_BASECFG)
+[ -z "$BASECFG" ] && BASECFG=/uird_configs/basecfg.ini
+cat "$BASECFG" >/memory/basecfg.ini 2>/dev/null
+
+RAMSIZE=$(cmdline_value $UIRD_RAMSIZE)
 if [ "$RAMSIZE" = "" ]; then RAMSIZE="70%"; fi
 mount -t tmpfs -o "size=$RAMSIZE" tmpfs $MEMORY
 
 mkdir -p $MOUNTDIR $CHANGES
 
 getcmdline >/memory/cmdline
-cat /basecfg.ini >/memory/basecfg.ini 2>/dev/null
+
+BASECFG=$(cmdline_value $UIRD_BASECFG)
+[ -z "$BASECFG" ] && BASECFG=/uird_configs/basecfg.ini
+cat "$BASECFG" >/memory/basecfg.ini 2>/dev/null
 
 
 # find data dir with filesystem bundles
 #DATA="$(find_data 60 "$DATAMNT")"
 
 #init BASE layer
-[ "$(cmdline_value uird.from)" ] && init_layer $DATAMNT/from $LAYER_BASE uird.from "check_SGN"
+[ "$(cmdline_value $UIRD_FROM)" ] && init_layer $DATAMNT/from $LAYER_BASE $UIRD_FROM "check_SGN"
 debug_shell
 # init CACHE layer
-[ "$(cmdline_value uird.cache)" ] && init_layer $DATAMNT/cache $LAYER_CACHE uird.cache
+[ "$(cmdline_value $UIRD_CACHE)" ] && init_layer $DATAMNT/cache $LAYER_CACHE $UIRD_CACHE
 debug_shell
 # init HOMES layer
-[ "$(cmdline_value uird.homes)" ] && init_layer $DATAMNT/homes $LAYER_HOMES uird.homes
+[ "$(cmdline_value $UIRD_HOMES)" ] && init_layer $DATAMNT/homes $LAYER_HOMES $UIRD_HOMES
 debug_shell
 
 #setting up config
@@ -92,16 +98,16 @@ debug_shell
     # copy to CACHE if needed (uird.copy2cache=)
 #    copy_to_cache $d_dirs "$LAYER_CACHE"
 #done
-[ "$(cmdline_value uird.from)" ] && copy_to_cache $LAYER_BASE "$LAYER_CACHE"
+[ "$(cmdline_value $UIRD_FROM)" ] && copy_to_cache $LAYER_BASE "$LAYER_CACHE"
 debug_shell
 # sync data from BASE,CACHE layers to RAM
 #for d_dirs in "$LAYER_BASE" "$LAYER_CACHE" ;do
-    # copy to RAM if needed (uird.copy2ram=)
+    # copy to RAM if needed ($UIRD_COPY2RAM=)
 #    copy_to_ram $d_dirs "$COPY2RAM"
 #done
-[ "$(cmdline_value uird.from)" ] && copy_to_ram $LAYER_BASE "$COPY2RAM"
+[ "$(cmdline_value $UIRD_FROM)" ] && copy_to_ram $LAYER_BASE "$COPY2RAM"
 debug_shell
-[ "$(cmdline_value uird.cache)" ] && copy_to_ram $LAYER_CACHE "$COPY2RAM"
+[ "$(cmdline_value $UIRD_CACHE)" ] && copy_to_ram $LAYER_CACHE "$COPY2RAM"
 debug_shell
 # setup persistent changes, if possible
 #persistent_changes "$DATA" "$CHANGES"
@@ -119,11 +125,11 @@ debug_shell
 #    union_append_bundles $d_dirs "$BUNDLES" "$UNION"
 #done
 
-[ "$(cmdline_value uird.copy2ram)$(cmdline_parameter uird.copy2ram)" ] && union_append_bundles $COPY2RAM "$BUNDLES" "$UNION"
+[ "$(cmdline_value $UIRD_COPY2RAM)$(cmdline_parameter $UIRD_COPY2RAM)" ] && union_append_bundles $COPY2RAM "$BUNDLES" "$UNION"
 debug_shell
-[ "$(cmdline_value uird.cache)" ] && union_append_bundles $LAYER_CACHE "$BUNDLES" "$UNION"
+[ "$(cmdline_value $UIRD_CACHE)" ] && union_append_bundles $LAYER_CACHE "$BUNDLES" "$UNION"
 debug_shell
-[ "$(cmdline_value uird.from)" ] && union_append_bundles $LAYER_BASE "$BUNDLES" "$UNION"
+[ "$(cmdline_value $UIRD_FROM)" ] && union_append_bundles $LAYER_BASE "$BUNDLES" "$UNION"
 debug_shell
 
 #setup homes by using aufs

@@ -70,6 +70,49 @@ BIN_NTFSFIX=/sbin/ntfsfix
 BIN_FSCK=/sbin/fsck
 BIN_BTRFSCK=/sbin/btrfsck
 
+
+##### UIRD cmdline parameters aliases
+
+# uird.basecfg=           - расположение базового конфигурационного файла basecfg.ini
+# uird.config=            - расположение конфигурационного файла системы MagOS.ini
+# uird.sgnfiles[+]=          - перечисление файлов-маркеров для поиска источников указанных в uird.from= в соответствии с их порядком перечисления
+# uird.ro[+]=                - фильтр для модулей, которые монтируются в режиме RO
+# uird.rw[+]=                - фильтр для модулей, которые монтируются в режиме RW
+# uird.cp[+]=                - фильтр для модулей, содержимое которых копируется в корень
+# uird.copy2ram[+]=          - фильтр для модулей, которые копируются в RAM
+# uird.copy2cache[+]=        - фильтр для модулей, которые копируются в КЭШ
+# uird.ramsize=           - размер RAM
+# uird.ip=                - IP:GW:MASK , если не указан, то используется DHCP
+# uird.netfsopt[+]=          - дополнительные опции монтирования сетевых ФС: sshfs,nfs,curlftpfs,cifs
+# uird.load[+]=              - фильтр для модулей, которые необходимо подключить на этапе загрузки
+# uird.noload[+]=            - фильтр для модулей, которые необходимо пропустить во время загрузки
+# uird.from[+]=              - источники, где лежат модули для системы
+# uird.cache[+]=             - источники, в которые стоит синхронизировать модули 
+# uird.homes[+]=             - источники, где хранятся домашние директории пользователей 
+# uird.changes=           - источник, где хранить персистентные изменения
+# uird.machines=          - источник, где хранятся машинно-зависимые персистентные изменения
+
+[ -f "/uird_configs/uird_aliases" ] && . /uird_configs/uird_aliases
+
+[ -z $UIRD_BASECFG ] && UIRD_BASECFG=uird.basecfg
+[ -z $UIRD_CONFIG ] && UIRD_CONFIG=uird.config
+[ -z $UIRD_SGNFILES ] && UIRD_SGNFILES=uird.sgnfiles
+[ -z $UIRD_RO ] && UIRD_RO=uird.ro
+[ -z $UIRD_RW ] && UIRD_RW=uird.rw
+[ -z $UIRD_CP ] && UIRD_CP=uird.cp
+[ -z $UIRD_COPY2RAM ] && UIRD_COPY2RAM=uird.copy2ram
+[ -z $UIRD_COPY2CAHE ] && UIRD_COPY2CACHE=uird.copy2cache
+[ -z $UIRD_RAMSIZE ] && UIRD_RAMSIZE=uird.ramsize
+[ -z $UIRD_IP ] && UIRD_IP=uird.ip
+[ -z $UIRD_NETFSOPT ] && UIRD_NETFSOPT=uird.netfsopt
+[ -z $UIRD_LOAD ] && UIRD_LOAD=uird.load
+[ -z $UIRD_NOLOAD ] && UIRD_NOLOAD=uird.noload
+[ -z $UIRD_FROM ] && UIRD_FROM=uird.from
+[ -z $UIRD_CACHE ] && UIRD_CACHE=uird.cache
+[ -z $UIRD_HOMES ] && UIRD_HOMES=uird.homes
+[ -z $UIRD_CHANGES ] && UIRD_CHANGES=uird.changes
+[ -z $UIRD_MACHINES ] && UIRD_MACHINES=uird.machines
+
 # =================================================================
 # debug and output functions
 # =================================================================
@@ -660,7 +703,7 @@ mount_curlftpfs()
     local OPTIONS
     debug_log "mount_curlftpfs" "$*"
     OPTIONS=
-    [ "$(cmdline_value uird.netfsopt)" ] && OPTIONS="-o $(cmdline_value uird.netfsopt)"
+    [ "$(cmdline_value $UIRD_NETFSOPT)" ] && OPTIONS="-o $(cmdline_value $UIRD_NETFSOPT)"
 
     mkdir -p $2
     $BIN_CURLFTPFS $OPTIONS $1 $2 </dev/console >/dev/console 2>/dev/console || return
@@ -680,7 +723,7 @@ mount_sshfs()
     local OPTIONS
     debug_log "mount_sshfs" "$*"
     OPTIONS=
-    [ "$(cmdline_value uird.netfsopt)" ] && OPTIONS="-o $(cmdline_value uird.netfsopt)"
+    [ "$(cmdline_value $UIRD_NETFSOPT)" ] && OPTIONS="-o $(cmdline_value $UIRD_NETFSOPT)"
     mkdir -p $2
     times=3
     while [ $times -gt 0 ]; do
@@ -705,7 +748,7 @@ mount_nfs()
 {
     debug_log "mount_nfs" "$*"
     OPTIONS="nolock,rsize=4096,wsize=4096"
-    [ "$(cmdline_value uird.netfsopt)" ] && OPTIONS="$OPTIONS,$(cmdline_value uird.netfsopt)"
+    [ "$(cmdline_value $UIRD_NETFSOPT)" ] && OPTIONS="$OPTIONS,$(cmdline_value $UIRD_NETFSOPT)"
     mkdir -p $2
     modprobe nfs
     local SHARE=`echo $1 | sed s-^nfs://-- `
@@ -723,7 +766,7 @@ mount_cifs()
 {
     debug_log "mount_cifs" "$*"
     OPTIONS=""
-    [ "$(cmdline_value uird.netfsopt)" ] && OPTIONS="$(cmdline_value uird.netfsopt)"
+    [ "$(cmdline_value $UIRD_NETFSOPT)" ] && OPTIONS="$(cmdline_value $UIRD_NETFSOPT)"
     mkdir -p $2
     modprobe cifs
     local SHARE=`echo $1 | sed s-^cifs://-- `
@@ -799,8 +842,8 @@ find_filepath()
 
     FOUND=$(ls -A1d $DIR/$2 2>/dev/null | head -n 1 | tr -s '/')
     
-    if [ "$(cmdline_value uird.sgnfiles)" -a "$4" != "" ] ; then
-        SGN_FILES="$(cmdline_value uird.sgnfiles)"
+    if [ "$(cmdline_value $UIRD_SGNFILES)" -a "$4" != "" ] ; then
+        SGN_FILES="$(cmdline_value $UIRD_SGNFILES)"
         ARR_SGN_FILES=$(echo $SGN_FILES | tr -s "," ";")
         SGN_FILE=$(echo $ARR_SGN_FILES | cut -d ";" -f "$4")
 
@@ -1120,7 +1163,7 @@ init_ifcfg()
 
     modprobe af_packet 2>/dev/null
 
-    IP=$(cmdline_value uird.ip)
+    IP=$(cmdline_value $UIRD_IP)
     [ "$IP" = "" ] && IP=::
 
     echo $IP | while IFS=":" read CLIENT GW MASK; do
@@ -1310,7 +1353,7 @@ posix_test()
 setup_config()
 {
     debug_log "setup config" "$*"
-    INIFILE=$(cmdline_value uird.config)
+    INIFILE=$(cmdline_value $UIRD_CONFIG)
     [ -z $INIFILE ] && return
     echo_green_star
     echolog "$SETUP_CONFIG" $brown"$INIFILE"$default
@@ -1335,7 +1378,7 @@ setup_changes()
 {
     debug_log "setup changes" "$*"
 
-    CHANGESVAL=$(cmdline_value uird.changes)
+    CHANGESVAL=$(cmdline_value $UIRD_CHANGES)
     [ -z "$CHANGESVAL" ] && return
 
     echo_green_star
@@ -1359,9 +1402,9 @@ setup_machines()
     debug_log "setup machines" "$*"
     local CHANGESMNT MACHINES SOURCE MNT_DIR
 
-    CHANGESVAL=$(cmdline_value uird.changes)
+    CHANGESVAL=$(cmdline_value $UIRD_CHANGES)
     [ -z "$CHANGESVAL" ] && return
-    MACHINES=$(cmdline_value uird.machines)
+    MACHINES=$(cmdline_value $UIRD_MACHINES)
     [ -z "$MACHINES" ] && return
 
     #In case we using lzm|xzm as changes= parameter
@@ -1420,7 +1463,7 @@ setup_homes()
 
     local MNT_HOME LAYER_HOMES HOMES_BR HOMES
 
-    HOMES=$(cmdline_value uird.homes)
+    HOMES=$(cmdline_value $UIRD_HOMES)
     [ -z "$HOMES" ] && return
 
     LAYER_HOMES=$1
@@ -1496,14 +1539,14 @@ persistent_changes()
     fi
 }
 
-# Find uird.ro=,uird.rw= modules in given dir
+# Find $UIRD_RO=,$UIRD_RW= modules in given dir
 # $1 = layer directory 
 #
 find_modules()
 {
     debug_log "find_modules" "$*"
     local ARR_FILTER filter
-    ARR_FILTER=$(echo $(cmdline_value uird.ro)","$(cmdline_value uird.rw)","$(cmdline_value uird.cp) | tr -s ";," " ")
+    ARR_FILTER=$(echo $(cmdline_value $UIRD_RO)","$(cmdline_value $UIRD_RW)","$(cmdline_value $UIRD_CP) | tr -s ";," " ")
     for filter in $ARR_FILTER; do
         find "$1" -path "$filter"  2>/dev/null | sort 
     done
@@ -1511,7 +1554,7 @@ find_modules()
 
 # List all modules in all directories
 # and filter out
-# separator for uird.load and uird.noload arguments is "," or ";"
+# separator for $UIRD_LOAD and $UIRD_NOLOAD arguments is "," or ";"
 # $1 = layer directory
 
 list_modules()
@@ -1519,8 +1562,8 @@ list_modules()
     debug_log "list_modules" "$*"
     local LOAD NOLOAD MODNAME LINE
 
-    LOAD=$(cmdline_value uird.load | sed -r 's/\?/./g' |  sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')
-    NOLOAD=$(cmdline_value uird.noload | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')
+    LOAD=$(cmdline_value $UIRD_LOAD | sed -r 's/\?/./g' |  sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')
+    NOLOAD=$(cmdline_value $UIRD_NOLOAD | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')
     find_modules "$1" | sort | while read LINE; do
     MODNAME=$(echo $LINE | cut -b ${#1}- | cut -b 2-)
     #      if [ "$(echo $LINE | grep /optional/)" ]; then
@@ -1545,9 +1588,9 @@ union_append_bundles()
 
     local BUN MOD RW RO CP FS OPTIONS PRESERVE
 
-    RW=$(cmdline_value uird.rw | sed -r 's/\?/./g' |  sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')
-    RO=$(cmdline_value uird.ro | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')
-    CP=$(cmdline_value uird.cp | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')
+    RW=$(cmdline_value $UIRD_RW | sed -r 's/\?/./g' |  sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')
+    RO=$(cmdline_value $UIRD_RO | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')
+    CP=$(cmdline_value $UIRD_CP | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')
 
     echo_green_star
     echolog "$UNION_APPEND_BUNDLES" $brown$1 
@@ -1635,11 +1678,11 @@ done
 copy_to_ram()
 {
     debug_log "copy_to_ram" "$*"
-    if [ "$(cmdline_parameter toram)$(cmdline_value toram)$(cmdline_parameter uird.copy2ram)$(cmdline_value uird.copy2ram)" ]; then
+    if [ "$(cmdline_parameter toram)$(cmdline_value toram)$(cmdline_parameter $UIRD_COPY2RAM)$(cmdline_value $UIRD_COPY2RAM)" ]; then
         [ "$2" = "" ] && return
         echo_green_star
         echolog "$COPY_TO_RAM"
-        copy_to $1 $2 RAM "$(cmdline_value uird.copy2ram)$(cmdline_value toram)"
+        copy_to $1 $2 RAM "$(cmdline_value $UIRD_COPY2RAM)$(cmdline_value toram)"
     fi
 }
 
@@ -1650,11 +1693,11 @@ copy_to_ram()
 copy_to_cache()
 {
     debug_log "copy_to_cache" "$*"
-    if [ "$(cmdline_parameter uird.copy2cache)$(cmdline_value uird.copy2cache)" ]; then
+    if [ "$(cmdline_parameter $UIRD_COPY2CACHE)$(cmdline_value $UIRD_COPY2CACHE)" ]; then
         [ "$2" = "" ] && return
         echo_green_star
         echolog "$COPY_TO_CACHE"
-        copy_to $1 $2 CACHE "$(cmdline_value uird.copy2cache)"
+        copy_to $1 $2 CACHE "$(cmdline_value $UIRD_COPY2CACHE)"
     fi
 }
 
