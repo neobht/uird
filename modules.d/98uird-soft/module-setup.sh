@@ -38,6 +38,7 @@ install() {
 #    dracut_install /usr/bin/mplayer    
 
     dracut_install /usr/bin/git
-
+    dracut_install /usr/bin/ssh
+    
 }
 
