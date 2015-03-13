@@ -68,6 +68,8 @@ install() {
     inst $(type -p fsck.btrfs) /sbin/fsck.btrfs
     inst $(type -p btrfsck) /sbin/btrfsck
     inst $(type -p ntfsfix) /sbin/ntfsfix
+    inst $(type -p mount.cifs) /sbin/mount.cifs
+    inst $(type -p mount.nfs) /sbin/mount.nfs
     
     inst_hook cmdline 95 "$moddir/parse-root-uird.sh"
     inst_hook mount 99 "$moddir/mount-uird.sh"
