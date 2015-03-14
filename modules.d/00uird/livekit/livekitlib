@@ -195,11 +195,14 @@ shell_cmd()
 start_quickshell()
 {
     if [ "$(cmdline_parameter quickshell)$(cmdline_parameter qsb)" ] ; then
-        getty -n -l /bin/autologin 9600 tty2 linux &
-        getty -n -l /bin/autologin 9600 tty3 linux &
-        getty -n -l /bin/autologin 9600 tty4 linux &
-        getty -n -l /bin/autologin 9600 tty5 linux &
-        getty -n -l /bin/autologin 9600 tty6 linux &
+        ln -s /root/bashrc /root/.bashrc
+        ln -s /root/bash_profile /root/.bash_profile
+        
+#        getty -n -l /bin/autologin 9600 tty2 linux &
+#        getty -n -l /bin/autologin 9600 tty3 linux &
+#        getty -n -l /bin/autologin 9600 tty4 linux &
+#        getty -n -l /bin/autologin 9600 tty5 linux &
+#        getty -n -l /bin/autologin 9600 tty6 linux &
         automount
         clear
         cat /usr/share/quickshell.hlp

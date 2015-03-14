@@ -1,2 +1,2 @@
 #!/bin/bash
-exec /bin/login -f root
+exec /usr/bin/login -f root
