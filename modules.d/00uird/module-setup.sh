@@ -23,13 +23,13 @@ install() {
     inst "$moddir/livekit/liblinuxlive" "/liblinuxlive"
 
     #binaries
-    inst $(type -p bash) /bin/bash
+    #inst $(type -p bash) /bin/bash
     inst $(type -p blkid) /sbin/blkid.real
     inst $(type -p losetup) /sbin/losetup.real
 
     _binaries="dialog gettext loadkeys resume rsync fsck fsck.ext2 fsck.ext3 fsck.ext4 fsck.exfat fsck.vfat fsck.xfs fsck.btrfs btrfsck ntfsfix"
     for _i in $_binaries; do
-	inst $(type -P "$_i" ) /sbin/$_i
+	inst $(type -p "$_i" ) /sbin/$_i
     done
     #busybox
     _busybox=$(type -P busybox || type -P busybox.static )

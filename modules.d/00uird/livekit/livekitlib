@@ -69,6 +69,8 @@ BIN_GETTEXT=/sbin/gettext
 BIN_NTFSFIX=/sbin/ntfsfix
 BIN_FSCK=/sbin/fsck
 BIN_BTRFSCK=/sbin/btrfsck
+BIN_BLKID=/sbin/blkid.real
+BIN_LOSETUP=/sbin/losetup.real
 
 
 ##### UIRD cmdline parameters aliases
@@ -218,7 +220,7 @@ start_quickshell()
 resume_from_suspend()
 {
     if [ -z $(cmdline_parameter noresume) ] ; then
-        RESUME_DEV=$(blkid.real | grep -m1 swsuspend | awk -F: '{print $1}')
+        RESUME_DEV=$($BIN_BLKID | grep -m1 swsuspend | awk -F: '{print $1}')
         [ -z "$RESUME_DEV" ] || resume -r $RESUME_DEV
     fi
 }
@@ -496,7 +498,7 @@ list_swap_devices()
 {
     debug_log "list_swap_devices" "$*"
     if [ "$(cmdline_parameter nohd)" != "" -o "$(cmdline_parameter noswap)" != "" ]; then return 1; fi
-    blkid.real -t TYPE="swap" -o device
+    $BIN_BLKID -t TYPE="swap" -o device
 }
 
 # List all block devices
@@ -520,7 +522,7 @@ device_filesystem()
     local NTFS
 
     if [ -e /bin/ntfsmount ]; then NTFS="ntfs-3g"; else NTFS="ntfs"; fi
-    blkid.real -s TYPE "$1" -o value | sed "s/msdos/vfat/" | sed "s/ntfs/$NTFS/"
+    $BIN_BLKID -s TYPE "$1" -o value | sed "s/msdos/vfat/" | sed "s/ntfs/$NTFS/"
 }
 
 # tell us if the given filesystem is supported
@@ -647,12 +649,12 @@ mount_device()
         echolog "$MOUNT_DEVICE_ENC" $green"$DEV"$default
         times=3
         while [ $times -gt 0 ]; do
-            /usr/bin/losetup.real -e AES256 "$LOOPDEV" "$DEV" >/dev/console </dev/console 2>/dev/console
+            $BIN_LOSETUP -e AES256 "$LOOPDEV" "$DEV" >/dev/console </dev/console 2>/dev/console
             [ $(cmdline_parameter fsck) ] && fsck_device "$LOOPDEV"
             mount -n -o $OPTIONS "$LOOPDEV" "$2" >/dev/null 2>&1
             ERR=$?
             [ $ERR -eq 0 ] && break
-            /usr/bin/losetup.real -d "$LOOPDEV"
+            $BIN_LOSETUP -d "$LOOPDEV"
             times=$(expr $times - 1)
         done
     fi
@@ -992,7 +994,7 @@ device_bestfs()
     debug_log "device_bestfs" "$*"
     local FS
 
-    FS="$(blkid.real "$1" | sed -r "s/.*TYPE=//" | tr -d '"' | tr [A-Z] [a-z])"
+    FS="$($BIN_BLKID "$1" | sed -r "s/.*TYPE=//" | tr -d '"' | tr [A-Z] [a-z])"
     if [ "$FS" = "msdos" -o "$FS" = "fat" -o "$FS" = "vfat" ]; then
         FS="vfat"
     elif [ "$FS" = "ntfs" ]; then
