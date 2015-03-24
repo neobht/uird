@@ -37,6 +37,10 @@ header "Запускается UIRD init <http://magos-linux.ru/>"
 debug_start
 debug_shell
 
+[ -d /lib/modules/"$(uname -r)" ] || [ -d /lib64/modules/"$(uname -r)" ] || ( echolog "!!! Ядро и модули ядра не совпадают !!!" && exit 1)
+
+debug_shell
+
 init_devs
 debug_shell
 

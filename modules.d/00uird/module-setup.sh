@@ -23,7 +23,7 @@ install() {
     inst "$moddir/livekit/liblinuxlive" "/liblinuxlive"
 
     #binaries
-    #inst $(type -p bash) /bin/bash
+    inst $(type -p bash) /bin/bash
     inst $(type -p blkid) /sbin/blkid.real
     inst $(type -p losetup) /sbin/losetup.real
 
@@ -47,26 +47,6 @@ install() {
         ln_r /usr/bin/busybox $_path
     done
 
-    
-#    inst $(type -p dialog) /sbin/dialog
-#    inst $(type -p gettext) /sbin/gettext
-#    inst $(type -p loadkeys) /sbin/loadkeys
-#    inst $(type -p resume) /sbin/resume
-#    inst $(type -p rsync) /sbin/rsync
-    
-#    inst $(type -p fsck) /sbin/fsck
-#    inst $(type -p fsck.ext2) /sbin/fsck.ext2
-#    inst $(type -p fsck.ext3) /sbin/fsck.ext3
-#    inst $(type -p fsck.ext4) /sbin/fsck.ext4
-#    inst $(type -p fsck.exfat) /sbin/fsck.exfat
-#    inst $(type -p fsck.vfat) /sbin/fsck.vfat
-#    inst $(type -p fsck.xfs) /sbin/fsck.xfs
-#    inst $(type -p fsck.btrfs) /sbin/fsck.btrfs
-#    inst $(type -p btrfsck) /sbin/btrfsck
-#    inst $(type -p ntfsfix) /sbin/ntfsfix
-#    inst $(type -p mount.cifs) /sbin/mount.cifs
-#    inst $(type -p mount.nfs) /sbin/mount.nfs
-    
     inst_hook cmdline 95 "$moddir/parse-root-uird.sh"
     inst_hook mount 99 "$moddir/mount-uird.sh"
 #    inst_hook shutdown 99 "$moddir/shutdown-uird.sh"

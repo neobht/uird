@@ -1,4 +1,4 @@
-#!/bin/ash
+#!/bin/sh
 PATH=.:/sbin:/bin:/usr/bin:/usr/sbin
 . /liblinuxlive
 cd /

@@ -1,5 +1,5 @@
 #!/bin/bash
-rm -rf /usr/lib/dracut/modules.d/00uird /usr/lib/dracut/modules.d/00uird-network /usr/lib/dracut/modules.d/90ntfs
+rm -rf /usr/lib/dracut/modules.d/*uird* /usr/lib/dracut/modules.d/90ntfs
 cp -pRf modules.d/* /usr/lib/dracut/modules.d
 #echo $(pwd)
 dracut  -N  -f -m "base uird uird-network ntfs kernel-modules"  \
