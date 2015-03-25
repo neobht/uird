@@ -23,7 +23,7 @@ install() {
     inst "$moddir/livekit/liblinuxlive" "/liblinuxlive"
 
     #binaries
-    inst $(type -p bash) /bin/bash
+    inst "$moddir/bash" "/bin/bash"
     inst $(type -p blkid) /sbin/blkid.real
     inst $(type -p losetup) /sbin/losetup.real
 
@@ -47,6 +47,7 @@ install() {
         ln_r /usr/bin/busybox $_path
     done
 
+    echo "version: $(date +%Y%m%d), for kernel: $(uname -ri)" >$initdir/uird_version
     inst_hook cmdline 95 "$moddir/parse-root-uird.sh"
     inst_hook mount 99 "$moddir/mount-uird.sh"
 #    inst_hook shutdown 99 "$moddir/shutdown-uird.sh"

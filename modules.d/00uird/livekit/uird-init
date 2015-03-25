@@ -32,7 +32,7 @@ echo "0" >/proc/sys/kernel/printk
 loadfont < /usr/lib/consolefonts/ter-u16n.psf >/dev/null
 loadkeys /usr/lib/kbd/ru.map >/dev/null
 
-header "Запускается UIRD init <http://magos-linux.ru/>"
+header "Запускается UIRD init <http://magos-linux.ru/>" " [ $(cat /uird_version) ]"
 
 debug_start
 debug_shell
