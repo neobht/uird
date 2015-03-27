@@ -85,7 +85,7 @@
     uird.ramsize=70%
     uird.ro=*.xzm;*.rom;*.rom.enc;*.pfs;*.sfs
     uird.rw=*.rwm;*.rwm.enc
-    uird.cp=*.xzm.cp
+    uird.cp=*.xzm.cp,*/rootcopy
     uird.load=/base/,/modules/,rootcopy
     uird.noload=
     uird.from=/MagOS;/MagOS-Data
