@@ -1,5 +1,4 @@
 #!/bin/bash
-#dracut -N  -f -m "base busybox uird magos-soft network ntfs url-lib ifcfg"  \
 dracut -N  -f -m "kernel-modules"  \
 	-d "loop cryptoloop zram aes-generic aes-i586 pata_acpi ata_generic ahci xhci-hcd \
 	    usb-storage uhci-hcd hid usbhid ehci-hcd ohci-hcd ehci-pci ehci-platform hid-generic \

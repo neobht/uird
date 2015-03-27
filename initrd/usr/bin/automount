@@ -1,6 +1,6 @@
 #!/bin/sh
 PATH=.:/sbin:/bin:/usr/bin:/usr/sbin
-. /liblinuxlive
+. /livekitlib
 cd /
 [ -f /dev/sda1 ] && umount /mnt/*  > /dev/null
 for a in $(blkid |grep /dev/sd | awk -F: '{ print $1 }') ; do

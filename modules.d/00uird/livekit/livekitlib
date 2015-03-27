@@ -5,6 +5,7 @@
 #
 # Author: Mikhail Zaripov <http://magos-linux.ru>
 # Author: Anton Goroshkin <http://magos-linux.ru>
+# Author: Alexander Betkher <http://magos-linux.ru>
 
 
 # Colors text
@@ -188,11 +189,11 @@ debug_shell()
 shell_cmd()
 {
     if [ "$(cmdline_parameter qs)" ]; then 
-        ln -s /root/bashrc /root/.bashrc >/dev/null
-        ln -s /root/bash_profile /root/.bash_profile >/dev/null
+        ln -s /root/bashrc /root/.bashrc 2>/dev/null
+        ln -s /root/bash_profile /root/.bash_profile 2>/dev/null
         echo "============== SHELL MODE ============="
-        /bin/bash autologin
-        #setsid sh -c 'exec sh < /dev/tty1 >/dev/tty1 2>&1'
+        #/bin/bash autologin
+        setsid bash -c 'exec bash autologin < /dev/tty1 >/dev/tty1 2>&1'
         echo
     fi
 }
@@ -211,7 +212,8 @@ start_quickshell()
         automount
         clear
         cat /usr/share/quickshell.hlp
-        /bin/bash autologin
+#        /bin/bash autologin
+        setsid bash -c 'exec bash autologin < /dev/tty1 >/dev/tty1 2>&1'
         cd /
         umount /mnt/*
         export LANG=""
