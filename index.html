@@ -127,9 +127,9 @@ uird.machines=          - источник, где хранятся машинн
 uird.ramsize=70%
 uird.ro=*.xzm;*.rom;*.rom.enc;*.pfs;*.sfs
 uird.rw=*.rwm;*.rwm.enc
-uird.cp=*.xzm.cp
-uird.load=*
-uird.noload=/optional/;/cache/;/homes/,/changes/
+uird.cp=*.xzm.cp,*/rootcopy
+uird.load=/base/,/modules/,rootcopy
+uird.noload=
 uird.from=/MagOS;/MagOS-Data
 uird.changes=/MagOS-Data/changes
 uird.cache=/MagOS-Data/cache
@@ -137,7 +137,7 @@ uird.machines=/MagOS-Data/machines
 uird.homes=/MagOS-Data/homes
 </code></pre>
 
-<p>!!! Если параметр uird.basecfg= не задан, то используется /basecfg.ini внутри initrd (не реализовано, пока используется только конфиг внутри initrd).</p>
+<p>!!! Если параметр uird.basecfg= не задан, то используется /uird_configs/basecfg.ini внутри initrd.</p>
 
 <h3>
 <a id="Структура-системной-директории" class="anchor" href="#%D0%A1%D1%82%D1%80%D1%83%D0%BA%D1%82%D1%83%D1%80%D0%B0-%D1%81%D0%B8%D1%81%D1%82%D0%B5%D0%BC%D0%BD%D0%BE%D0%B9-%D0%B4%D0%B8%D1%80%D0%B5%D0%BA%D1%82%D0%BE%D1%80%D0%B8%D0%B8" aria-hidden="true"><span class="octicon octicon-link"></span></a>Структура системной директории</h3>
@@ -182,7 +182,7 @@ uird.homes=/MagOS-Data/homes
 
 <p>В основе реализации лежит набор скриптов инициализации dracut (модули base , busybox ) и скрипты uird (livekitlib+uird-init).</p>
 
-<pre><code>cmdline-hook: parse-root-uird.sh (проверяет параметр root=uird:)
+<pre><code>cmdline-hook: parse-root-uird.sh (проверяет параметр root=uird)
 mount-hook: mount-uird.sh (выполняет скрипт uird-init)
 </code></pre>
 
