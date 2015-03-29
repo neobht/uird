@@ -85,16 +85,16 @@
     uird.ramsize=70%
     uird.ro=*.xzm;*.rom;*.rom.enc;*.pfs;*.sfs
     uird.rw=*.rwm;*.rwm.enc
-    uird.cp=*.xzm.cp
-    uird.load=*
-    uird.noload=/optional/;/cache/;/homes/,/changes/
+    uird.cp=*.xzm.cp,*/rootcopy
+    uird.load=/base/,/modules/,rootcopy
+    uird.noload=
     uird.from=/MagOS;/MagOS-Data
     uird.changes=/MagOS-Data/changes
     uird.cache=/MagOS-Data/cache
     uird.machines=/MagOS-Data/machines
     uird.homes=/MagOS-Data/homes
     
-!!! Если параметр uird.basecfg= не задан, то используется /basecfg.ini внутри initrd (не реализовано, пока используется только конфиг внутри initrd).
+!!! Если параметр uird.basecfg= не задан, то используется /uird_configs/basecfg.ini внутри initrd.
 
 ### Структура системной директории 
 
@@ -138,7 +138,7 @@
 
 В основе реализации лежит набор скриптов инициализации dracut (модули base , busybox ) и скрипты uird (livekitlib+uird-init).
 
-    cmdline-hook: parse-root-uird.sh (проверяет параметр root=uird:)
+    cmdline-hook: parse-root-uird.sh (проверяет параметр root=uird)
     mount-hook: mount-uird.sh (выполняет скрипт uird-init)
 
 * [livekitlib](https://github.com/magos-linux/magos-linux/blob/master/make_initrd/modules.d/97uird/livekit/livekitlib) - содержит библиотеку функций системы инициализации.
