@@ -23,7 +23,7 @@ install() {
     inst "$moddir/livekit/liblinuxlive" "/liblinuxlive"
 
     #binaries
-    inst "$moddir/bash" "/bin/bash"
+    inst "$moddir/bash-$(uname -i)" "/bin/bash"
     inst $(type -p blkid) /sbin/blkid.real
     inst $(type -p losetup) /sbin/losetup.real
 
