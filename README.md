@@ -141,6 +141,6 @@
     cmdline-hook: parse-root-uird.sh (проверяет параметр root=uird)
     mount-hook: mount-uird.sh (выполняет скрипт uird-init)
 
-* [livekitlib](https://github.com/magos-linux/magos-linux/blob/master/make_initrd/modules.d/97uird/livekit/livekitlib) - содержит библиотеку функций системы инициализации.
-* [uird-init](https://github.com/magos-linux/magos-linux/blob/master/make_initrd/modules.d/97uird/livekit/uird-init) - последовательно выполняет набор функций из livekitlib и осуществляет каскадно-блочное монтирование модулей системы в единый корень AUFS в директорию указанную в переменной dracut $NEWROOT.
+* [livekitlib](https://github.com/neobht/uird/blob/master/modules.d/00uird/livekit/livekitlib) - содержит библиотеку функций системы инициализации.
+* [uird-init](https://github.com/neobht/uird/blob/master/modules.d/00uird/livekit/uird-init) - последовательно выполняет набор функций из livekitlib и осуществляет каскадно-блочное монтирование модулей системы в единый корень AUFS в директорию указанную в переменной dracut $NEWROOT.
 
