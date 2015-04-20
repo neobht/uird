@@ -55,10 +55,13 @@ debug_shell
 mkdir -p $MEMORY
 
 getcmdline >/memory/cmdline
+eval echo $(cat /proc/cmdline /memory/cmdline 2>/dev/null | tr -s ";" "," ) >/memory/cmdline
 
 BASECFG=$(cmdline_value $UIRD_BASECFG)
 [ -z "$BASECFG" ] && BASECFG=/uird_configs/basecfg.ini
-cat "$BASECFG" >/memory/basecfg.ini 2>/dev/null
+#cat "$BASECFG" >/memory/basecfg.ini 2>/dev/null
+
+eval echo $(cat /memory/cmdline $BASECFG 2>/dev/null | tr -s ";" "," ) >/memory/cmdline
 
 RAMSIZE=$(cmdline_value $UIRD_RAMSIZE)
 if [ "$RAMSIZE" = "" ]; then RAMSIZE="70%"; fi
@@ -70,8 +73,9 @@ getcmdline >/memory/cmdline
 
 BASECFG=$(cmdline_value $UIRD_BASECFG)
 [ -z "$BASECFG" ] && BASECFG=/uird_configs/basecfg.ini
-cat "$BASECFG" >/memory/basecfg.ini 2>/dev/null
+#cat "$BASECFG" >/memory/basecfg.ini 2>/dev/null
 
+eval echo $(cat /proc/cmdline /memory/cmdline $BASECFG 2>/dev/null | tr -s ";" "," ) >/memory/cmdline
 
 # find data dir with filesystem bundles
 #DATA="$(find_data 60 "$DATAMNT")"
