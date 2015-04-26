@@ -58,7 +58,8 @@ uird.load[+]=              - фильтр для модулей, которые 
 uird.noload[+]=            - фильтр для модулей, которые необходимо пропустить во время загрузки
 uird.from[+]=              - источники, где лежат модули для системы
 uird.cache[+]=             - источники, в которые стоит синхронизировать модули 
-uird.homes[+]=             - источники, где хранятся домашние директории пользователей 
+uird.homes[+]=             - источники, где хранятся домашние директории пользователей (объединяются AUFS)
+uird.home[+]=              - источник, где хранятся домашние директории пользователей
 uird.changes=           - источник, где хранить персистентные изменения
 uird.machines=          - источник, где хранятся машинно-зависимые персистентные изменения
 </code></pre>
@@ -73,9 +74,10 @@ uird.machines=          - источник, где хранятся машинн
 <pre><code>uird.cache=/MagOS/cache;/MagOS-Data/cache;/MagOS-Data/netlive
 </code></pre>
 
-<p>Вводится уровень домашних директорий пользователя layer-homes и соответствующий параметр uird.homes=:</p>
+<p>Вводится уровень домашних директорий пользователя layer-homes и соответствующие параметры: uird.homes=, uird.home=:</p>
 
 <pre><code>uird.homes=/MagOS-Data/homes;/MagOS-Data/home.img;nfs://magos.sibsau.ru/homes/n/e/neobht
+uird.home=/MagOS-Data/homes
 </code></pre>
 
 <p>Все директории пользователя из различных источников каскадно-объединяются посредством AUFS и монтируются в /home. Более приоритетным является самый первый источник, затем в порядке перечисления уменьшается приоритет.</p>
@@ -134,7 +136,7 @@ uird.from=/MagOS;/MagOS-Data
 uird.changes=/MagOS-Data/changes
 uird.cache=/MagOS-Data/cache
 uird.machines=/MagOS-Data/machines
-uird.homes=/MagOS-Data/homes
+uird.home=/MagOS-Data/homes
 </code></pre>
 
 <p>!!! Если параметр uird.basecfg= не задан, то используется /uird_configs/basecfg.ini внутри initrd.</p>
