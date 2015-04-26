@@ -113,6 +113,7 @@ BIN_LOSETUP=/sbin/losetup.real
 [ -z $UIRD_FROM ] && UIRD_FROM=uird.from
 [ -z $UIRD_CACHE ] && UIRD_CACHE=uird.cache
 [ -z $UIRD_HOMES ] && UIRD_HOMES=uird.homes
+[ -z $UIRD_HOME ] && UIRD_HOME=uird.home
 [ -z $UIRD_CHANGES ] && UIRD_CHANGES=uird.changes
 [ -z $UIRD_MACHINES ] && UIRD_MACHINES=uird.machines
 
@@ -1468,32 +1469,37 @@ setup_machines()
 
 # Setup homes
 # $1 = homes-layer
-# $2 = mount directory
-# $3 = home directory
+# $2 = home directory
 setup_homes()
 {
     debug_log "setup homes" "$*"
 
-    local MNT_HOME LAYER_HOMES HOMES_BR HOMES
+    local MNT_HOME LAYER_HOMES HOMES_BR HOMES HOME
 
     HOMES=$(cmdline_value $UIRD_HOMES)
-    [ -z "$HOMES" ] && return
+    HOME=$(cmdline_value $UIRD_HOME)
+    [ -z "$HOMES" ] && [ -z "$HOME" ] && return
 
     LAYER_HOMES=$1
     MNT_HOME=$2
     
     echo_green_star
     echolog "$SETUP_HOMES" $brown"$(basename $LAYER_HOMES)" " -> " "$MNT_HOME"
-
-    for d_dirs in "$LAYER_HOMES"/*; do
-        if [ -z $HOMES_BR ];then
-            HOMES_BR="$d_dirs=rw" 
-        else
-            HOMES_BR="$HOMES_BR:$d_dirs=rw"
-        fi
-    done
+    
+    if [ "$HOMES" ]; then
+	for d_dirs in "$LAYER_HOMES"/*; do
+    	    if [ -z $HOMES_BR ];then
+        	HOMES_BR="$d_dirs=rw+wh" 
+    	    else
+        	HOMES_BR="$HOMES_BR:$d_dirs=rw+wh"
+    	    fi
+	done
     #   mount -t aufs -o xino="/tmp/.xino",trunc_xino,br="$1" aufs "$2"
-    mount -t aufs -o xino="/memory/.xino",trunc_xino,br=$HOMES_BR aufs $MNT_HOME
+	mount -t aufs -o xino="/memory/.xino",trunc_xino,br=$HOMES_BR aufs $MNT_HOME
+    else 
+	HOMES_BR="$LAYER_HOMES"/0
+	mount -o bind $HOMES_BR $MNT_HOME
+    fi
 }
 
 # Activate persistent changes
