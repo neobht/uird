@@ -15,4 +15,4 @@ dracut  -N  -f -m "base uird uird-network ntfs kernel-modules"  \
         --kernel-cmdline "uird.from=/MagOS,/MagOS-Data uird.ro=*.xzm,*.rom,*.rom.enc,*.pfs,*.sfs uird.rw=*.rwm,*.rwm.enc uird.cp=*.xzm.cp,*/rootcopy uird.load=/base/,/modules/,rootcopy uird.machines=/MagOS-Data/machines uird.config=MagOS.ini" \
         -c dracut.conf -v -M uird.magos.cpio.xz $(uname -r)  >dracut_magos.log 2>&1
 
-#        -c dracut.conf -v -M uird.magos.cpio.xz 3.14.17-pf4 >dracut_magos.log 2>&1
+#        -c dracut.conf -v -M uird.magos.cpio.xz 3.19.4-desktop586-2.mga5 >dracut_magos.log 2>&1

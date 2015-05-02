@@ -9,5 +9,6 @@ dracut -N  -f -m "kernel-modules"  \
         --filesystems "aufs squashfs vfat msdos iso9660 isofs xfs ext3 ext4 fuse nfs cifs udf nls_cp866 nls_utf8 " \
         --confdir "dracut.conf.d" \
         -c dracut_configs.conf -v -M uird.kernel.cpio.xz $(uname -r) >dracut_kernel.log 2>&1
+#        -c dracut_configs.conf -v -M uird.kernel.cpio.xz 3.19.4-desktop586-2.mga5 >dracut_kernel.log 2>&1
 
 
