@@ -9,6 +9,8 @@
     *.RWM.ENC - RW слой криптованый
     *.ROM.ENC - RO слой криптованый
 
+### Параметры командной строки
+
 Ввиду множественности параметров ядра введен префикс параметров '**uird**'  (Unified Init Ram Disk): 
 
     uird.basecfg=           - расположение базового конфигурационного файла basecfg.ini
@@ -35,6 +37,8 @@
 
     uird.from=/MagOS;$( eval [ $(date +%u) -gt 5 ] && echo /MagOS-Data) - подключать MagOS-Data только по выходным
     uird.changes=$(mkdir -p /MagOS-Data/changes && echo /MagOS-Data/changes) 
+
+### Уровни для источников
 
 Вводится базовый уровень layer-base и соответствующий параметр uird.from=:
 
