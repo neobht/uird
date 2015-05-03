@@ -67,6 +67,8 @@ uird.changes=           - источник, где хранить персист
 uird.machines=          - источник, где хранятся машинно-зависимые персистентные изменения
 </code></pre>
 
+<p>В качестве значений параметров могут быть использованы команды shell:</p>
+
 <pre><code>uird.from=/MagOS;$( eval [ $(date +%u) -gt 5 ] && echo /MagOS-Data) - подключать MagOS-Data только по выходным
 uird.changes=$(mkdir -p /MagOS-Data/changes && echo /MagOS-Data/changes) 
 </code></pre>
