@@ -44,6 +44,11 @@ debug_shell
 init_devs
 debug_shell
 
+mkdir -p $MEMORY
+
+getcmdline >/memory/cmdline
+eval echo $(cat /proc/cmdline /memory/cmdline 2>/dev/null | tr -s ";" "," ) >/memory/cmdline
+
 # start quickshell
 start_quickshell
 debug_shell
@@ -52,10 +57,6 @@ debug_shell
 resume_from_suspend
 debug_shell
 
-mkdir -p $MEMORY
-
-getcmdline >/memory/cmdline
-eval echo $(cat /proc/cmdline /memory/cmdline 2>/dev/null | tr -s ";" "," ) >/memory/cmdline
 
 BASECFG=$(cmdline_value $UIRD_BASECFG)
 [ -z "$BASECFG" ] && BASECFG=/uird_configs/basecfg.ini

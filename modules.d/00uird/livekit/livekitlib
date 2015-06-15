@@ -189,10 +189,10 @@ debug_shell()
 # start shell
 shell_cmd()
 {
-    if [ "$(cmdline_parameter qs)" ]; then 
+    if [ "$(cmdline_parameter qse)" ]; then 
         ln -s /root/bashrc /root/.bashrc 2>/dev/null
         ln -s /root/bash_profile /root/.bash_profile 2>/dev/null
-        echo "============== SHELL MODE ============="
+        echo "============== QUICK SHELL END MODE ============="
         #/bin/bash autologin
         setsid bash -c 'exec bash autologin < /dev/tty1 >/dev/tty1 2>&1'
         echo
@@ -201,7 +201,7 @@ shell_cmd()
 # start quickshell
 start_quickshell()
 {
-    if [ "$(cmdline_parameter quickshell)$(cmdline_parameter qsb)" ] ; then
+    if [ "$(cmdline_parameter quickshell)$(cmdline_parameter qs)" ] ; then
         ln -s /root/bashrc /root/.bashrc
         ln -s /root/bash_profile /root/.bash_profile
         mkdir -p /mnt
@@ -790,6 +790,22 @@ mount_cifs()
         echo $2/$(basename $SHARE)
     fi
 }
+# Mount rsync filesystem from the given server
+# $1 = server
+# $2 = mountdir
+#
+mount_rsync()
+{
+    debug_log "mount_rsync" "$*"
+    OPTIONS="--progress -a"
+    [ "$(cmdline_value $UIRD_NETFSOPT)" ] && OPTIONS="$(cmdline_value $UIRD_NETFSOPT)"
+    mkdir -p $2
+#    local SHARE=`echo $1 | sed s-^cifs://-- `
+   # if 
+        $BIN_RSYNC $OPTIONS $1/* $2/ #2>/dev/null ; then
+        #echo $2
+    #fi
+}
 
 
 # Format mountdir for device. This function used to append _cdrom or _removable
@@ -1276,6 +1292,7 @@ mount_data_source()
         echo $SOURCE | grep -iq ^"cifs://" && DATA_FROM=$(mount_cifs $SOURCE $MNT_DIR)
         echo $SOURCE | grep -iq ^"ssh://" && DATA_FROM=$(mount_sshfs $SOURCE $MNT_DIR)
         echo $SOURCE | grep -iq ^"ftp://" && DATA_FROM=$(mount_curlftpfs $SOURCE $MNT_DIR)
+        echo $SOURCE | grep -iq ^"rsync://" && mount_rsync $SOURCE $MNT_DIR && DATA_FROM=$MNT_DIR
     else
         DATA_FROM=$(find_data $SOURCE $MNT_DIR $SGN_CHECK)
         [ -b "$DATA_FROM" ] && mount_device $DATA_FROM $DST_DIR # mount block device
@@ -1680,7 +1697,7 @@ copy_to()
     mkdir -p "$2/$TARGET"
     echolog $yellow"  $3 $blue<- $purple$(basename $MODULE)"$green
     if [ -f "$BIN_RSYNC" ]; then
-        rsync --progress -a "$MODULE" "$2/$TARGET"
+        $BIN_RSYNC --progress -a "$MODULE" "$2/$TARGET"
     else
         cp "$MODULE" "$2/$TARGET"
     fi
