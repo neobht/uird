@@ -1,0 +1,3 @@
+[submodule "dracut"]
+	path = dracut
+	url = https://github.com/haraldh/dracut
