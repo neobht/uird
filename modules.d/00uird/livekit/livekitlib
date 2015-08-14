@@ -241,6 +241,41 @@ fatal()
     setsid sh -c 'exec sh < /dev/tty1 >/dev/tty1 2>&1'
 }
 
+#============================================================
+# MagOS debug functions
+#============================================================
+debug_mode() {
+if [ "$DEBUG_IS_ENABLED"  -o "$DEBUGMODE" == "yes" ] ; then
+name=$(basename $0)
+slash="/"
+[ "$(pwd)" == "/union" ] && slash=""
+if ! test -f  ${slash}var/log/magos/${name}.log ; then
+  echo "$0 --  debug mode enabled"
+  test -d ${slash}var/log/magos || mkdir -p ${slash}var/log/magos
+  echo $(date) >   ${slash}var/log/magos/${name}.log || echo "can not create log file"
+  $0 "$@" 2>&1 | tee -a ${slash}var/log/magos/${name}.log 
+  exit 0
+fi
+fi
+}
+
+echodebug() {
+[ "$DEBUG_IS_ENABLED"  -o "$DEBUGMODE" == "yes" ] && echo "$1"
+if [ -n "$2" ] ;then 
+  command=$2
+  shift
+  shift
+  if [ -z $1 ] ;then
+    $command 
+  else
+    $command "$@"
+  fi
+fi
+}
+
+
+
+
 # look into cmdline and echo $1 back if $1 is set
 # $1 = value name, case sensitive, for example 'debug'
 #
@@ -953,7 +988,7 @@ find_file()
 # $3 = check SGN
 find_data()
 {
-    debug_log "find_in_computer" "$*"
+    debug_log "find_data" "$*"
     local TIMEOUT RESULT
 
     TIMEOUT=$(cmdline_value scantimeout | sed -r 's/[^0-9]*([0-9]+).*/\1/') #'
@@ -1300,9 +1335,9 @@ mount_data_source()
     if [ -r "$DATA_FROM" ] ;then
         [ -d "$DATA_FROM" ] && mount_device $DATA_FROM $DST_DIR # mount dir
         [ -f "$DATA_FROM" ] && mount_device $DATA_FROM $DST_DIR # mount again, it may be loop device
-        echolog "$MOUNT_DATA_SOURCE_USING" $yellow$DATA_FROM
+        echolog "$MOUNT_DATA_SOURCE_USING" $yellow$DATA_FROM$default
     else
-        echolog $red"$MOUNT_DATA_SOURCE_NOT_FOUND"
+        echolog $red"$MOUNT_DATA_SOURCE_NOT_FOUND"$default
         rmdir $DST_DIR
     fi
 
@@ -1318,7 +1353,7 @@ init_layer()
     debug_log "init_layer" "$*"
 
     echo_green_star
-    echolog "$INIT_LAYER" $brown$(basename $2) " -> " $1
+    echolog "$INIT_LAYER" $brown$(basename $2) " -> " $1$default
 
     local NUM_SUBL FROM CMD_PARAM ARR_FROM DATAFROM DATA DATAMNTM
     NUM_SUBL=0
@@ -1369,7 +1404,7 @@ posix_test()
             rm $2/.empty1 $2/.empty2 2>/dev/null
 
         if [ $? -ne 0 ]; then
-            echolog $red"$POSIX_NOT_COMPATIBLE"
+            echolog $red"$POSIX_NOT_COMPATIBLE"$default
             rm $2/.empty1 $2/.empty2 2>/dev/null
             mkdir -p $1
             posixovl -F $1 -- -o attr_timeout=300,entry_timeout=300,negative_timeout=300,kernel_cache,allow_other
@@ -1394,7 +1429,7 @@ setup_config()
     [ -f "$LAYER_BASE/1/$INIFILE" ] && PATHINI="$LAYER_BASE/1/$INIFILE"
     [ -f "$LAYER_BASE/2/$INIFILE" ] && PATHINI="$LAYER_BASE/2/$INIFILE"
 #    [ -f "$DATAMNT/0/$INIFILE" ] && PATHINI="$DATAMNT/0/$INIFILE"
-    [ -z "$PATHINI" ] && echolog $red"$SETUP_CONFIG_NOTFOUND" || echolog "$SETUP_CONFIG_USING" $yellow"$PATHINI"
+    [ -z "$PATHINI" ] && echolog $red"$SETUP_CONFIG_NOTFOUND"$default || echolog "$SETUP_CONFIG_USING" $yellow"$PATHINI"$default
     [ -z "$PATHINI" ] && PATHINI=/dev/null
     egrep -v '^#|^$' "$PATHINI" | sed s-\\\\r-- | gzip > /memory/$LIVEKITNAME.ini.gz
     grep '^CMDLINE=' "$PATHINI" | sed s/^CMDLINE=// | tr -d [:cntrl:]\'\" >>/memory/cmdline
@@ -1413,7 +1448,7 @@ setup_changes()
     [ -z "$CHANGESVAL" ] && return
 
     echo_green_star
-    echolog "$SETUP_CHANGES" $brown"$2"
+    echolog "$SETUP_CHANGES" $brown"$2"$default
 
     if [ "$CHANGESVAL" -a "$CHANGESVAL" != "xzm" ]; then
         mount_data_source $CHANGESVAL $2 $1 ""
@@ -1441,7 +1476,7 @@ setup_machines()
     #In case we using lzm|xzm as changes= parameter
     if echo "$CHANGESVAL" | grep -q [XxLl][Zz][Mm]$ ;then
         echo_green_star
-        echolog "$SETUP_MACHINES" $yellow"$1"
+        echolog "$SETUP_MACHINES" $yellow"$1"$default
 
         mount_data_source $MACHINES $1 $2 ""
 
@@ -1501,7 +1536,7 @@ setup_homes()
     MNT_HOME=$2
     
     echo_green_star
-    echolog "$SETUP_HOMES" $brown"$(basename $LAYER_HOMES)" " -> " "$MNT_HOME"
+    echolog "$SETUP_HOMES" $brown"$(basename $LAYER_HOMES)" " -> " "$MNT_HOME"$default
     
     if [ "$HOMES" ]; then
 	for d_dirs in "$LAYER_HOMES"/*; do
@@ -1629,7 +1664,7 @@ union_append_bundles()
     CP=$(cmdline_value $UIRD_CP | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')
 
     echo_green_star
-    echolog "$UNION_APPEND_BUNDLES" $brown$1 
+    echolog "$UNION_APPEND_BUNDLES" $brown$1$default 
     list_modules "$1" | while read BUNDLE; do
     BUN="$(basename "$BUNDLE")"
     mkdir -p "$2/$BUN"
