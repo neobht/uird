@@ -304,7 +304,8 @@ cmdline_value()
     #VALUE=$(echo -n " " | eval echo $(cat - /proc/cmdline $ADDFILE $BASECFG 2>/dev/null | tr -s ";" "," ) | egrep -m1 -o "(^|[[:space:]])$1=[^[:space:]]+" | cut -d "=" -f 2- | head -n1)
     #ADD_VALUE=$(echo -n " " | eval echo $(cat - /proc/cmdline $ADDFILE $BASECFG 2>/dev/null | tr -s ";" ",") | egrep -m1 -o "(^|[[:space:]])$1\+=[^[:space:]]+" | cut -d "=" -f 2- | head -n1)
     VALUE=$(echo -n " " | cat - $ADDFILE 2>/dev/null | egrep -m1 -o "(^|[[:space:]])$1=[^[:space:]]+" | cut -d "=" -f 2- | head -n1)
-    ADD_VALUE=$(echo -n " " | cat - $ADDFILE 2>/dev/null  | egrep -m1 -o "(^|[[:space:]])$1\+=[^[:space:]]+" | cut -d "=" -f 2- | head -n1)
+    # ADD_VALUE=$(echo -n " " | cat - $ADDFILE 2>/dev/null  | egrep -m1 -o "(^|[[:space:]])$1\+=[^[:space:]]+" | cut -d "=" -f 2- | head -n1)
+    ADD_VALUE=$(echo -n " " | cat - $ADDFILE 2>/dev/null  | egrep -o "(^|[[:space:]])$1\+=[^[:space:]]+" | cut -d "=" -f 2- | tr [[:cntrl:]] , | sed s/,,*/,/g | sed s/^,// | sed s/,$//)
     [ -z $ADD_VALUE ]  &&  echo "$VALUE"  ||  echo "$VALUE,$ADD_VALUE"
 }
 
