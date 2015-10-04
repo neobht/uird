@@ -31,36 +31,6 @@ white='\033[0;37m'
 purple='\033[0;35m'
 default='\033[0m'
 
-
-# Messages
-INIT_UNION="Инициализация файловой системы AUFS"
-INIT_LAYER="Инициализация:"
-
-MOUNT_DATA_SOURCE="Поиск и инициализация источника:"
-MOUNT_DATA_SOURCE_USING="    используется источник:"
-MOUNT_DATA_SOURCE_NOT_FOUND="    источник не удалось найти или инициализировать"
-
-TESTING_FOR_POSIX="Тестирование файловой системы на совместимость с POSIX"
-POSIX_NOT_COMPATIBLE="    POSIX не поддерживается, используется POSIXOVL"
-POSIX_TEST="Запись не поддерживается, используется ОЗУ"
-
-SETUP_CONFIG="Поиск и инициализация файла конфигурации:"
-SETUP_CONFIG_USING="  используется файл конфигурации:"
-SETUP_CONFIG_NOTFOUND="  конфигурационный файл не удалось найти, используются параметры по-умолчанию"
-SETUP_CHANGES="Инициализация источника для персистентных изменений:"
-SETUP_CHANGES_USING="  используется для изменений:"
-SETUP_MACHINES="Инициализация источника для машинно-зависимых изменений:"
-SETUP_HOMES="Подключение источников для домашних директорий:"
-
-INIT_IFCFG="Инициализация сетевых сервисов"
-UNION_APPEND_BUNDLES="Подключение модулей в общий корень:"
-COPY_TO_RAM="Копирование данных в ОЗУ, это может занять длительное время, ожидайте..."
-COPY_TO_CACHE="Копирование данных в КЭШ, это может занять длительное время, ожидайте..."
-
-FIND_DATA=" - подождите, идет поиск и подключение источника\r"
-FSCK_DEVICE="Осуществляется проверка файловой системы: "
-MOUNT_DEVICE_ENC="Подключение шифрованной файловой системы: "
-
 # BINARY
 BIN_RSYNC=/sbin/rsync
 BIN_HTTPFS=/sbin/httpfs
@@ -72,6 +42,56 @@ BIN_FSCK=/sbin/fsck
 BIN_BTRFSCK=/sbin/btrfsck
 BIN_BLKID=/sbin/blkid.real
 BIN_LOSETUP=/sbin/losetup.real
+
+
+export TEXTDOMAIN="uird"
+export TEXTDOMAINDIR="/usr/share/locale"
+
+LANG=$(echo -n " "| cat - /proc/cmdline 2>/dev/null | tr -s ";" ","  | egrep -m1 -o "(^|[[:space:]])lang=[^[:space:]]+" | cut -d "=" -f 2-| head -n1)
+
+echo "$LANG"
+if [ "$LANG" = "" -o "$LANG" = "ru_RU" ];then 
+    LANG=ru_RU.UTF-8
+fi
+
+export LANG=$LANG
+
+[ -f $BIN_GETTEXT ] && GETTEXT=gettext || GETTEXT=echo
+
+# Messages
+INIT_UNION=$($GETTEXT "Initializing filesystem AUFS")
+INIT_LAYER=$($GETTEXT "Initializing:")
+
+MOUNT_DATA_SOURCE=$($GETTEXT "Searching and initializing source:")
+MOUNT_DATA_SOURCE_USING=$($GETTEXT "    using source:")
+MOUNT_DATA_SOURCE_NOT_FOUND=$($GETTEXT "    source not found or not initialized")
+
+TESTING_FOR_POSIX=$($GETTEXT "Testing filesystem for POSIX compatibility")
+POSIX_NOT_COMPATIBLE=$($GETTEXT "    POSIX not available, using POSIXOVL")
+POSIX_TEST=$($GETTEXT "Writing is not available, using RAM")
+
+SETUP_CONFIG=$($GETTEXT "Searching and initializing configuration file:")
+SETUP_CONFIG_USING=$($GETTEXT "  using configuration file:")
+SETUP_CONFIG_NOTFOUND=$($GETTEXT "  configuration file not found, using default parameters")
+SETUP_CHANGES=$($GETTEXT "Initializing source for persistent changes:")
+SETUP_CHANGES_USING=$($GETTEXT "  using for changes:")
+SETUP_MACHINES=$($GETTEXT "Initializing source for machine-depended changes:")
+SETUP_MACHINES_MOD=$($GETTEXT "Searching bundle for machine-depended changes:")
+SETUP_MACHINES_UNPACKING=$($GETTEXT "unpacking")
+SETUP_MACHINES_TO_RAM=$($GETTEXT "to RAM")
+SETUP_HOMES=$($GETTEXT "Mounting sources for homes directories:")
+
+INIT_IFCFG=$($GETTEXT "Initializing network services")
+UNION_APPEND_BUNDLES=$($GETTEXT "Mounting bundles to root:")
+COPY_TO_RAM=$($GETTEXT "Copy data to RAM, this may take a long time, waiting...")
+COPY_TO_CACHE=$($GETTEXT "Copy data to CACHE, this may take a long time, waiting...")
+
+FIND_DATA=$($GETTEXT " - waiting, it is searching and mounting source\r")
+FSCK_DEVICE=$($GETTEXT "Checking filesystem: ")
+MOUNT_DEVICE_ENC=$($GETTEXT "Mounting encrypted filesystem: ")
+
+NOT_ENOUGH_MEMORY=$($GETTEXT "not enough memory.")
+
 
 
 ##### UIRD cmdline parameters aliases
@@ -162,7 +182,7 @@ echolog()
     log "$@"
     key="$1"
     shift
-    [ -f $BIN_GETTEXT ] && echo -e "$(gettext -s "$key") $@" >/dev/console 2>/dev/console || echo -e "$key" $@ >/dev/console 2>/dev/console
+    echo -e "$key" $@ >/dev/console 2>/dev/console
 }
 
 # show information about the debug shell
@@ -1082,7 +1102,7 @@ locale_id()
     # but only if there is just ONE directory, nothing more
     # (so we are sure which one to use)
     if [ "$LOCALE" = "" ]; then
-        LOCALE=ru_RU
+        LOCALE=ru_RU.UTF-8
     fi
 
     if [ "$LOCALE" != "" ]; then
@@ -1493,7 +1513,7 @@ setup_machines()
             fi
         else
             echo_green_star
-            echolog "Поиск модуля машинно-зависимых изменений:" $yellow"$CHANGESVAL"$default
+            echolog $SETUP_MACHINES_MOD $yellow"$CHANGESVAL"$default
             SOURCE=$CHANGESVAL
             MNT_DIR=$4
             if [ "$(echo $SOURCE | grep "://")" != ""  ]; then
@@ -1511,7 +1531,7 @@ setup_machines()
 
         fi
         if [ -f "$CHANGESMNT" ] ;then
-            echolog $default"  распаковка $yellow$CHANGESMNT$default в ОЗУ"
+            echolog $default"  $SETUP_MACHINES_UNPACKING $yellow$CHANGESMNT$default $SETUP_MACHINES_TO_RAM"
             unsquashfs -f -dest $3 "$CHANGESMNT" >/dev/null 2>&1
         fi
         echo "$CHANGESMNT" | sed s=/machines/static/=/machines/dynamic/= > $3/.savetomodule
@@ -1738,7 +1758,7 @@ copy_to()
         cp "$MODULE" "$2/$TARGET"
     fi
 
-    if [ $? -ne 0 ]; then fatal "Not enough memory."; fi
+    if [ $? -ne 0 ]; then fatal "$NOT_ENOUGH_MEMORY"; fi
     #      echo $2
 done
 }

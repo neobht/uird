@@ -1,0 +1,134 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2015-10-04 22:37+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: livekitlib:53
+msgid "Initializing filesystem AUFS"
+msgstr "Инициализация файловой системы AUFS"
+
+#: livekitlib:54
+msgid "Initializing:"
+msgstr "Инициализация:"
+
+#: livekitlib:56
+msgid "Searching and initializing source:"
+msgstr "Поиск и инициализация источника:"
+
+#: livekitlib:57
+msgid "    using source:"
+msgstr "    используется источник:"
+
+#: livekitlib:58
+msgid "    source not found or not initialized"
+msgstr "    источник не найден или не инициализирован"
+
+#: livekitlib:60
+msgid "Testing filesystem for POSIX compatibility"
+msgstr "Тестирование файловой системы на совместимость с POSIX"
+
+#: livekitlib:61
+msgid "    POSIX not available, using POSIXOVL"
+msgstr "    POSIX не поддерживается, используется POSIXOVL"
+
+#: livekitlib:62
+msgid "Writing is not available, using RAM"
+msgstr "Запись не поддерживается, используется ОЗУ"
+
+#: livekitlib:64
+msgid "Searching and initializing configuration file:"
+msgstr "Поиск и инициализация файла конфигурации:"
+
+#: livekitlib:65
+msgid "  using configuration file:"
+msgstr "  используется конфигурационный файл:"
+
+#: livekitlib:66
+msgid "  configuration file not found, using default parameters"
+msgstr "  конфигурационный файл не найден, используются параметры по-умолчанию"
+
+#: livekitlib:67
+msgid "Initializing source for persistent changes:"
+msgstr "Инициализация источника персистентных изменений:"
+
+#: livekitlib:68
+msgid "  using for changes:"
+msgstr "  используется для изменений:"
+
+#: livekitlib:69
+msgid "Initializing source for machine-depended changes:"
+msgstr "Инициализация источника машинно-зависимых изменений:"
+
+#: livekitlib:70
+msgid "Searching bundle for machine-depended changes:"
+msgstr "Поиск модуля машинно-зависимых изменений:"
+
+#: livekitlib:71
+msgid "unpacking"
+msgstr "распаковка"
+
+#: livekitlib:72
+msgid "to RAM"
+msgstr "в ОЗУ"
+
+#: livekitlib:73
+msgid "Mounting sources for homes directories:"
+msgstr "Подключение источников для домашних директорий:"
+
+#: livekitlib:75
+msgid "Initializing network services"
+msgstr "Инициализация сетевых сервисов"
+
+#: livekitlib:76
+msgid "Mounting bundles to root:"
+msgstr "Подключение модулей в общий корень:"
+
+#: livekitlib:77
+msgid "Copy data to RAM, this may take a long time, waiting..."
+msgstr "Копирование в ОЗУ, это может занять длительное время, ожидайте..."
+
+#: livekitlib:78
+msgid "Copy data to CACHE, this may take a long time, waiting..."
+msgstr "Копирование в КЭШ, это может занять длительное время, ожидайте..."
+
+#: livekitlib:80
+msgid " - waiting, it is searching and mounting source\\r"
+msgstr " - ожидайте, идет поиск и подключение источника\\r"
+
+#: livekitlib:81
+msgid "Checking filesystem: "
+msgstr "Идет проверка файловой системы: "
+
+#: livekitlib:82
+msgid "Mounting encrypted filesystem: "
+msgstr "Подключение шифрованной файловой системы: "
+
+#: livekitlib:84
+msgid "not enough memory."
+msgstr "не достаточно памяти."
+
+#: uird-init:12
+msgid "Starting UIRD init <http://magos-linux.ru>"
+msgstr "Запускается UIRD init <http://magos-linux.ru>"
+
+#: uird-init:13
+msgid "UIRD init is finished, starting"
+msgstr "UIRD init завершил работу, запускается"
+
+#: uird-init:14
+msgid "Running rc.preinit scripts"
+msgstr "Выполняются rc.preinit скрипты"

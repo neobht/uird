@@ -1,0 +1,134 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2015-10-04 22:36+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: livekitlib:53
+msgid "Initializing filesystem AUFS"
+msgstr ""
+
+#: livekitlib:54
+msgid "Initializing:"
+msgstr ""
+
+#: livekitlib:56
+msgid "Searching and initializing source:"
+msgstr ""
+
+#: livekitlib:57
+msgid "    using source:"
+msgstr ""
+
+#: livekitlib:58
+msgid "    source not found or not initialized"
+msgstr ""
+
+#: livekitlib:60
+msgid "Testing filesystem for POSIX compatibility"
+msgstr ""
+
+#: livekitlib:61
+msgid "    POSIX not available, using POSIXOVL"
+msgstr ""
+
+#: livekitlib:62
+msgid "Writing is not available, using RAM"
+msgstr ""
+
+#: livekitlib:64
+msgid "Searching and initializing configuration file:"
+msgstr ""
+
+#: livekitlib:65
+msgid "  using configuration file:"
+msgstr ""
+
+#: livekitlib:66
+msgid "  configuration file not found, using default parameters"
+msgstr ""
+
+#: livekitlib:67
+msgid "Initializing source for persistent changes:"
+msgstr ""
+
+#: livekitlib:68
+msgid "  using for changes:"
+msgstr ""
+
+#: livekitlib:69
+msgid "Initializing source for machine-depended changes:"
+msgstr ""
+
+#: livekitlib:70
+msgid "Searching bundle for machine-depended changes:"
+msgstr ""
+
+#: livekitlib:71
+msgid "unpacking"
+msgstr ""
+
+#: livekitlib:72
+msgid "to RAM"
+msgstr ""
+
+#: livekitlib:73
+msgid "Mounting sources for homes directories:"
+msgstr ""
+
+#: livekitlib:75
+msgid "Initializing network services"
+msgstr ""
+
+#: livekitlib:76
+msgid "Mounting bundles to root:"
+msgstr ""
+
+#: livekitlib:77
+msgid "Copy data to RAM, this may take a long time, waiting..."
+msgstr ""
+
+#: livekitlib:78
+msgid "Copy data to CACHE, this may take a long time, waiting..."
+msgstr ""
+
+#: livekitlib:80
+msgid " - waiting, it is searching and mounting source\\r"
+msgstr ""
+
+#: livekitlib:81
+msgid "Checking filesystem: "
+msgstr ""
+
+#: livekitlib:82
+msgid "Mounting encrypted filesystem: "
+msgstr ""
+
+#: livekitlib:84
+msgid "not enough memory."
+msgstr ""
+
+#: uird-init:12
+msgid "Starting UIRD init <http://magos-linux.ru>"
+msgstr ""
+
+#: uird-init:13
+msgid "UIRD init is finished, starting"
+msgstr ""
+
+#: uird-init:14
+msgid "Running rc.preinit scripts"
+msgstr ""
