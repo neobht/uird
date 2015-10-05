@@ -30,11 +30,11 @@ msgid "Searching and initializing source:"
 msgstr ""
 
 #: livekitlib:57
-msgid "    using source:"
+msgid "using source:"
 msgstr ""
 
 #: livekitlib:58
-msgid "    source not found or not initialized"
+msgid "source not found or not initialized"
 msgstr ""
 
 #: livekitlib:60
@@ -42,7 +42,7 @@ msgid "Testing filesystem for POSIX compatibility"
 msgstr ""
 
 #: livekitlib:61
-msgid "    POSIX not available, using POSIXOVL"
+msgid "POSIX not available, using POSIXOVL"
 msgstr ""
 
 #: livekitlib:62
@@ -54,11 +54,11 @@ msgid "Searching and initializing configuration file:"
 msgstr ""
 
 #: livekitlib:65
-msgid "  using configuration file:"
+msgid "using configuration file:"
 msgstr ""
 
 #: livekitlib:66
-msgid "  configuration file not found, using default parameters"
+msgid "configuration file not found, using default parameters"
 msgstr ""
 
 #: livekitlib:67
@@ -66,7 +66,7 @@ msgid "Initializing source for persistent changes:"
 msgstr ""
 
 #: livekitlib:68
-msgid "  using for changes:"
+msgid "using for changes:"
 msgstr ""
 
 #: livekitlib:69
@@ -106,7 +106,7 @@ msgid "Copy data to CACHE, this may take a long time, waiting..."
 msgstr ""
 
 #: livekitlib:80
-msgid " - waiting, it is searching and mounting source\\r"
+msgid "waiting, it is searching and mounting source\\r"
 msgstr ""
 
 #: livekitlib:81

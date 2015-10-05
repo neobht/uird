@@ -30,20 +30,20 @@ msgid "Searching and initializing source:"
 msgstr "Поиск и инициализация источника:"
 
 #: livekitlib:57
-msgid "    using source:"
-msgstr "    используется источник:"
+msgid "using source:"
+msgstr "используется источник:"
 
 #: livekitlib:58
-msgid "    source not found or not initialized"
-msgstr "    источник не найден или не инициализирован"
+msgid "source not found or not initialized"
+msgstr "источник не найден или не инициализирован"
 
 #: livekitlib:60
 msgid "Testing filesystem for POSIX compatibility"
 msgstr "Тестирование файловой системы на совместимость с POSIX"
 
 #: livekitlib:61
-msgid "    POSIX not available, using POSIXOVL"
-msgstr "    POSIX не поддерживается, используется POSIXOVL"
+msgid "POSIX not available, using POSIXOVL"
+msgstr "POSIX не поддерживается, используется POSIXOVL"
 
 #: livekitlib:62
 msgid "Writing is not available, using RAM"
@@ -54,20 +54,20 @@ msgid "Searching and initializing configuration file:"
 msgstr "Поиск и инициализация файла конфигурации:"
 
 #: livekitlib:65
-msgid "  using configuration file:"
-msgstr "  используется конфигурационный файл:"
+msgid "using configuration file:"
+msgstr "используется конфигурационный файл:"
 
 #: livekitlib:66
-msgid "  configuration file not found, using default parameters"
-msgstr "  конфигурационный файл не найден, используются параметры по-умолчанию"
+msgid "configuration file not found, using default parameters"
+msgstr "конфигурационный файл не найден, используются параметры по-умолчанию"
 
 #: livekitlib:67
 msgid "Initializing source for persistent changes:"
 msgstr "Инициализация источника персистентных изменений:"
 
 #: livekitlib:68
-msgid "  using for changes:"
-msgstr "  используется для изменений:"
+msgid "using for changes:"
+msgstr "используется для изменений:"
 
 #: livekitlib:69
 msgid "Initializing source for machine-depended changes:"
@@ -106,8 +106,8 @@ msgid "Copy data to CACHE, this may take a long time, waiting..."
 msgstr "Копирование в КЭШ, это может занять длительное время, ожидайте..."
 
 #: livekitlib:80
-msgid " - waiting, it is searching and mounting source\\r"
-msgstr " - ожидайте, идет поиск и подключение источника\\r"
+msgid "waiting, it is searching and mounting source\\r"
+msgstr "ожидайте, идет поиск и подключение источника\\r"
 
 #: livekitlib:81
 msgid "Checking filesystem: "
