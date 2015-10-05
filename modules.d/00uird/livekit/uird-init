@@ -38,6 +38,7 @@ echo "0" >/proc/sys/kernel/printk
 loadfont < /usr/lib/consolefonts/ter-u16n.psf >/dev/null
 loadkeys /usr/lib/kbd/ru.map >/dev/null
 
+echo $LANG
 header $HEADER_START 
 header " [ $(cat /uird_version) ]"
 

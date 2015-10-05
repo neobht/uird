@@ -49,7 +49,7 @@ export TEXTDOMAINDIR="/usr/share/locale"
 
 LANG=$(echo -n " "| cat - /proc/cmdline 2>/dev/null | tr -s ";" ","  | egrep -m1 -o "(^|[[:space:]])lang=[^[:space:]]+" | cut -d "=" -f 2-| head -n1)
 
-echo "$LANG"
+#echo "$LANG"
 if [ "$LANG" = "" -o "$LANG" = "ru_RU" ];then 
     LANG=ru_RU.UTF-8
 fi
