@@ -82,7 +82,7 @@ eval echo $(cat /proc/cmdline /memory/cmdline 2>/dev/null | tr -s ";" "," ) >/me
 [ "help" = "$(cmdline_value $UIRD_CHANGESS)" ]    && (cat /usr/share/uird.help/uird.changes.help      | more) && is_help=help
 [ "help" = "$(cmdline_value $UIRD_MACHINES)" ]    && (cat /usr/share/uird.help/uird.machines.help     | more) && is_help=help
 [ "help" = "$(cmdline_value $UIRD_FIND_PARAMS)" ] && (cat /usr/share/uird.help/uird.find_params.help  | more) && is_help=help
-[ "help" = "$(cmdline_parameter $UIRD_HELP)" ]    && (cat /usr/share/uird.help/*.help                 | more) && is_help=help
+[ "$(cmdline_parameter $UIRD_HELP)" ]             && (cat /usr/share/uird.help/*.help                 | more) && is_help=help
 
 shell_cmd "$is_help"
 
