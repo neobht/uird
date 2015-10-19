@@ -132,3 +132,7 @@ msgstr ""
 #: uird-init:14
 msgid "Running rc.preinit scripts"
 msgstr ""
+
+#: uird-init:15
+msgid "Updating directory /mnt"
+msgstr ""

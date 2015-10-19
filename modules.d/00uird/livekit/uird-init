@@ -12,6 +12,7 @@
 HEADER_START=$($GETTEXT "Starting UIRD init <http://magos-linux.ru>")
 HEADER_END=$($GETTEXT "UIRD init is finished, starting")
 RC_PREINIT=$($GETTEXT "Running rc.preinit scripts")
+MNT_REFRESH=$($GETTEXT "Updating directory /mnt")
 
 
 #transfer_initramfs
@@ -42,8 +43,10 @@ echo $LANG
 header $HEADER_START 
 header " [ $(cat /uird_version) ]"
 
+
 debug_start
 debug_shell
+
 
 [ -d /lib/modules/"$(uname -r)" ] || [ -d /lib64/modules/"$(uname -r)" ] || ( echolog "!!! Ядро и модули ядра не совпадают !!!" && exit 1)
 
@@ -57,9 +60,39 @@ mkdir -p $MEMORY
 getcmdline >/memory/cmdline
 eval echo $(cat /proc/cmdline /memory/cmdline 2>/dev/null | tr -s ";" "," ) >/memory/cmdline
 
+# print help
+
+[ "help" = "$(cmdline_value $UIRD_BASECFG)" ]     && (cat /usr/share/uird.help/uird.basecfg.help      | more) && is_help=help
+[ "help" = "$(cmdline_value $UIRD_CONFIG)" ]      && (cat /usr/share/uird.help/uird.config.help       | more) && is_help=help
+[ "help" = "$(cmdline_value $UIRD_SGNFILES)" ]    && (cat /usr/share/uird.help/uird.sgnfiles.help     | more) && is_help=help
+[ "help" = "$(cmdline_value $UIRD_RO)" ]          && (cat /usr/share/uird.help/uird.ro.help           | more) && is_help=help
+[ "help" = "$(cmdline_value $UIRD_RW)" ]          && (cat /usr/share/uird.help/uird.rw.help           | more) && is_help=help
+[ "help" = "$(cmdline_value $UIRD_CP)" ]          && (cat /usr/share/uird.help/uird.cp.help           | more) && is_help=help
+[ "help" = "$(cmdline_value $UIRD_COPY2RAM)" ]    && (cat /usr/share/uird.help/uird.copy2ram.help     | more) && is_help=help
+[ "help" = "$(cmdline_value $UIRD_COPY2CACHE)" ]  && (cat /usr/share/uird.help/uird.copy2cache.help   | more) && is_help=help
+[ "help" = "$(cmdline_value $UIRD_RAMSIZE)" ]     && (cat /usr/share/uird.help/uird.ramsize.help      | more) && is_help=help
+[ "help" = "$(cmdline_value $UIRD_IP)" ]          && (cat /usr/share/uird.help/uird.ip.help           | more) && is_help=help
+[ "help" = "$(cmdline_value $UIRD_NETFSOPT)" ]    && (cat /usr/share/uird.help/uird.netfsopt.help     | more) && is_help=help
+[ "help" = "$(cmdline_value $UIRD_LOAD)" ]        && (cat /usr/share/uird.help/uird.load.help         | more) && is_help=help
+[ "help" = "$(cmdline_value $UIRD_NOLOAD)" ]      && (cat /usr/share/uird.help/uird.noload.help       | more) && is_help=help
+[ "help" = "$(cmdline_value $UIRD_FROM)" ]        && (cat /usr/share/uird.help/uird.from.help         | more) && is_help=help
+[ "help" = "$(cmdline_value $UIRD_CACHE)" ]       && (cat /usr/share/uird.help/uird.cache.help        | more) && is_help=help
+[ "help" = "$(cmdline_value $UIRD_HOMES)" ]       && (cat /usr/share/uird.help/uird.homes.help        | more) && is_help=help
+[ "help" = "$(cmdline_value $UIRD_HOME)" ]        && (cat /usr/share/uird.help/uird.home.help         | more) && is_help=help
+[ "help" = "$(cmdline_value $UIRD_CHANGESS)" ]    && (cat /usr/share/uird.help/uird.changes.help      | more) && is_help=help
+[ "help" = "$(cmdline_value $UIRD_MACHINES)" ]    && (cat /usr/share/uird.help/uird.machines.help     | more) && is_help=help
+[ "help" = "$(cmdline_value $UIRD_FIND_PARAMS)" ] && (cat /usr/share/uird.help/uird.find_params.help  | more) && is_help=help
+[ "help" = "$(cmdline_parameter $UIRD_HELP)" ]    && (cat /usr/share/uird.help/*.help                 | more) && is_help=help
+
+shell_cmd "$is_help"
+
+debug_shell
+
+
 # start quickshell
 start_quickshell
 debug_shell
+
 
 # Resume from swsuspend
 resume_from_suspend
@@ -149,7 +182,7 @@ debug_shell
 #touch $UNION/etc/fstab >/dev/null
 #fstab_update $UNION
 echo_green_star
-echolog "Обновление директории /mnt "
+echolog $MNT_REFRESH
 rmdir $UNION/mnt/* 2>/dev/null
 debug_shell
 
@@ -182,4 +215,4 @@ mount --move $MEMORY $UNION/$MEMORY
 header "$HEADER_END $LIVEKITNAME"
 debug_shell
 
-shell_cmd
+shell_cmd "qse"

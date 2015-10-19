@@ -7,8 +7,8 @@ Also there are available some additional commands (see output of 'ls /usr/bin'):
  automount - to remount all disks, and to plug new USB drives;
  exit      - to continue  booting MagOS (only works in first console);
  poweroff  - to power off :)
- Ctrl + o  - to enable/disable bash-commander (embedded file manager).
+ mc  - to start midnight-commander.
 
-Bash-commander hotkeys are:
+Midnight-commander hotkeys are:
  F1-help, F2-change dir, F3-view, F4-edit, F5-copy,
- F6-move, F7-mkdir, F8-delete, F9-logout, F10-poweroff.
+ F6-move, F7-mkdir, F8-delete, F9-menu, F10-exit.

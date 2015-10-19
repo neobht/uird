@@ -24,7 +24,7 @@ install() {
     inst "$moddir/livekit/i18n/ru.mo" "/usr/share/locale/ru/LC_MESSAGES/uird.mo"
 
     #binaries
-    inst "$moddir/bash-$(uname -i)" "/bin/bash"
+#    inst "$moddir/bash-$(uname -i)" "/bin/bash"
     [ -x "$initdir/bin/bash" ] || inst $(type -p bash) "/bin/bash"
     inst $(type -p blkid) /sbin/blkid.real
     inst $(type -p losetup) /sbin/losetup.real

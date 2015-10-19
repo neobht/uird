@@ -114,6 +114,8 @@ NOT_ENOUGH_MEMORY=$($GETTEXT "not enough memory.")
 # uird.homes[+]=             - источники, где хранятся домашние директории пользователей 
 # uird.changes=           - источник, где хранить персистентные изменения
 # uird.machines=          - источник, где хранятся машинно-зависимые персистентные изменения
+# uird.find_params[+]=          - параметры для утилиты find при поиске модулей
+# uird.help               - печатает подсказку по параметрам UIRD
 
 [ -f "/uird_configs/uird_aliases" ] && . /uird_configs/uird_aliases
 
@@ -136,6 +138,8 @@ NOT_ENOUGH_MEMORY=$($GETTEXT "not enough memory.")
 [ -z $UIRD_HOME ] && UIRD_HOME=uird.home
 [ -z $UIRD_CHANGES ] && UIRD_CHANGES=uird.changes
 [ -z $UIRD_MACHINES ] && UIRD_MACHINES=uird.machines
+[ -z $UIRD_FIND_PARAMS ] && UIRD_FIND_PARAMS=uird.find_params
+[ -z $UIRD_HELP ] && UIRD_HELP=uird.help
 
 # =================================================================
 # debug and output functions
@@ -207,15 +211,24 @@ debug_shell()
     fi
 }
 # start shell
+# if $1==help then start shell
 shell_cmd()
 {
-    if [ "$(cmdline_parameter qse)" ]; then 
+    if [ "$(cmdline_parameter qse)" -a "$1" = "qse" ]; then 
         ln -s /root/bashrc /root/.bashrc 2>/dev/null
         ln -s /root/bash_profile /root/.bash_profile 2>/dev/null
-        echo "============== QUICK SHELL END MODE ============="
+        echo
+        echo "============== QUICK SHELL MODE ============="
         #/bin/bash autologin
         setsid bash -c 'exec bash autologin < /dev/tty1 >/dev/tty1 2>&1'
         echo
+    elif [ "$1" = "help" ];then 
+        ln -s /root/bashrc /root/.bashrc 2>/dev/null
+        ln -s /root/bash_profile /root/.bash_profile 2>/dev/null
+        echo
+        echo "============== QUICK SHELL MODE ============="
+        setsid bash -c 'exec bash autologin < /dev/tty1 >/dev/tty1 2>&1'
+        reboot -f
     fi
 }
 # start quickshell
@@ -237,7 +250,6 @@ start_quickshell()
         setsid bash -c 'exec bash autologin < /dev/tty1 >/dev/tty1 2>&1'
         cd /
         umount /mnt/*
-        export LANG=""
         echo "continue...."
     fi
 }
@@ -321,7 +333,7 @@ cmdline_value()
     ADDFILE=/memory/cmdline
     #BASECFG=/memory/basecfg.ini
     #   [ -f /livekitlib ] || ADDFILE=/mnt/$ADDFILE
-    #VALUE=$(echo -n " " | eval echo $(cat - /proc/cmdline $ADDFILE $BASECFG 2>/dev/null | tr -s ";" "," ) | egrep -m1 -o "(^|[[:space:]])$1=[^[:space:]]+" | cut -d "=" -f 2- | head -n1)
+    ##VALUE=$(echo -n " " | eval echo $(cat - /proc/cmdline $ADDFILE $BASECFG 2>/dev/null | tr -s ";" "," ) | egrep -m1 -o "(^|[[:space:]])$1=[^[:space:]]+" | cut -d "=" -f 2- | head -n1)
     #ADD_VALUE=$(echo -n " " | eval echo $(cat - /proc/cmdline $ADDFILE $BASECFG 2>/dev/null | tr -s ";" ",") | egrep -m1 -o "(^|[[:space:]])$1\+=[^[:space:]]+" | cut -d "=" -f 2- | head -n1)
     VALUE=$(echo -n " " | cat - $ADDFILE 2>/dev/null | egrep -m1 -o "(^|[[:space:]])$1=[^[:space:]]+" | cut -d "=" -f 2- | head -n1)
     # ADD_VALUE=$(echo -n " " | cat - $ADDFILE 2>/dev/null  | egrep -m1 -o "(^|[[:space:]])$1\+=[^[:space:]]+" | cut -d "=" -f 2- | head -n1)
@@ -1637,10 +1649,12 @@ persistent_changes()
 find_modules()
 {
     debug_log "find_modules" "$*"
-    local ARR_FILTER filter
+    local ARR_FILTER FIND_PARAMS filter
     ARR_FILTER=$(echo $(cmdline_value $UIRD_RO)","$(cmdline_value $UIRD_RW)","$(cmdline_value $UIRD_CP) | tr -s ";," " ")
+    FIND_PARAMS=$(echo $(cmdline_value $UIRD_FIND_PARAMS) | tr ";,_" " ")
+    echolog "======================"$FIND_PARAMS"================="
     for filter in $ARR_FILTER; do
-        find "$1" -path "$filter"  2>/dev/null | sort 
+        find "$1" -path "$filter" $FIND_PARAMS 2>/dev/null | sort 
     done
 }
 

@@ -1,18 +1,18 @@
-# SOME DESCRIPTIVE TITLE.
+# UIRD MESSAGES.
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+# Anton Goroshkin <neobht@gmail.com>, YEAR.
 #
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: PACKAGE VERSION\n"
+"Project-Id-Version: 1.1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-10-04 22:37+0300\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
-"Language: \n"
+"POT-Creation-Date: 2015-10-20 00:00+0700\n"
+"PO-Revision-Date: 2015-10-20 00:00+0700\n"
+"Last-Translator: Anton Goroshkin <neobht@gmail.com>\n"
+"Language-Team: Russian <http://magos-linux.ru>\n"
+"Language: RU \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -110,12 +110,12 @@ msgid "waiting, it is searching and mounting source\\r"
 msgstr "ожидайте, идет поиск и подключение источника\\r"
 
 #: livekitlib:81
-msgid "Checking filesystem: "
-msgstr "Идет проверка файловой системы: "
+msgid "Checking filesystem:"
+msgstr "Идет проверка файловой системы:"
 
 #: livekitlib:82
-msgid "Mounting encrypted filesystem: "
-msgstr "Подключение шифрованной файловой системы: "
+msgid "Mounting encrypted filesystem:"
+msgstr "Подключение шифрованной файловой системы:"
 
 #: livekitlib:84
 msgid "not enough memory."
@@ -132,3 +132,7 @@ msgstr "UIRD init завершил работу, запускается"
 #: uird-init:14
 msgid "Running rc.preinit scripts"
 msgstr "Выполняются rc.preinit скрипты"
+
+#: uird-init:15
+msgid "Updating directory /mnt"
+msgstr "Обновление директории /mnt"
