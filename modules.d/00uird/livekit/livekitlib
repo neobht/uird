@@ -1652,7 +1652,7 @@ find_modules()
     local ARR_FILTER FIND_PARAMS filter
     ARR_FILTER=$(echo $(cmdline_value $UIRD_RO)","$(cmdline_value $UIRD_RW)","$(cmdline_value $UIRD_CP) | tr -s ";," " ")
     FIND_PARAMS=$(echo $(cmdline_value $UIRD_FIND_PARAMS) | tr ";,_" " ")
-    echolog "======================"$FIND_PARAMS"================="
+#    echolog "======================"$FIND_PARAMS"================="
     for filter in $ARR_FILTER; do
         find "$1" -path "$filter" $FIND_PARAMS 2>/dev/null | sort 
     done

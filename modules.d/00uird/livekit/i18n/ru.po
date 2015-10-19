@@ -1,7 +1,7 @@
 # UIRD MESSAGES.
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
-# Anton Goroshkin <neobht@gmail.com>, YEAR.
+# Anton Goroshkin <neobht@gmail.com>, 2015.
 #
 #, fuzzy
 msgid ""
