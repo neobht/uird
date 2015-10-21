@@ -19,5 +19,5 @@ uird.from=cifs://server/path/... - источник доступный по CIFS
 
 Пример:
 uird.from=/MagOS;/MagOS-Data;ftp://myftp.com/mydir/
-запись означает: найти на доступных физических носителях каталоги MagOS и MagOS-Data; 
+Такая запись означает: найти на доступных физических носителях каталоги MagOS и MagOS-Data; 
 использовать в качестве первого источника MagOS, второго MagOS-Data, третьего каталог mydir сервера ftp://myftp.com
