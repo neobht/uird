@@ -61,6 +61,7 @@ getcmdline >/memory/cmdline
 eval echo $(cat /proc/cmdline /memory/cmdline 2>/dev/null | tr -s ";" "," ) >/memory/cmdline
 
 # print help
+if cat /memory/cmdline |grep -q help ; then
 
 [ "help" = "$(cmdline_value $UIRD_BASECFG)" ]     && (cat /usr/share/uird.help/uird.basecfg.help      | more) && is_help=help
 [ "help" = "$(cmdline_value $UIRD_CONFIG)" ]      && (cat /usr/share/uird.help/uird.config.help       | more) && is_help=help
@@ -85,6 +86,8 @@ eval echo $(cat /proc/cmdline /memory/cmdline 2>/dev/null | tr -s ";" "," ) >/me
 [ "$(cmdline_parameter $UIRD_HELP)" ]             && (cat /usr/share/uird.help/*.help                 | more) && is_help=help
 
 shell_cmd "$is_help"
+
+fi
 
 debug_shell
 
