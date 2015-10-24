@@ -4,18 +4,18 @@ uird.homes= -	спискок источников которые будут об
 				(здеь хранятся домашние директорий пользователей) Разделитель в списке ";" или "," 
 				Более приоритетным является самый первый источник, затем в порядке перечисления уменьшается приоритет. 
 				Отличается от uird.home  наличием каскадного монтирования источников. 
-				Если каскадное монтирование для домашних каталогов не требуется использование uird.home предпочтительнее.
+				Если каскадное монтирование для домашних каталогов не требуется, использование uird.home предпочтительнее.
 
 Допустимые значения:
-uird.from=/path/dir 			- директория (надо уточнить где ведется поиск)
-uird.from=/dev/[..]/path/dir 	- директория на заданном носителе
-uird.from=/dev/[..]/file.img 	- образ диска (надо уточнить где ведется поиск)
-uird.from=/dev/[..]/file.xzm 	- модуль squashfs    (надо уточнить где ведется поиск, и вообще можно ли модуль)
-uird.from=http://server/path/... - источник доступный по HTTP (используется httpfs)
-uird.from=ssh://server/path/... - источник доступный по SSH (используется sshfs)
-uird.from=ftp://server/path/... - источник доступный по FTP (используется curlftpfs)
-uird.from=nfs://server/path/... - источник доступный по NFS
-uird.from=cifs://server/path/... - источник доступный по CIFS
+uird.homes=/path/dir 			- директория (надо уточнить где ведется поиск)
+uird.homes=/dev/[..]/path/dir 	- директория на заданном носителе
+uird.homes=/dev/[..]/file.img 	- образ диска на заданном носителе
+uird.homes=/dev/[..]/file.xzm 	- модуль squashfs    (надо уточнить где ведется поиск, и вообще можно ли модуль)
+uird.homes=http://server/path/... - источник доступный по HTTP (используется httpfs)
+uird.homes=ssh://server/path/... - источник доступный по SSH (используется sshfs)
+uird.homes=ftp://server/path/... - источник доступный по FTP (используется curlftpfs)
+uird.homes=nfs://server/path/... - источник доступный по NFS
+uird.homes=cifs://server/path/... - источник доступный по CIFS
 
 Пример:
 uird.homes=/MagOS-Data/homes;/MagOS-Data/home.img;nfs://magos.sibsau.ru/homes/n/e/neobht
