@@ -136,3 +136,7 @@ msgstr ""
 #: uird-init:15
 msgid "Updating directory /mnt"
 msgstr ""
+
+#: uird-init:16
+msgid "UIRD help system"
+msgstr ""

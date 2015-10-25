@@ -64,28 +64,28 @@ eval echo $(cat /proc/cmdline /memory/cmdline 2>/dev/null | tr -s ";" "," ) >/me
 
 # print help
 if cat /memory/cmdline |grep -q help ; then
-echo ""
-header "$HELP_SYSTEM" 
-echo ""
-param_list=$( eval echo "$UIRD_BASECFG $UIRD_CONFIG $UIRD_SGNFILES $UIRD_RO $UIRD_RW $UIRD_CP $UIRD_COPY2RAM \
-						$UIRD_COPY2CACHE $UIRD_RAMSIZE $UIRD_IP  $UIRD_NETFSOPT  $UIRD_LOAD $UIRD_NOLOAD  \
-						$UIRD_FROM  $UIRD_CACHE $UIRD_HOMES $UIRD_HOME $UIRD_CHANGES $UIRD_MACHINES $UIRD_FIND_PARAMS" ) 
-for par in $param_list ;do
-	if [ "help" == "$(cmdline_value $par)" ] ; then 
-	header "-=-=-=- $par -=-=-=-"
-	echo "default is: $(cat /uird_configs/basecfg.ini |grep "$par")" 
-	cat /usr/share/uird.help/${par}.help 
-	echo "ENTER --> next page"
-	read qqq 
-	fi
-done 
-if [ "$(cmdline_parameter $UIRD_HELP)" ] ;then
-for file in $(ls -1 /usr/share/uird.help/*.help) ;do
-	echo "-=-=-=- $file -=-=-=-" # header do not work with less command
-	cat $file
-done | less 
-fi
-shell_cmd "help"
+    echo ""
+    header "$HELP_SYSTEM" 
+    echo ""
+    param_list=$( eval echo "$UIRD_BASECFG $UIRD_CONFIG $UIRD_SGNFILES $UIRD_RO $UIRD_RW $UIRD_CP $UIRD_COPY2RAM \
+        $UIRD_COPY2CACHE $UIRD_RAMSIZE $UIRD_IP  $UIRD_NETFSOPT  $UIRD_LOAD $UIRD_NOLOAD  \
+        $UIRD_FROM  $UIRD_CACHE $UIRD_HOMES $UIRD_HOME $UIRD_CHANGES $UIRD_MACHINES $UIRD_FIND_PARAMS" ) 
+    for par in $param_list ;do
+        if [ "help" == "$(cmdline_value $par)" ] ; then 
+            header "-=-=-=- $par -=-=-=-"
+            echo "default is: $(cat /uird_configs/basecfg.ini |grep "$par")" 
+            cat /usr/share/uird.help/${par}.help 
+            echo "ENTER --> next page"
+            read qqq 
+        fi
+    done 
+    if [ "$(cmdline_parameter $UIRD_HELP)" ] ;then
+        for file in $(ls -1 /usr/share/uird.help/*.help) ;do
+            echo "-=-=-=- $file -=-=-=-" # header do not work with less command
+            cat $file
+        done | less 
+    fi
+    shell_cmd "help"
 fi
 
 
