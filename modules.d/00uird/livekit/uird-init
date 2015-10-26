@@ -73,7 +73,7 @@ if cat /memory/cmdline |grep -q help ; then
     for par in $param_list ;do
         if [ "help" == "$(cmdline_value $par)" ] ; then 
             header "-=-=-=- $par -=-=-=-"
-            echo "default is: $(cat /uird_configs/basecfg.ini |grep "$par")" 
+            echo "default is:  $(for a in $(cat /etc/cmdline.d/01-default.conf) ;do echo $a ;done |grep "$par")"
             cat /usr/share/uird.help/${par}.help 
             echo "ENTER --> next page"
             read qqq 
