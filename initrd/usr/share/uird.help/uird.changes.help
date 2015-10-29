@@ -1,12 +1,15 @@
 **************************************************************************************************
-uird.changes= - источник, для хранения персистентных изменений
+!!! This text was translated from russian  by the Google service !!!
+!!! If you can translate better, please visit www.magos-linux.ru !!!
 
-Допустимые значения:
+uird.changes= - source, for storage of persistent changes
 
-uird.changes=dir                - директория (ищется по всем дискам и устройствам и подключается 
-                                  первая найденная)
-uird.changes=/dev/[..]/path/dir - директория на заданном носителе
-uird.changes=xzm                - включение режима сохранния машинно-зависимых изменений в модуль. 
-                                  Подробнее в описании парметра uird.machines. Внимание. Режим 
-                                  реализован не полностью.
+Legitimate values:
+
+uird.changes=dir                - directory (search this dir in all disks and devices and use first 
+                                  found)
+uird.changes=/dev/[..]/path/dir - directory on the selected device
+uird.changes=xzm                - switching on of the mode of saving machine-dependent changes in 
+                                  the module. In more detail in the description of a parametr of 
+                                  uird.machines. Attention. The mode is realized not completely.
 **************************************************************************************************

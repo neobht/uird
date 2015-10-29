@@ -69,18 +69,20 @@ if cat /memory/cmdline |grep -q help ; then
     echo ""
     param_list=$( eval echo "$UIRD_BASECFG $UIRD_CONFIG $UIRD_SGNFILES $UIRD_RO $UIRD_RW $UIRD_CP $UIRD_COPY2RAM \
         $UIRD_COPY2CACHE $UIRD_RAMSIZE $UIRD_IP  $UIRD_NETFSOPT  $UIRD_LOAD $UIRD_NOLOAD  \
-        $UIRD_FROM  $UIRD_CACHE $UIRD_HOMES $UIRD_HOME $UIRD_CHANGES $UIRD_MACHINES $UIRD_FIND_PARAMS" ) 
+        $UIRD_FROM  $UIRD_CACHE $UIRD_HOMES $UIRD_HOME $UIRD_CHANGES $UIRD_MACHINES $UIRD_FIND_PARAMS" )
+    help_dir=/usr/share/uird.help
+    [ -d /usr/share/uird.help/${LANG} ] &&  help_dir=/usr/share/uird.help/${LANG} 
     for par in $param_list ;do
         if [ "help" == "$(cmdline_value $par)" ] ; then 
             header "-=-=-=- $par -=-=-=-"
-            echo "default is:  $(for a in $(cat /etc/cmdline.d/01-default.conf) ;do echo $a ;done |grep "$par")"
-            cat /usr/share/uird.help/${par}.help 
+            echo "default is:  $(for a in $(cat /etc/cmdline.d/01-default.conf) ;do echo $a ;done |grep "$par" )"
+            cat ${help_dir}/${par}.help 
             echo "ENTER --> next page"
             read qqq 
         fi
     done 
     if [ "$(cmdline_parameter $UIRD_HELP)" ] ;then
-        for file in $(ls -1 /usr/share/uird.help/*.help) ;do
+        for file in $(ls -1 ${help_dir}/*.help) ;do
             echo "-=-=-=- $file -=-=-=-" # header do not work with less command
             cat $file
         done | less 

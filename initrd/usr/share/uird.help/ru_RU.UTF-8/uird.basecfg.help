@@ -1,10 +1,7 @@
 **************************************************************************************************
-!!! This text was translated from russian  by the Google service !!!
-!!! If you can translate better, please visit www.magos-linux.ru !!!
+uird.basecfg= - задает расположение конфигурационного файла basecfg. ini
 
-uird.basecfg= - parameter sets layout of the basecfg.ini file
-
-basecfg. ini - the basic configuration file of UIRD, it contains the UIRD parameters in a key=value format
+basecfg. ini - базовый конфигурационный файл uird, содержит параметры uird в формате ключ=значение
 
 пример basecfg.ini:
 

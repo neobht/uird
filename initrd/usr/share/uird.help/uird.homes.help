@@ -1,25 +1,28 @@
 **************************************************************************************************
-uird.homes= - список источников которые будут объединены каскадно (aufs) и смонтированы в /home 
-              (здеь хранятся домашние директорий пользователей) Разделитель в списке ";" или "," 
-              Более приоритетным является самый первый источник, затем в порядке перечисления  
-              приоритет уменьшается. Отличается от uird.home  наличием каскадного монтирования 
-              источников. Если каскадное монтирование для домашних каталогов не требуется, 
-              использование uird.home предпочтительнее.
+!!! This text was translated from russian  by the Google service !!!
+!!! If you can translate better, please visit www.magos-linux.ru !!!
 
-Допустимые значения:
-uird.homes=/path/dir              - директория (ищется по всем дискам и устройствам и подключается 
-                                    первая найденная)
-uird.homes=/dev/[..]/path/dir     - директория на заданном носителе
-uird.homes=/dev/[..]/file.img     - образ диска на заданном носителе
-uird.homes=/dev/[..]/file.xzm     - модуль squashfs на заданном носителе
-uird.homes=http://server/path/... - источник доступный по HTTP (используется httpfs)
-uird.homes=ssh://server/path/...  - источник доступный по SSH (используется sshfs)
-uird.homes=ftp://server/path/...  - источник доступный по FTP (используется curlftpfs)
-uird.homes=nfs://server/path/...  - источник доступный по NFS
-uird.homes=cifs://server/path/... - источник доступный по CIFS
+uird.homes= - the list of sources which will be cascade integrated (aufs) and mounted in /home dir 
+              (user's home directories are stored here). Separator in the list ";" or "," 
+              More priority is the first source, then as listing the priority decreases. Differs 
+              from uird.home in existence of the cascade assembling of sources. If the aufs mounting 
+              for /home isn't required,  use of uird.home is more preferable.
 
-Пример:
+
+Legitimate values::
+
+uird.from=/path/dir              - directory (search this dir in all disks and devices and use first 
+                                   found)
+uird.from=/dev/[..]/path/dir     - directory on the selected device
+uird.from=file-dvd.iso, file.img - disk image (ISO, block device image)
+uird.from=http://server/path/... - HTTP source (use by  httpfs)
+uird.from=ssh://server/path/...  - SSH source  (use by sshfs)
+uird.from=ftp://server/path/...  - FTP source  (use by curlftpfs)
+uird.from=nfs://server/path/...  - NFS source
+uird.from=cifs://server/path/... - CIFS source
+
+
+Example:
 uird.homes=/MagOS-Data/homes;/MagOS-Data/home.img;nfs://magos.sibsau.ru/homes/n/e/neobht
-Такая запись означает: монтировать каскадно перечисленные источники, получившуюся "слоеную" fs 
-монтироовать в /home.
+This string means: mount the listed sources to /home using aufs
 **************************************************************************************************

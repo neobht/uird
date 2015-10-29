@@ -1,15 +1,19 @@
 **************************************************************************************************
-uird.sgnfiles= - список файлов маркеров для уточнения выбора каталогов-источников (uird.from=)
-                 первый маркер соответствует перовому источнику из uird.from=, второй второтму и.т.д.
-                 (Маркером может быть любой, даже пустой файл. Важно только имя. При поиске источников
-                 из списка uird.from= uird буде проверять наличие маркера внутри найденного каталога, 
-                 если файл не найден поиск будет продолжен. Типичная ситуация использование маркеров - 
-                 загрузка нескольких однотипных систем на одной машине без указания точного расположения 
-                 каталогов с системой в uird.from)  Разделитель в списке ";" или ","
+!!! This text was translated from russian  by the Google service !!!
+!!! If you can translate better, please visit www.magos-linux.ru !!!
 
-Пример:
+uird.sgnfiles= - the list of files of markers for specification of a choice of directories sources 
+                 (uird.from =)   the first marker corresponds to a first source from uird.from =, 
+                 the second to the second etc.  (Any, even the empty file can be a marker. 
+                 Important only name. By search in sources from the uird.from list  UIRD will  
+                 check existence of a marker in the found directory,  if the file isn't found search 
+                 continued. A typical situation use of markers - booting of several similar systems 
+                 in one machine without specifying of exact directories with system in uird.from). 
+                 Separator in the list ";" or ","
+
+Example:
 uird.sgnfiles=flashdrive.sgn;flashdrive_data.sgn
-Такая запись означает: при поиске первого источника из списка uird.from проверять наличие внутри
-найденного каталога файла flashdrive.sgn, если файл не найден продолжить поиск. Во втором источнике
-проверять наличие flashdrive_data.sgn.
+This string means: by search in the first source from the uird.from list, UIRD will check existence 
+flashdrive.sgn file inside the found directory,  if the file isn't found search will be continue. 
+In the second source will check existence of flashdrive_data.sgn.
 **************************************************************************************************

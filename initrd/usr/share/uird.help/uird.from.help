@@ -1,24 +1,28 @@
 **************************************************************************************************
-uird.from= - список источников хранящих модули/директории/iso для построения корневой файловой системы 
-             (root fs) Источники будут использованы в порядке перечисления. 
-             Разделитель в списке ";" или ","
+!!! This text was translated from russian  by the Google service !!!
+!!! If you can translate better, please visit www.magos-linux.ru !!!
 
-uird.from+=- добавить источники к перечисленным в basecfg.ini
+uird.from= - the list of sources which contents modules/directory/iso for creation of root file system  
+             (root fs) Sources will be used as listing.  Separator in the list ";" or "," 
+uird.from+=- add sources to list from basecfg.ini
 
-Допустимые значения:
+Legitimate values::
 
-uird.from=/path/dir              - директория на любом доступном носителе
-uird.from=/dev/[..]/path/dir     - директория на заданном носителе
-uird.from=file-dvd.iso, file.img - образ диска (ISO, образ блочного устройства)
-uird.from=http://server/path/... - источник доступный по HTTP (используется httpfs)
-uird.from=ssh://server/path/...  - источник доступный по SSH (используется sshfs)
-uird.from=ftp://server/path/...  - источник доступный по FTP (используется curlftpfs)
-uird.from=nfs://server/path/...  - источник доступный по NFS
-uird.from=cifs://server/path/... - источник доступный по CIFS
+uird.from=/path/dir              - directory (search this dir in all disks and devices and use first 
+                                   found)
+uird.from=/dev/[..]/path/dir     - directory on the selected device
+uird.from=file-dvd.iso, file.img - disk image (ISO, block device image)
+uird.from=http://server/path/... - HTTP source (use by  httpfs)
+uird.from=ssh://server/path/...  - SSH source  (use by sshfs)
+uird.from=ftp://server/path/...  - FTP source  (use by curlftpfs)
+uird.from=nfs://server/path/...  - NFS source
+uird.from=cifs://server/path/... - CIFS source
 
 
-Пример:
+Example:
 uird.from=/MagOS;/MagOS-Data;ftp://myftp.com/mydir/
-Такая запись означает: найти на доступных физических носителях каталоги MagOS и MagOS-Data; 
-использовать в качестве первого источника MagOS, второго MagOS-Data, третьего каталог mydir сервера ftp://myftp.com
+This string means: find the directories MagOS and MagOS-Data in available physical disks; 
+use as the first source of MagOS, the second MagOS-Data, the third  catalogue mydir of the 
+ftp://myftp .com server
+
 **************************************************************************************************

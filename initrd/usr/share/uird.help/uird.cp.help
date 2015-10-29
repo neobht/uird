@@ -1,12 +1,16 @@
 **************************************************************************************************
-uird.cp= -  список фильтров для модулей/директорий содержимое которых копируется в корневую директорию 
-            системы с сохранением структуры каталогов. Разделитель в списке ";" или ","
-            Последовательность фильтров такова: uird.cp-->uird.rw-->uird
+!!! This text was translated from russian  by the Google service !!!
+!!! If you can translate better, please visit www.magos-linux.ru !!!
+
+uird.cp= -  the list of filters for modules/directories which contents is copied in a root directory 
+            of system with saving structure of catalogues. A separator in the list ";" or ",". 
+            Sequence of filters is as follows: uird.cp-->uird.rw-->uird
 
 uird.cp+= - добавить фильтры к описанным в basecfg.ini
 
-Пример: 
+Example: 
 uird.cp=*.xzm.cp,*/rootcopy
-Такая запись означает: содержимое файлов с расширением xzm.cp, а также каталога rootcopy найденных
-в источниках uird.from и прошедших фильтры uird.load--uird.noload копировать в корень системы.
+This string means: contents of files with xzm.cp extension, and also the directory "rootcopy" of 
+the found in sources of uird.from and passed  uird.load/uird.noload  filters  copy in a root 
+directory of system.
 **************************************************************************************************

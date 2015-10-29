@@ -1,6 +1,9 @@
 **************************************************************************************************
-uird.machines=  - источник, где хранятся машинно-зависимые персистентные изменения. Эти изменения 
-                  сохраняются в модуль.xzm при выключении/перезагрузке отдельно для каждой машины.
-                  Режим включается параметром uird.changes=xzm
-                  Внимание. Режим реализован не полностью.
+!!! This text was translated from russian  by the Google service !!!
+!!! If you can translate better, please visit www.magos-linux.ru !!!
+
+uird.machines=  - This is  a special source which consist of  machine-dependent system changes. 
+These changes  will saves during  every halt/reboot, separately for each machine.  The mode switched 
+on by the uird.changes=xzm parameter. Attention. The mode is not  completely realized .
+
 **************************************************************************************************
