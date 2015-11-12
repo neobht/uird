@@ -245,8 +245,7 @@ start_quickshell()
 #        getty -n -l /bin/autologin 9600 tty6 linux &
         automount
         clear
-        cat /usr/share/quickshell.hlp
-#        /bin/bash autologin
+        cat /usr/share/uird.help/${LANG}/uird.quickshell.help 2> /dev/null || cat /usr/share/uird.help/uird.quickshell.help
         setsid bash -c 'exec bash autologin < /dev/tty1 >/dev/tty1 2>&1'
         cd /
         umount /mnt/*
@@ -276,6 +275,8 @@ fatal()
 #============================================================
 # MagOS debug functions
 #============================================================
+# enabling logging mode for script by DEBUG_IS_ENABLED=yes
+# or for all scripts by "debug" cmdline parametr
 debug_mode() {
 if [ "$DEBUG_IS_ENABLED"  -o "$DEBUGMODE" == "yes" ] ; then
 name=$(basename $0)
@@ -291,6 +292,11 @@ fi
 fi
 }
 
+# echo $1 text, only if debug is enabled by DEBUG_IS_ENABLED=yes or "debug" cmdline parametr
+# if $2 exists execute it 
+# if $3 and other paramenrs exists add them like params to $2
+# echodebug "text" sleep 5 (echo "text", and wait 5 sec, time to read)  
+# echodebug "text" read aaa (echo "text", and wait to push ENTER)
 echodebug() {
 [ "$DEBUG_IS_ENABLED"  -o "$DEBUGMODE" == "yes" ] && echo "$1"
 if [ -n "$2" ] ;then 
