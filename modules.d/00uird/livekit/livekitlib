@@ -96,26 +96,28 @@ NOT_ENOUGH_MEMORY=$($GETTEXT "not enough memory.")
 
 ##### UIRD cmdline parameters aliases
 
-# uird.basecfg=           - расположение базового конфигурационного файла basecfg.ini
-# uird.config=            - расположение конфигурационного файла системы MagOS.ini
+# uird.basecfg=              - расположение базового конфигурационного файла basecfg.ini
+# uird.config=               - расположение конфигурационного файла системы MagOS.ini
 # uird.sgnfiles[+]=          - перечисление файлов-маркеров для поиска источников указанных в uird.from= в соответствии с их порядком перечисления
 # uird.ro[+]=                - фильтр для модулей, которые монтируются в режиме RO
 # uird.rw[+]=                - фильтр для модулей, которые монтируются в режиме RW
 # uird.cp[+]=                - фильтр для модулей, содержимое которых копируется в корень
 # uird.copy2ram[+]=          - фильтр для модулей, которые копируются в RAM
 # uird.copy2cache[+]=        - фильтр для модулей, которые копируются в КЭШ
-# uird.ramsize=           - размер RAM
-# uird.ip=                - IP:GW:MASK , если не указан, то используется DHCP
+# uird.ramsize=              - размер RAM
+# uird.ip=                   - IP:GW:MASK , если не указан, то используется DHCP
 # uird.netfsopt[+]=          - дополнительные опции монтирования сетевых ФС: sshfs,nfs,curlftpfs,cifs
 # uird.load[+]=              - фильтр для модулей, которые необходимо подключить на этапе загрузки
 # uird.noload[+]=            - фильтр для модулей, которые необходимо пропустить во время загрузки
 # uird.from[+]=              - источники, где лежат модули для системы
 # uird.cache[+]=             - источники, в которые стоит синхронизировать модули 
 # uird.homes[+]=             - источники, где хранятся домашние директории пользователей 
-# uird.changes=           - источник, где хранить персистентные изменения
-# uird.machines=          - источник, где хранятся машинно-зависимые персистентные изменения
-# uird.find_params[+]=          - параметры для утилиты find при поиске модулей
-# uird.help               - печатает подсказку по параметрам UIRD
+# uird.home=                 - источник, где хранится домашняя директория пользователей 
+# uird.changes=              - источник, где хранить персистентные изменения
+# uird.machines=             - источник, где хранятся машинно-зависимые персистентные изменения
+# uird.mounts[+]=            - источники, которые необходимо примонтировать 
+# uird.find_params[+]=       - параметры для утилиты find при поиске модулей
+# uird.help                  - печатает подсказку по параметрам UIRD
 
 [ -f "/uird_configs/uird_aliases" ] && . /uird_configs/uird_aliases
 
@@ -138,6 +140,7 @@ NOT_ENOUGH_MEMORY=$($GETTEXT "not enough memory.")
 [ -z $UIRD_HOME ] && UIRD_HOME=uird.home
 [ -z $UIRD_CHANGES ] && UIRD_CHANGES=uird.changes
 [ -z $UIRD_MACHINES ] && UIRD_MACHINES=uird.machines
+[ -z $UIRD_MOUNTS ] && UIRD_MOUNTS=uird.mounts
 [ -z $UIRD_FIND_PARAMS ] && UIRD_FIND_PARAMS=uird.find_params
 [ -z $UIRD_HELP ] && UIRD_HELP=uird.help
 
@@ -1394,12 +1397,15 @@ init_layer()
     echo_green_star
     echolog "$INIT_LAYER" $brown$(basename $2) " -> " $1$default
 
-    local NUM_SUBL FROM CMD_PARAM ARR_FROM DATAFROM DATA DATAMNTM
+    local NUM_SUBL FROM CMD_PARAM ARR_FROM DATAFROMTO DATAFROM DATATO DATA DATAMNTM
     NUM_SUBL=0
     CMD_PARAM=$3
     FROM=$(cmdline_value $CMD_PARAM)
     ARR_FROM=$(echo $FROM | tr -s ";," " ")
-    for DATAFROM in $ARR_FROM; do
+    for DATAFROMTO in $ARR_FROM; do
+        DATAFROMTO=$DATAFROMTO"#"
+        DATAFROM=${DATAFROMTO%%#*}
+        DATATO=${DATAFROMTO#*#}
         if [ "$DATAFROM" ]; then
             DATA=$2/$NUM_SUBL
             DATAMNTM=$1/$NUM_SUBL
@@ -1407,6 +1413,10 @@ init_layer()
             #   [ -d "$DATA/$LIVEKITNAME" ] && DATA="$DATA/$LIVEKITNAME"
             #   [ -f "$DATA/$SGN" ] || DATA=""
             #   grep -q "`head -1 /VERSION`" $DATA/[Vv][Ee][Rr][Ss][Ii][Oo][Nn] 2>/dev/null || DATA=""
+            if [ "$DATATO" ]; then
+                mkdir -p ${DATATO%%#*}
+                mount -o bind $DATA ${DATATO%%#*}
+            fi
         fi
 
         NUM_SUBL=$((NUM_SUBL+1))

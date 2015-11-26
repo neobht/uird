@@ -16,6 +16,7 @@ UIRD_CACHE=uird.cache
 UIRD_HOMES=uird.homes
 UIRD_CHANGES=uird.changes
 UIRD_MACHINES=uird.machines
+UIRD_MOUNTS=uird.mounts
 UIRD_FIND_PARAMS=uird.find_params
 UIRD_HELP=uird.help
 

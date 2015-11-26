@@ -17,11 +17,12 @@ installkernel() {
 
 install() {
      
-    inst /usr/lib/magos/scripts/httpfs /sbin/httpfs
     inst $(type -p sshfs) /sbin/sshfs
     inst $(type -p curlftpfs) /sbin/curlftpfs
 
     _arch=$(uname -m)
+    inst /usr/lib/magos/scripts/httpfs /sbin/httpfs
+    inst /usr/lib/magos/scripts/httpfs-$_arch /sbin/httpfs
 
     inst_libdir_file {"tls/$_arch/",tls/,"$_arch/",}"libnss_dns.so.*" \
         {"tls/$_arch/",tls/,"$_arch/",}"libnss_mdns4_minimal.so.*"
