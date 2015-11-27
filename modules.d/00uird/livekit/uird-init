@@ -135,9 +135,6 @@ debug_shell
 [ "$(cmdline_value $UIRD_HOMES)" ] && init_layer $DATAMNT/homes $LAYER_HOMES $UIRD_HOMES
 [ "$(cmdline_value $UIRD_HOME)" ] && init_layer $DATAMNT/homes $LAYER_HOMES $UIRD_HOME
 debug_shell
-# init MOUNTS layer
-[ "$(cmdline_value $UIRD_MOUNTS)" ] && init_layer $DATAMNT/mounts $LAYER_MOUNTS $UIRD_MOUNTS
-debug_shell
 
 #setting up config
 setup_config
@@ -169,6 +166,9 @@ init_aufs
 
 # init aufs union
 init_union "$CHANGES" "$UNION"
+debug_shell
+# init MOUNTS layer
+[ "$(cmdline_value $UIRD_MOUNTS)" ] && init_layer $DATAMNT/mounts $LAYER_MOUNTS $UIRD_MOUNTS
 debug_shell
 
 # add data to union

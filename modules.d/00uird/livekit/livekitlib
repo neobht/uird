@@ -1414,8 +1414,8 @@ init_layer()
             #   [ -f "$DATA/$SGN" ] || DATA=""
             #   grep -q "`head -1 /VERSION`" $DATA/[Vv][Ee][Rr][Ss][Ii][Oo][Nn] 2>/dev/null || DATA=""
             if [ "$DATATO" ]; then
-                mkdir -p ${DATATO%%::*}
-                mount -o bind $DATA ${DATATO%%::*}
+                mkdir -p $UNION/${DATATO%%::*}
+                mount -o bind $DATA $UNION/${DATATO%%::*}
             fi
         fi
 

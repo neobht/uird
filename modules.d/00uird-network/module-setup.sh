@@ -21,8 +21,9 @@ install() {
     inst $(type -p curlftpfs) /sbin/curlftpfs
 
     _arch=$(uname -m)
-    inst /usr/lib/magos/scripts/httpfs /sbin/httpfs
     inst /usr/lib/magos/scripts/httpfs-$_arch /sbin/httpfs
+#    inst /usr/lib/magos/scripts/httpfs-i686 /sbin/httpfs-i686
+#    inst /usr/lib/magos/scripts/httpfs-x86_64 /sbin/httpfs-x86_64
 
     inst_libdir_file {"tls/$_arch/",tls/,"$_arch/",}"libnss_dns.so.*" \
         {"tls/$_arch/",tls/,"$_arch/",}"libnss_mdns4_minimal.so.*"
