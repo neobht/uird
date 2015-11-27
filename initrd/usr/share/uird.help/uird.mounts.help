@@ -1,3 +1,29 @@
 **************************************************************************************************
-uird.mounts 
+!!! This text was translated from russian  by the Google service !!!
+!!! If you can translate better, please visit www.magos-linux.ru !!!
+
+uird.mounts= -   the list of sources which will be mounted in the specified points. Source and
+                 mount point are separated by "::". A separator in the list is ";" or ",". If mount 
+                 point is not exist, it will be created.
+
+uird.mounts+=  - add sources to list from basecfg.ini
+
+Legitimate values: (for sources):
+uird.from=/path/dir              - directory (search this dir in all disks and devices and use first 
+                                   found)
+uird.from=/dev/[..]/path/dir     - directory on the selected device
+uird.from=file-dvd.iso, file.img - disk image (ISO, block device image)
+uird.from=http://server/path/... - HTTP source (use by  httpfs)
+uird.from=ssh://server/path/...  - SSH source  (use by sshfs)
+uird.from=ftp://server/path/...  - FTP source  (use by curlftpfs)
+uird.from=nfs://server/path/...  - NFS source
+uird.from=cifs://server/path/... - CIFS source
+
+Legitimate value: (for mount point):
+/path/to/dir                       - full path to dir
+
+Example:
+uird.mounts=/dev/sda3/MagOS-Data/opt::/opt;/MagOS-Data/myfolder::/opt/myfolder
+This string means: mount /MagOS-Data/opt directory from device /dev/sda3 to /opt dir,
+find /MagOS-Data/myfolder in all available physical disks and mount it to /opt/myfolder
 **************************************************************************************************

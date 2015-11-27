@@ -6,7 +6,7 @@ uird.from= - the list of sources which contents modules/directory/iso for creati
              (root fs) Sources will be used as listing.  Separator in the list ";" or "," 
 uird.from+=- add sources to list from basecfg.ini
 
-Legitimate values::
+Legitimate values:
 
 uird.from=/path/dir              - directory (search this dir in all disks and devices and use first 
                                    found)
