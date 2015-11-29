@@ -70,7 +70,7 @@ if cat /memory/cmdline |grep -q help ; then
     echo ""
     param_list=$( eval echo "$UIRD_BASECFG $UIRD_CONFIG $UIRD_SGNFILES $UIRD_RO $UIRD_RW $UIRD_CP $UIRD_COPY2RAM \
         $UIRD_COPY2CACHE $UIRD_RAMSIZE $UIRD_IP  $UIRD_NETFSOPT  $UIRD_LOAD $UIRD_NOLOAD  \
-        $UIRD_FROM  $UIRD_CACHE $UIRD_HOMES $UIRD_HOME $UIRD_CHANGES $UIRD_MACHINES $UIRD_FIND_PARAMS" )
+        $UIRD_FROM  $UIRD_CACHE $UIRD_HOMES $UIRD_HOME $UIRD_CHANGES $UIRD_MACHINES $UIRD_FIND_PARAMS $UIRD_MOUNTS" )
     help_dir=/usr/share/uird.help
     [ -d /usr/share/uird.help/${LANG} ] &&  help_dir=/usr/share/uird.help/${LANG} 
     for par in $param_list ;do
