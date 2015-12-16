@@ -984,11 +984,21 @@ find_filepath()
     fi
 }
 
+#convert UUID@/path and LABEL@/path to /dev/sd??/path 
+uuid_label_to_dev () {
+local DEV DEVPATH
+DEV=$($BIN_BLKID | grep $(echo $1 |sed 's:@.*$::') | awk -F: '{print $1}')  
+DEVPATH=$(echo $1 |sed "s:^.*@:${DEV}:")
+echo $DEVPATH
+}
+
+
 # Find file in computer by mounting disks or other storage devices
 # and searching for $1 in the mounted directory
 # $1 = filename or device-path or devicepath/filename
 # $2 = device mountpoint
 # $3 = check SGN
+
 find_file()
 {
     debug_log "find_file" "$*"
@@ -996,7 +1006,9 @@ find_file()
 
     # allow using /mnt/... as well as /dev/...
     FIND=$(echo "$1" | sed -r "s:^/mnt/:/dev/:")
-
+    
+    echo $FIND |grep -q "@"  && FIND=$(uuid_label_to_dev $FIND)
+    
     # if parameter is just a device, echo it and exit
     if [ -b "$FIND" -o -c "$FIND" -o "$FIND" = "" ]; then echo "$FIND"; return; fi
 
@@ -1371,6 +1383,7 @@ mount_data_source()
         echo $SOURCE | grep -iq ^"ftp://" && DATA_FROM=$(mount_curlftpfs $SOURCE $MNT_DIR)
         echo $SOURCE | grep -iq ^"rsync://" && mount_rsync $SOURCE $MNT_DIR && DATA_FROM=$MNT_DIR
     else
+	echo $SOURCE |grep -q "@/"  && SOURCE=$(uuid_label_to_dev $SOURCE) 
         DATA_FROM=$(find_data $SOURCE $MNT_DIR $SGN_CHECK)
         [ -b "$DATA_FROM" ] && mount_device $DATA_FROM $DST_DIR # mount block device
     fi
