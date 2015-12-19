@@ -11,15 +11,17 @@ uird.homes= - the list of sources which will be cascade integrated (aufs) and mo
 
 Legitimate values::
 
-uird.from=/path/dir              - directory (search this dir in all disks and devices and use first 
-                                   found)
-uird.from=/dev/[..]/path/dir     - directory on the selected device
-uird.from=file-dvd.iso, file.img - disk image (ISO, block device image)
-uird.from=http://server/path/... - HTTP source (use by  httpfs)
-uird.from=ssh://server/path/...  - SSH source  (use by sshfs)
-uird.from=ftp://server/path/...  - FTP source  (use by curlftpfs)
-uird.from=nfs://server/path/...  - NFS source
-uird.from=cifs://server/path/... - CIFS source
+uird.homes=/path/dir                - directory (search this dir in all disks and devices and use first 
+                                    found)
+uird.homes=/dev/[..]/path/dir       - directory on the selected device
+uird.homes=LABEL@/path/dir          - directory on the device with label LABEL
+uird.homes=UUID@/path/dir           - directory on the device with uuid UUID
+uird.homes=file-dvd.iso, file.img   - disk image (ISO, block device image)
+uird.homes=http://server/path/...   - HTTP source (use by  httpfs)
+uird.homes=ssh://server/path/...    - SSH source  (use by sshfs)
+uird.homes=ftp://server/path/...    - FTP source  (use by curlftpfs)
+uird.homes=nfs://server/path/...    - NFS source
+uird.homes=cifs://server/path/...   - CIFS source
 
 
 Example:

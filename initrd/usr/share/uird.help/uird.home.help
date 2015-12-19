@@ -11,6 +11,8 @@ Legitimate values:
 uird.home=/path/dir             - directory (search this dir in all disks and devices and use first 
                                   found)
 uird.home=/dev/[..]/path/dir    - directory in the selected disk
+uird.home=LABEL@/path/dir       - directory on the device with label LABEL
+uird.home=UUID@/path/dir        - directory on the device with uuid UUID
 uird.home=/dev/[..]/file.img    - block device image (file in selected disk) 
 uird.home=ssh://server/path/... - SSH source (use by sshfs)
 uird.home=ftp://server/path/... - FTP source (use by curlftpfs)

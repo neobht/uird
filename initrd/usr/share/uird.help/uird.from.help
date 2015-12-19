@@ -8,15 +8,17 @@ uird.from+=- add sources to list from basecfg.ini
 
 Legitimate values:
 
-uird.from=/path/dir              - directory (search this dir in all disks and devices and use first 
-                                   found)
-uird.from=/dev/[..]/path/dir     - directory on the selected device
-uird.from=file-dvd.iso, file.img - disk image (ISO, block device image)
-uird.from=http://server/path/... - HTTP source (use by  httpfs)
-uird.from=ssh://server/path/...  - SSH source  (use by sshfs)
-uird.from=ftp://server/path/...  - FTP source  (use by curlftpfs)
-uird.from=nfs://server/path/...  - NFS source
-uird.from=cifs://server/path/... - CIFS source
+uird.from=/path/dir                 - directory (search this dir in all disks and devices and use first 
+                                    found)
+uird.from=/dev/[..]/path/dir        - directory on the selected device
+uird.from=LABEL@/path/dir           - directory on the device with label LABEL
+uird.from=UUID@/path/dir            - directory on the device with uuid UUID
+uird.from=file-dvd.iso, file.img    - disk image (ISO, block device image)
+uird.from=http://server/path/...    - HTTP source (use by  httpfs)
+uird.from=ssh://server/path/...     - SSH source  (use by sshfs)
+uird.from=ftp://server/path/...     - FTP source  (use by curlftpfs)
+uird.from=nfs://server/path/...     - NFS source
+uird.from=cifs://server/path/...    - CIFS source
 
 
 Example:

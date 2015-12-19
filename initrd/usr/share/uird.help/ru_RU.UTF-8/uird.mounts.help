@@ -9,6 +9,8 @@ uird.mounts+=  - добавить источники к списку из basecf
 uird.mounts=/path/dir              - директория (ищется по всем дискам и устройствам и подключается 
                                    первая найденная)
 uird.mounts=/dev/[..]/path/dir     - директория на заданном носителе
+uird.mounts=LABEL@/path/dir        - директория на носителе с меткой LABEL
+uird.mounts=UUID@/path/dir         - директория на носителе с uuid UUID
 uird.mounts=/dev/[..]/file.img     - образ диска на заданном носителе
 uird.mounts=ssh://server/path/...  - источник доступный по SSH (используется sshfs)
 uird.mounts=ftp://server/path/...  - источник доступный по FTP (используется curlftpfs)

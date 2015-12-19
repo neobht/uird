@@ -8,6 +8,8 @@ uird.home= -  источник который будет смонтирован 
 uird.home=/path/dir             - директория (ищется по всем дискам и устройствам и подключается 
                                   первая найденная)
 uird.home=/dev/[..]/path/dir    - директория на заданном носителе
+uird.home=LABEL@/path/dir        - директория на носителе с меткой LABEL
+uird.home=UUID@/path/dir         - директория на носителе с uuid UUID
 uird.home=/dev/[..]/file.img    - образ диска на заданном носителе
 uird.home=ssh://server/path/... - источник доступный по SSH (используется sshfs)
 uird.home=ftp://server/path/... - источник доступный по FTP (используется curlftpfs)
