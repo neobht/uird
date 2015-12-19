@@ -328,7 +328,7 @@ cmdline_parameter()
     #BASECFG=/memory/basecfg.ini
     #   [ -f /livekitlib ] || ADDFILE=/mnt/live$ADDFILE 
     #echo -n " " | cat - /proc/cmdline $ADDFILE $BASECFG 2>/dev/null | egrep -m1 -o "(^|[[:space:]])$1([[:space:]]|\$)" | tr -d " "
-    echo -n " " | cat - $ADDFILE 2>/dev/null | egrep -m1 -o "(^|[[:space:]])$1([[:space:]]|\$)" | tr -d " "
+    echo -n " " | cat - $ADDFILE 2>/dev/null | egrep -m1 -o "(^|[[:space:]])$1([[:space:]]|\$)" | head -n1 | tr -d " "
 }
 
 # look into cmdline and echo value of $1 option
@@ -632,6 +632,7 @@ is_supported_filesystem()
 # $2 = optional filesystem name, in order to skip autodetection
 fsck_device()
 {
+    debug_log "fsck_device" "$*"
     [ -b "$1" -o -f "$1" ] || return
     if [ -f "$1" ] ;then
         echo $1 | grep -q ".img$" || return
