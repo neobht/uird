@@ -1750,7 +1750,7 @@ union_append_bundles()
             #else    
             #echo "==============$OPTIONS======$FS+++++++++"
             mount -o $OPTIONS $FS "$BUNDLE" "$2/$BUN"
-            cp -a "$2/$BUN"/* $3 2>/dev/null
+            cp -a "$2/$BUN"/. $3 2>/dev/null
             #fumount "$2/$BUN"
             #fi
             continue
