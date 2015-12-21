@@ -986,10 +986,16 @@ find_filepath()
 }
 
 #convert UUID@/path and LABEL@/path to /dev/sd??/path 
+# $1 = LABEL@/path/to/file
+# if function can't find label or uuid - echo $1
 uuid_label_to_dev () {
-local DEV DEVPATH
-DEV=$($BIN_BLKID | grep $(echo $1 |sed 's:@.*$::') | awk -F: '{print $1}')  
-DEVPATH=$(echo $1 |sed "s:^.*@:${DEV}:")
+	local DEV DEVPATH
+	DEV=$($BIN_BLKID | grep -m1 $(echo $1 |sed 's:@.*$::') | awk -F: '{print $1}')  
+	if [ -z $DEV ] ; then
+		DEVPATH="$1"
+	else 
+		DEVPATH=$(echo $1 |sed "s:^.*@:${DEV}:")
+	fi
 echo $DEVPATH
 }
 
@@ -1384,7 +1390,7 @@ mount_data_source()
         echo $SOURCE | grep -iq ^"ftp://" && DATA_FROM=$(mount_curlftpfs $SOURCE $MNT_DIR)
         echo $SOURCE | grep -iq ^"rsync://" && mount_rsync $SOURCE $MNT_DIR && DATA_FROM=$MNT_DIR
     else
-	echo $SOURCE |grep -q "@/"  && SOURCE=$(uuid_label_to_dev $SOURCE) 
+		echo $SOURCE | grep -q "@"  && SOURCE=$(uuid_label_to_dev $SOURCE) 
         DATA_FROM=$(find_data $SOURCE $MNT_DIR $SGN_CHECK)
         [ -b "$DATA_FROM" ] && mount_device $DATA_FROM $DST_DIR # mount block device
     fi
