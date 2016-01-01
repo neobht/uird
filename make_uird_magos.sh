@@ -1,9 +1,6 @@
 #!/bin/bash
-#rm -rf /usr/lib/dracut/modules.d/*uird* /usr/lib/dracut/modules.d/90ntfs
-#cp -pRf modules.d/* /usr/lib/dracut/modules.d
-#echo $(pwd)
 cd dracut/modules.d
-ln -s ../../modules.d/* ../modules.d/
+ln -s ../../modules.d/* ../modules.d/ 2>/dev/null
 cd ../..
 ./dracut/dracut.sh -l -N  -f -m "base uird uird-network ntfs kernel-modules"  \
 	-d "loop cryptoloop zram aes-generic aes-i586 pata_acpi ata_generic ahci xhci-hcd \

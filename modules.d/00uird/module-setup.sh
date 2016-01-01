@@ -34,7 +34,7 @@ install() {
 	inst $(type -p "$_i" ) /sbin/$_i
     done
     #busybox
-    _busybox=$(type -p busybox || type -p busybox.static )
+    _busybox=$(type -p busybox.static || type -p busybox )
     inst $_busybox /usr/bin/busybox
     _progs=""
     for _i in $($_busybox --list)
