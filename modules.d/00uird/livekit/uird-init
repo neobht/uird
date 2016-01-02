@@ -239,4 +239,4 @@ mount --move $MEMORY $UNION/$MEMORY
 header "$HEADER_END $LIVEKITNAME"
 debug_shell
 
-shell_cmd "qse"
+[ "$(cmdline_parameter qse)" ] && shell_cmd "shell"
