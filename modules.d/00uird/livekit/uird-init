@@ -70,7 +70,7 @@ if cat /memory/cmdline |grep -q help ; then
     echo ""
     param_list=$( eval echo "$UIRD_BASECFG $UIRD_CONFIG $UIRD_SGNFILES $UIRD_RO $UIRD_RW $UIRD_CP $UIRD_COPY2RAM \
         $UIRD_COPY2CACHE $UIRD_RAMSIZE $UIRD_IP  $UIRD_NETFSOPT  $UIRD_LOAD $UIRD_NOLOAD  \
-        $UIRD_FROM  $UIRD_CACHE $UIRD_HOMES $UIRD_HOME $UIRD_CHANGES $UIRD_MACHINES $UIRD_FIND_PARAMS $UIRD_MOUNTS" )
+        $UIRD_FROM  $UIRD_CACHE $UIRD_HOMES $UIRD_HOME $UIRD_CHANGES $UIRD_MACHINES $UIRD_FIND_PARAMS $UIRD_MOUNTS $UIRD_BREAK" )
     help_dir=/usr/share/uird.help
     [ -d /usr/share/uird.help/${LANG} ] &&  help_dir=/usr/share/uird.help/${LANG} 
     for par in $param_list ;do
@@ -126,32 +126,40 @@ BASECFG=$(cmdline_value $UIRD_BASECFG)
 eval echo $(cat /proc/cmdline /memory/cmdline $BASECFG 2>/dev/null | tr -s ";" "," ) >/memory/cmdline
 
 #init BASE layer
+[ "$(cmdline_value $UIRD_BREAK)" = "init_base" ] && shell_cmd "break"
 [ "$(cmdline_value $UIRD_FROM)" ] && init_layer $DATAMNT/from $LAYER_BASE $UIRD_FROM "check_SGN"
 debug_shell
 # init CACHE layer
+[ "$(cmdline_value $UIRD_BREAK)" = "init_cache" ] && shell_cmd "break"
 [ "$(cmdline_value $UIRD_CACHE)" ] && init_layer $DATAMNT/cache $LAYER_CACHE $UIRD_CACHE
 debug_shell
 # init HOMES layer
+[ "$(cmdline_value $UIRD_BREAK)" = "init_home" ] && shell_cmd "break"
 [ "$(cmdline_value $UIRD_HOMES)" ] && init_layer $DATAMNT/homes $LAYER_HOMES $UIRD_HOMES
 [ "$(cmdline_value $UIRD_HOME)" ] && init_layer $DATAMNT/homes $LAYER_HOMES $UIRD_HOME
 debug_shell
 
 #setting up config
+[ "$(cmdline_value $UIRD_BREAK)" = "config" ] && shell_cmd "break"
 setup_config
 debug_shell
 
 #setting up source for changes
+[ "$(cmdline_value $UIRD_BREAK)" = "changes" ] && shell_cmd "break"
 setup_changes $DATAMNT/changes $CHANGES
 debug_shell
 #setting up machines
+[ "$(cmdline_value $UIRD_BREAK)" = "machines" ] && shell_cmd "break"
 setup_machines $MACHINES $DATAMNT/machines $CHANGES $DATAMNT/changes
 debug_shell
 
 # sync data from BASE layer to CACHE layer
+[ "$(cmdline_value $UIRD_BREAK)" = "sync_to_cache" ] && shell_cmd "break"
 [ "$(cmdline_value $UIRD_FROM)" ] && copy_to_cache $LAYER_BASE "$LAYER_CACHE"
 debug_shell
 
 # sync data from BASE,CACHE layers to RAM
+[ "$(cmdline_value $UIRD_BREAK)" = "sync_to_ram" ] && shell_cmd "break"
 [ "$(cmdline_value $UIRD_FROM)" ] && copy_to_ram $LAYER_BASE "$COPY2RAM"
 debug_shell
 [ "$(cmdline_value $UIRD_CACHE)" ] && copy_to_ram $LAYER_CACHE "$COPY2RAM"
@@ -165,21 +173,27 @@ debug_shell
 init_aufs
 
 # init aufs union
+[ "$(cmdline_value $UIRD_BREAK)" = "init_aufs" ] && shell_cmd "break"
 init_union "$CHANGES" "$UNION"
 debug_shell
 # init MOUNTS layer
+[ "$(cmdline_value $UIRD_BREAK)" = "mounts" ] && shell_cmd "break"
 [ "$(cmdline_value $UIRD_MOUNTS)" ] && init_layer $DATAMNT/mounts $LAYER_MOUNTS $UIRD_MOUNTS
 debug_shell
 
 # add data to union
+[ "$(cmdline_value $UIRD_BREAK)" = "append_copy2ram" ] && shell_cmd "break"
 [ "$(cmdline_value $UIRD_COPY2RAM)$(cmdline_parameter $UIRD_COPY2RAM)" ] && union_append_bundles $COPY2RAM "$BUNDLES" "$UNION"
 debug_shell
+[ "$(cmdline_value $UIRD_BREAK)" = "append_cache" ] && shell_cmd "break"
 [ "$(cmdline_value $UIRD_CACHE)" ] && union_append_bundles $LAYER_CACHE "$BUNDLES" "$UNION"
 debug_shell
+[ "$(cmdline_value $UIRD_BREAK)" = "append_base" ] && shell_cmd "break"
 [ "$(cmdline_value $UIRD_FROM)" ] && union_append_bundles $LAYER_BASE "$BUNDLES" "$UNION"
 debug_shell
 
 #setup homes by using aufs
+[ "$(cmdline_value $UIRD_BREAK)" = "set_homes" ] && shell_cmd "break"
 setup_homes "$LAYER_HOMES" "$UNION/home"                                                                                                                                                      debug_shell
 debug_shell
 
@@ -206,6 +220,7 @@ cp liblinuxlive $UNION/mnt/live/liblinuxlive
 [ -d "/memory/changes" ] && ln -sf /memory/changes $UNION/mnt/live/memory/changes
 debug_shell
 
+[ "$(cmdline_value $UIRD_BREAK)" = "rc.preinit" ] && shell_cmd "break"
 cd $UNION
 echo_green_star
 echolog $RC_PREINIT

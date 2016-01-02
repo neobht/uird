@@ -118,6 +118,7 @@ NOT_ENOUGH_MEMORY=$($GETTEXT "not enough memory.")
 # uird.mounts[+]=            - источники, которые необходимо примонтировать 
 # uird.find_params[+]=       - параметры для утилиты find при поиске модулей
 # uird.help                  - печатает подсказку по параметрам UIRD
+# uird.break=                - остановка загрузки на определенном этапе и включение режима отладки
 
 [ -f "/uird_configs/uird_aliases" ] && . /uird_configs/uird_aliases
 
@@ -143,6 +144,7 @@ NOT_ENOUGH_MEMORY=$($GETTEXT "not enough memory.")
 [ -z $UIRD_MOUNTS ] && UIRD_MOUNTS=uird.mounts
 [ -z $UIRD_FIND_PARAMS ] && UIRD_FIND_PARAMS=uird.find_params
 [ -z $UIRD_HELP ] && UIRD_HELP=uird.help
+[ -z $UIRD_BREAK ] && UIRD_BREAK=uird.break
 
 # =================================================================
 # debug and output functions
@@ -217,21 +219,22 @@ debug_shell()
 # if $1==help then start shell
 shell_cmd()
 {
+    ln -s /root/bashrc /root/.bashrc 2>/dev/null
+    ln -s /root/bash_profile /root/.bash_profile 2>/dev/null
+    echo
     if [ "$(cmdline_parameter qse)" -a "$1" = "qse" ]; then 
-        ln -s /root/bashrc /root/.bashrc 2>/dev/null
-        ln -s /root/bash_profile /root/.bash_profile 2>/dev/null
-        echo
         echo "============== QUICK SHELL MODE ============="
-        #/bin/bash autologin
         setsid bash -c 'exec bash autologin < /dev/tty1 >/dev/tty1 2>&1'
         echo
     elif [ "$1" = "help" ];then 
-        ln -s /root/bashrc /root/.bashrc 2>/dev/null
-        ln -s /root/bash_profile /root/.bash_profile 2>/dev/null
-        echo
         echo "============== QUICK SHELL MODE ============="
         setsid bash -c 'exec bash autologin < /dev/tty1 >/dev/tty1 2>&1'
         reboot -f
+    elif [ "$1" = "break" ];then
+        echo "============== BREAK SHELL MODE ============="
+        DEBUG_IS_ENABLED = 1
+        setsid bash -c 'exec bash autologin < /dev/tty1 >/dev/tty1 2>&1'
+        echo
     fi
 }
 # start quickshell
