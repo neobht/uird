@@ -232,7 +232,7 @@ shell_cmd()
         reboot -f
     elif [ "$1" = "break" ];then
         echo "============== BREAK SHELL MODE ============="
-        DEBUG_IS_ENABLED = 1
+        DEBUG_IS_ENABLED=1
         setsid bash -c 'exec bash autologin < /dev/tty1 >/dev/tty1 2>&1'
         echo
     fi
