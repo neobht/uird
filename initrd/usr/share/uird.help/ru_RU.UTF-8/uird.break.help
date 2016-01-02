@@ -2,21 +2,19 @@
 uird.break=STAGE 	-  остановка загрузки на стадии STAGE и включение режима отладки (debug)
 
 допустимые значения для STAGE:
-	init_base	-
-	init_cache	-
-	init_home	-
-	config		-
-	changes		-
-	machines	-
-	sync_to_cache	-
-	sync_to_ram	-
-	init_aufs	-
-	mounts		-
-	append_copy2ram	-
-	append_cache	-
-	append_base	-
-	set_homes	-
-	rc.preinit	-
+	init_base	- поиск источников и инициализация базового уровня
+	init_cache	- поиск источников и инициализация уровня КЭШ
+	init_home	- поиск источников и инициализация уровня домашних директорий
+	config		- подключение конфигурационного файла
+	changes		- подключение источника персистентных изменений
+	machines	- подключение источника машинно-зависимых изменений
+	sync_to_cache	- копирование в КЭШ
+	sync_to_ram	- копирование в ОЗУ
+	init_aufs	- инициализация общего корня AUFS
+	mounts		- подключение дополнительных источников, указанных в uird.mounts=
+	append_bundles	- подключение модулей в общий корень 
+	set_homes	- подключение домашних директорий в общий корень
+	rc.preinit	- запуск скриптов rc.preinit
 
 
 Пример: 

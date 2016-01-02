@@ -188,7 +188,7 @@ debug_shell
 #[ "$(cmdline_value $UIRD_BREAK)" = "append_cache" ] && shell_cmd "break"
 #[ "$(cmdline_value $UIRD_CACHE)" ] && union_append_bundles $LAYER_CACHE "$BUNDLES" "$UNION"
 #debug_shell
-[ "$(cmdline_value $UIRD_BREAK)" = "append_base" ] && shell_cmd "break"
+[ "$(cmdline_value $UIRD_BREAK)" = "append_bundles" ] && shell_cmd "break"
 [ "$(cmdline_value $UIRD_FROM)" ] && union_append_bundles $LAYER_BASE "$BUNDLES" "$UNION" "$COPY2RAM" "$LAYER_CACHE"
 debug_shell
 
