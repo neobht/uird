@@ -993,13 +993,13 @@ find_filepath()
 # $1 = LABEL@/path/to/file
 # if function can't find label or uuid - echo $1
 uuid_label_to_dev () {
-	local DEV DEVPATH
-	DEV=$($BIN_BLKID | grep -m1 $(echo $1 |sed 's:@.*$::') | awk -F: '{print $1}')  
-	if [ -z $DEV ] ; then
-		DEVPATH="$1"
-	else 
-		DEVPATH=$(echo $1 |sed "s:^.*@:${DEV}:")
-	fi
+    local DEV DEVPATH
+    DEV=$($BIN_BLKID | grep -m1 $(echo $1 |sed 's:@.*$::') | awk -F: '{print $1}')  
+    if [ -z $DEV ] ; then
+        DEVPATH="$1"
+    else 
+        DEVPATH=$(echo $1 |sed "s:^.*@:${DEV}:")
+    fi
 echo $DEVPATH
 }
 
@@ -1591,7 +1591,7 @@ setup_machines()
                 init_ifcfg
                 echo $SOURCE | grep -iq ^"http://" && DATA_FROM=$(mount_httpfs $SOURCE $MNT_DIR)
                 echo $SOURCE | grep -iq ^"nfs://" && DATA_FROM=$(mount_nfs $SOURCE $MNT_DIR)
-		echo $SOURCE | grep -iq ^"cifs://" && DATA_FROM=$(mount_cifs $SOURCE $MNT_DIR)
+                echo $SOURCE | grep -iq ^"cifs://" && DATA_FROM=$(mount_cifs $SOURCE $MNT_DIR)
                 echo $SOURCE | grep -iq ^"ssh://" && DATA_FROM=$(mount_sshfs $SOURCE $MNT_DIR)
                 echo $SOURCE | grep -iq ^"ftp://" && DATA_FROM=$(mount_curlftpfs $SOURCE $MNT_DIR)
             else
@@ -1626,23 +1626,23 @@ setup_homes()
 
     LAYER_HOMES=$1
     MNT_HOME=$2
-    
+
     echo_green_star
     echolog "$SETUP_HOMES" $brown"$(basename $LAYER_HOMES)" " -> " "$MNT_HOME"$default
-    
+
     if [ "$HOMES" ]; then
-	for d_dirs in "$LAYER_HOMES"/*; do
-    	    if [ -z $HOMES_BR ];then
-        	HOMES_BR="$d_dirs=rw+wh" 
-    	    else
-        	HOMES_BR="$HOMES_BR:$d_dirs=rw+wh"
-    	    fi
-	done
-    #   mount -t aufs -o xino="/tmp/.xino",trunc_xino,br="$1" aufs "$2"
-	mount -t aufs -o xino="/memory/.xino",trunc_xino,br=$HOMES_BR aufs $MNT_HOME
+        for d_dirs in "$LAYER_HOMES"/*; do
+            if [ -z $HOMES_BR ];then
+                HOMES_BR="$d_dirs=rw+wh" 
+            else
+                HOMES_BR="$HOMES_BR:$d_dirs=rw+wh"
+            fi
+        done
+        #   mount -t aufs -o xino="/tmp/.xino",trunc_xino,br="$1" aufs "$2"
+        mount -t aufs -o xino="/memory/.xino",trunc_xino,br=$HOMES_BR aufs $MNT_HOME
     else 
-	HOMES_BR="$LAYER_HOMES"/0
-	mount -o bind $HOMES_BR $MNT_HOME
+        HOMES_BR="$LAYER_HOMES"/0
+        mount -o bind $HOMES_BR $MNT_HOME
     fi
 }
 
@@ -1746,12 +1746,13 @@ done
 # $1 = directory where to search for bundles
 # $2 = directory where to mount bundles
 # $3 = directory where union is mounted
-#
+# $4 = directory where copy2ram
+# $5 = directory where layer-cache
 union_append_bundles()
 {
     debug_log "union_append_bundles" "$*"
 
-    local BUN MOD RW RO CP FS OPTIONS PRESERVE
+    local BUN MOD RW RO CP FS OPTIONS PRESERVE MID_BUN BUNDLE
 
     RW=$(cmdline_value $UIRD_RW | sed -r 's/\?/./g' |  sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')
     RO=$(cmdline_value $UIRD_RO | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')
@@ -1767,11 +1768,15 @@ union_append_bundles()
     if [ $? -eq 0 ]; then
         PRESERVE="true"
     else
+        MID_BUN=${BUNDLE#*$1}
+        [ -x "$5/$MID_BUN" -a "$(cmdline_value $UIRD_COPY2CACHE)" ] && BUNDLE="$5/$MID_BUN"
+        [ -x "$4/$MID_BUN" -a "$(cmdline_value $UIRD_COPY2RAM)" ] && BUNDLE="$4/$MID_BUN"
+
         FS="$(device_bestfs "$BUNDLE")"
         OPTIONS="$(fs_options $FS mount)"
 
-        [ "$OPTION" = "bind" -a -f "$BUNDLE" ] && continue
-        
+        [ "$OPTIONS" = "bind" -a -f "$BUNDLE" ] && continue
+
         if [ "$CP" -a "$(echo $BUNDLE | egrep -i "$CP")" ]; then
             echolog "  $blue-->" $purple"$BUNDLE"$green" [режим CP] "$default
             #if [ "$FS" = "-t squashfs" ]; then
@@ -1784,7 +1789,7 @@ union_append_bundles()
             #fi
             continue
         elif [ "$RW" -a "$(echo $BUNDLE | egrep -i "$RW")" ]; then
-            MOD=rw
+            MOD=rw+wh
         else
             MOD=ro+wh
         fi
@@ -1820,20 +1825,20 @@ copy_to()
     local C2PARAM MODNAME
     C2PARAM="$(echo $4 | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')"
     list_modules "$1" | while read MODULE; do
-    MODNAME=$(echo $MODULE | cut -b ${#1}- | cut -b 2-)
-    [ "$C2PARAM" ] && ! [ "$(echo $MODNAME | egrep -i $C2PARAM )" ] && continue
-    TARGET=$(dirname "$MODULE" | cut -b ${#1}- | cut -b 2-)
-    mkdir -p "$2/$TARGET"
-    echolog $yellow"  $3 $blue<- $purple$(basename $MODULE)"$green
-    if [ -f "$BIN_RSYNC" ]; then
-        $BIN_RSYNC --progress -a "$MODULE" "$2/$TARGET"
-    else
-        cp "$MODULE" "$2/$TARGET"
-    fi
+        MODNAME=$(echo $MODULE | cut -b ${#1}- | cut -b 2-)
+        [ "$C2PARAM" ] && ! [ "$(echo $MODNAME | egrep -i $C2PARAM )" ] && continue
+        TARGET=$(dirname "$MODULE" | cut -b ${#1}- | cut -b 2-)
+        mkdir -p "$2/$TARGET"
+        echolog $yellow"  $3 $blue<- $purple$(basename $MODULE)"$green
+        if [ -f "$BIN_RSYNC" ]; then
+            $BIN_RSYNC --progress -a "$MODULE" "$2/$TARGET"
+        else
+            cp "$MODULE" "$2/$TARGET"
+        fi
 
-    if [ $? -ne 0 ]; then fatal "$NOT_ENOUGH_MEMORY"; fi
-    #      echo $2
-done
+        if [ $? -ne 0 ]; then fatal "$NOT_ENOUGH_MEMORY"; fi
+        #      echo $2
+    done
 }
 
 # Copy modules to RAM directory

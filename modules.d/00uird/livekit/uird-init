@@ -182,14 +182,14 @@ debug_shell
 debug_shell
 
 # add data to union
-[ "$(cmdline_value $UIRD_BREAK)" = "append_copy2ram" ] && shell_cmd "break"
-[ "$(cmdline_value $UIRD_COPY2RAM)$(cmdline_parameter $UIRD_COPY2RAM)" ] && union_append_bundles $COPY2RAM "$BUNDLES" "$UNION"
-debug_shell
-[ "$(cmdline_value $UIRD_BREAK)" = "append_cache" ] && shell_cmd "break"
-[ "$(cmdline_value $UIRD_CACHE)" ] && union_append_bundles $LAYER_CACHE "$BUNDLES" "$UNION"
-debug_shell
+#[ "$(cmdline_value $UIRD_BREAK)" = "append_copy2ram" ] && shell_cmd "break"
+#[ "$(cmdline_value $UIRD_COPY2RAM)$(cmdline_parameter $UIRD_COPY2RAM)" ] && union_append_bundles $COPY2RAM "$BUNDLES" "$UNION"
+#debug_shell
+#[ "$(cmdline_value $UIRD_BREAK)" = "append_cache" ] && shell_cmd "break"
+#[ "$(cmdline_value $UIRD_CACHE)" ] && union_append_bundles $LAYER_CACHE "$BUNDLES" "$UNION"
+#debug_shell
 [ "$(cmdline_value $UIRD_BREAK)" = "append_base" ] && shell_cmd "break"
-[ "$(cmdline_value $UIRD_FROM)" ] && union_append_bundles $LAYER_BASE "$BUNDLES" "$UNION"
+[ "$(cmdline_value $UIRD_FROM)" ] && union_append_bundles $LAYER_BASE "$BUNDLES" "$UNION" "$COPY2RAM" "$LAYER_CACHE"
 debug_shell
 
 #setup homes by using aufs
