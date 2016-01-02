@@ -46,8 +46,7 @@
 
 <p>Ввиду множественности параметров ядра введен префикс параметров '<strong>uird</strong>'  (Unified Init Ram Disk): </p>
 
-<pre><code>
-uird.basecfg=               - расположение базового конфигурационного файла basecfg.ini
+<pre><code>uird.basecfg=               - расположение базового конфигурационного файла basecfg.ini
 uird.config=                - расположение конфигурационного файла системы MagOS.ini
 uird.sgnfiles[+]=           - перечисление файлов-маркеров для поиска источников указанных в uird.from= в соответствии с их порядком перечисления
 uird.ro[+]=                 - фильтр для модулей, которые монтируются в режиме RO
@@ -107,6 +106,8 @@ uird.home=/MagOS-Data/homes
 <li>    <strong>/path/dir</strong>   - директория на любом доступном носителе</li>
 <li>    <strong>/dev/[..]/path/dir</strong>   - директория на заданном носителе</li>
 <li>    <strong>file-dvd.iso, file.img</strong>   - образ диска (ISO, образ блочного устройства)</li>
+<li>    <strong>LABEL@/path/dir</strong>  - директория на носителе с меткой LABEL</li>
+<li>    <strong>UUID@/path/dir</strong>   - директория на носителе с uuid UUID</li>
 <li>    <strong>http://server/path/...</strong>   - источник доступный по HTTP (используется httpfs) </li>
 <li>    <strong>ssh://server/path/...</strong>   - источник доступный по SSH (используется sshfs)</li>
 <li>    <strong>ftp://server/path/...</strong>   - источник доступный по FTP (используется curlftpfs)</li>
