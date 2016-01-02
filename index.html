@@ -201,7 +201,7 @@ uird.home=/MagOS-Data/homes
 <h3>
 <a id="Реализация" class="anchor" href="#%D0%A0%D0%B5%D0%B0%D0%BB%D0%B8%D0%B7%D0%B0%D1%86%D0%B8%D1%8F" aria-hidden="true"><span class="octicon octicon-link"></span></a>Реализация</h3>
 
-<p>В основе реализации лежит набор скриптов инициализации dracut (модули base , busybox ) и скрипты uird (livekitlib+uird-init).</p>
+<p>В основе реализации лежит набор скриптов инициализации dracut (модули base , kernel-modules ) и скрипты uird (livekitlib+uird-init).</p>
 
 <pre><code>cmdline-hook: parse-root-uird.sh (проверяет параметр root=uird)
 mount-hook: mount-uird.sh (выполняет скрипт uird-init)
