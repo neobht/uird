@@ -37,8 +37,27 @@ install() {
 
 #    dracut_install /usr/bin/mplayer    
 
-    dracut_install /usr/bin/git
     dracut_install /usr/bin/ssh
-    
+
+#    inst /usr/bin/git
+#    inst_multiple \
+#		/usr/lib64/git-core/git-sh-i18n \
+#		/usr/lib64/git-core/git-sh-i18n--envsubst \
+#		/usr/lib64/git-core/git-sh-setup \
+#		/usr/lib64/git-core/git-http-backend \
+#		/usr/lib64/git-core/git-http-fetch \
+#		/usr/lib64/git-core/git-http-push \
+#		/usr/lib64/git-core/git-stash \
+#		/usr/lib64/git-core/git-remote-https \
+#		/usr/lib64/git-core/git-svn \
+#		/usr/lib64/git-core/git-submodule \
+#		/usr/lib64/git-core/git-parse-remote \ 
+#		/usr/lib64/git-core/git-rebase \
+#		/usr/lib64/git-core/git-rebase--am \
+#		/usr/lib64/git-core/git-rebase--interactive \
+#		/usr/lib64/git-core/git-rebase--merge
+#    inst_libdir_file /usr/lib64/git-core/*
+#	cc
+    inst cc    
 }
 

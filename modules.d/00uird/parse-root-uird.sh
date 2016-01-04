@@ -36,4 +36,5 @@ uird_to_var() {
 
 
 # Done, all good!
+root=1
 rootok=1
