@@ -194,7 +194,7 @@ debug_shell
 
 #setup homes by using aufs
 [ "$(cmdline_value $UIRD_BREAK)" = "set_homes" ] && shell_cmd "break"
-setup_homes "$LAYER_HOMES" "$UNION/home"                                                                                                                                                      debug_shell
+setup_homes "$LAYER_HOMES" "$UNION/home"
 debug_shell
 
 # rootcopy
