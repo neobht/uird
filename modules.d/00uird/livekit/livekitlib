@@ -328,8 +328,8 @@ cmdline_parameter()
 {
     debug_log "cmdline_parameter" "$*"
     log "searching for bootparam: $1"
-    ADDFILE=/memory/cmdline
-    #BASECFG=/memory/basecfg.ini
+    ADDFILE=$MEMORY/cmdline
+    #BASECFG=$MEMORY/basecfg.ini
     #   [ -f /livekitlib ] || ADDFILE=/mnt/live$ADDFILE 
     #echo -n " " | cat - /proc/cmdline $ADDFILE $BASECFG 2>/dev/null | egrep -m1 -o "(^|[[:space:]])$1([[:space:]]|\$)" | tr -d " "
     echo -n " " | cat - $ADDFILE 2>/dev/null | egrep -m1 -o "(^|[[:space:]])$1([[:space:]]|\$)" | head -n1 | tr -d " "
@@ -343,8 +343,8 @@ cmdline_value()
     debug_log "cmdline_value" "$*"
     log "searching for bootparam value: $1"
     local ADDFILE BASECFG VALUE ADD_VALUE
-    ADDFILE=/memory/cmdline
-    #BASECFG=/memory/basecfg.ini
+    ADDFILE=$MEMORY/cmdline
+    #BASECFG=$MEMORY/basecfg.ini
     #   [ -f /livekitlib ] || ADDFILE=/mnt/$ADDFILE
     ##VALUE=$(echo -n " " | eval echo $(cat - /proc/cmdline $ADDFILE $BASECFG 2>/dev/null | tr -s ";" "," ) | egrep -m1 -o "(^|[[:space:]])$1=[^[:space:]]+" | cut -d "=" -f 2- | head -n1)
     #ADD_VALUE=$(echo -n " " | eval echo $(cat - /proc/cmdline $ADDFILE $BASECFG 2>/dev/null | tr -s ";" ",") | egrep -m1 -o "(^|[[:space:]])$1\+=[^[:space:]]+" | cut -d "=" -f 2- | head -n1)
@@ -458,7 +458,7 @@ init_union()
     echolog "$INIT_UNION"
     mkdir -p "$1"
     mkdir -p "$2"
-    mount -t aufs -o xino="/memory/.xino_union",trunc_xino,br="$1" aufs "$2"
+    mount -t aufs -o xino="$MEMORY/.xino_union",trunc_xino,br="$1" aufs "$2"
 #    mount -t aufs -o br="$1" aufs "$2"
 }
 
@@ -1523,9 +1523,9 @@ setup_config()
 #    [ -f "$DATAMNT/0/$INIFILE" ] && PATHINI="$DATAMNT/0/$INIFILE"
     [ -z "$PATHINI" ] && echolog $red"$SETUP_CONFIG_NOTFOUND"$default || echolog "$SETUP_CONFIG_USING" $yellow"$PATHINI"$default
     [ -z "$PATHINI" ] && PATHINI=/dev/null
-    egrep -v '^#|^$' "$PATHINI" | sed s-\\\\r-- | gzip > /memory/$LIVEKITNAME.ini.gz
-    grep '^CMDLINE=' "$PATHINI" | sed s/^CMDLINE=// | tr -d [:cntrl:]\'\" >>/memory/cmdline
-    chmod 400 /memory/$LIVEKITNAME.ini.gz /memory/cmdline 2>/dev/null
+    egrep -v '^#|^$' "$PATHINI" | sed s-\\\\r-- | gzip > $MEMORY/$LIVEKITNAME.ini.gz
+    grep '^CMDLINE=' "$PATHINI" | sed s/^CMDLINE=// | tr -d [:cntrl:]\'\" >>$MEMORY/cmdline
+    chmod 400 $MEMORY/$LIVEKITNAME.ini.gz $MEMORY/cmdline 2>/dev/null
 }
 
 
@@ -1639,7 +1639,7 @@ setup_homes()
             fi
         done
         #   mount -t aufs -o xino="/tmp/.xino",trunc_xino,br="$1" aufs "$2"
-        mount -t aufs -o xino="/memory/.xino",trunc_xino,br=$HOMES_BR aufs $MNT_HOME
+        mount -t aufs -o xino="$MEMORY/.xino",trunc_xino,br=$HOMES_BR aufs $MNT_HOME
     else 
         HOMES_BR="$LAYER_HOMES"/0
         mount -o bind $HOMES_BR $MNT_HOME

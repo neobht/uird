@@ -4,8 +4,6 @@
 # Author: Anton Goroshkin <http://magos-linux.ru>
 #
 
-. /livekitlib
-
 #. /lib/magos-lib.sh
 
 #Messages
@@ -20,7 +18,14 @@ HELP_SYSTEM=$($GETTEXT "UIRD help system")
 
 UNION=$NEWROOT
 
-MEMORY=/memory
+[ -f /etc/DISTRO_SPECS ] && . /etc/DISTRO_SPECS
+
+[ "$SYSMNT" ] && MEMORY=$SYSMNT || MEMORY=/memory
+
+. /livekitlib
+
+
+
 BUNDLES=$MEMORY/bundles
 CHANGES=$MEMORY/changes
 MACHINES=$MEMORY/machines
@@ -33,7 +38,7 @@ LAYER_MOUNTS=$MEMORY/layer-mounts
 #MOUNTDIR=$DATAMNT
 MOUNTDIR=$LAYER_BASE
 
-LIVEKITNAME="MagOS"
+[ -z $LIVEKITNAME ] && LIVEKITNAME="MagOS"
 
 echo "0" >/proc/sys/kernel/printk
 
@@ -59,12 +64,12 @@ debug_shell
 
 mkdir -p $MEMORY
 
-getcmdline >/memory/cmdline
-eval echo $(cat /proc/cmdline /memory/cmdline 2>/dev/null | tr -s ";" "," ) >/memory/cmdline
+getcmdline >$MEMORY/cmdline
+eval echo $(cat /proc/cmdline $MEMORY/cmdline 2>/dev/null | tr -s ";" "," ) >$MEMORY/cmdline
 
 
 # print help
-if cat /memory/cmdline |grep -q help ; then
+if cat $MEMORY/cmdline |grep -q help ; then
     echo ""
     header "$HELP_SYSTEM" 
     echo ""
@@ -107,9 +112,9 @@ debug_shell
 
 BASECFG=$(cmdline_value $UIRD_BASECFG)
 [ -z "$BASECFG" ] && BASECFG=/uird_configs/basecfg.ini
-#cat "$BASECFG" >/memory/basecfg.ini 2>/dev/null
+#cat "$BASECFG" >$MEMORY/basecfg.ini 2>/dev/null
 
-eval echo $(cat /memory/cmdline $BASECFG 2>/dev/null | tr -s ";" "," ) >/memory/cmdline
+eval echo $(cat $MEMORY/cmdline $BASECFG 2>/dev/null | tr -s ";" "," ) >$MEMORY/cmdline
 
 RAMSIZE=$(cmdline_value $UIRD_RAMSIZE)
 if [ "$RAMSIZE" = "" ]; then RAMSIZE="70%"; fi
@@ -117,13 +122,13 @@ mount -t tmpfs -o "size=$RAMSIZE" tmpfs $MEMORY
 
 mkdir -p $MOUNTDIR $CHANGES
 
-getcmdline >/memory/cmdline
+getcmdline >$MEMORY/cmdline
 
 BASECFG=$(cmdline_value $UIRD_BASECFG)
 [ -z "$BASECFG" ] && BASECFG=/uird_configs/basecfg.ini
-#cat "$BASECFG" >/memory/basecfg.ini 2>/dev/null
+#cat "$BASECFG" >$MEMORY/basecfg.ini 2>/dev/null
 
-eval echo $(cat /proc/cmdline /memory/cmdline $BASECFG 2>/dev/null | tr -s ";" "," ) >/memory/cmdline
+eval echo $(cat /proc/cmdline $MEMORY/cmdline $BASECFG 2>/dev/null | tr -s ";" "," ) >$MEMORY/cmdline
 
 #init BASE layer
 [ "$(cmdline_value $UIRD_BREAK)" = "init_base" ] && shell_cmd "break"
@@ -214,10 +219,10 @@ mkdir -p $UNION/mnt/live/memory
 #mkdir -p $UNION/mnt/live/etc
 cp liblinuxlive $UNION/mnt/live/liblinuxlive
 #cp /etc/resolv.conf $UNION/mnt/live/etc/ 2>/dev/null
-[ -d "/memory/data/from/0" ] && ln -sf /memory/data/from/0 $UNION/mnt/livemedia
-[ -d "/memory/data/from/1" ] && ln -sf /memory/data/from/1 $UNION/mnt/livedata
-[ -d "/memory/bundles" ] && ln -sf /memory/bundles $UNION/mnt/live/memory/images
-[ -d "/memory/changes" ] && ln -sf /memory/changes $UNION/mnt/live/memory/changes
+[ -d "$MEMORY/data/from/0" ] && ln -sf $MEMORY/data/from/0 $UNION/mnt/livemedia
+[ -d "$MEMORY/data/from/1" ] && ln -sf $MEMORY/data/from/1 $UNION/mnt/livedata
+[ -d "$MEMORY/bundles" ] && ln -sf $MEMORY/bundles $UNION/mnt/live/memory/images
+[ -d "$MEMORY/changes" ] && ln -sf $MEMORY/changes $UNION/mnt/live/memory/changes
 debug_shell
 
 [ "$(cmdline_value $UIRD_BREAK)" = "rc.preinit" ] && shell_cmd "break"

@@ -58,6 +58,7 @@ install() {
 #		/usr/lib64/git-core/git-rebase--merge
 #    inst_libdir_file /usr/lib64/git-core/*
 #	cc
-    inst cc    
+    inst cc
+    inst make
 }
 
