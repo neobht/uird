@@ -4,6 +4,8 @@
 # Author: Anton Goroshkin <http://magos-linux.ru>
 #
 
+. /livekitlib
+
 #. /lib/magos-lib.sh
 
 #Messages
@@ -21,9 +23,6 @@ UNION=$NEWROOT
 [ -f /etc/DISTRO_SPECS ] && . /etc/DISTRO_SPECS
 
 [ "$SYSMNT" ] && MEMORY=$SYSMNT || MEMORY=/memory
-
-. /livekitlib
-
 
 
 BUNDLES=$MEMORY/bundles
@@ -113,7 +112,7 @@ debug_shell
 BASECFG=$(cmdline_value $UIRD_BASECFG)
 [ -z "$BASECFG" ] && BASECFG=/uird_configs/basecfg.ini
 #cat "$BASECFG" >$MEMORY/basecfg.ini 2>/dev/null
-
+echo -n " " >>$MEMORY/cmdline
 eval echo $(cat $MEMORY/cmdline $BASECFG 2>/dev/null | tr -s ";" "," ) >$MEMORY/cmdline
 
 RAMSIZE=$(cmdline_value $UIRD_RAMSIZE)
@@ -127,7 +126,7 @@ getcmdline >$MEMORY/cmdline
 BASECFG=$(cmdline_value $UIRD_BASECFG)
 [ -z "$BASECFG" ] && BASECFG=/uird_configs/basecfg.ini
 #cat "$BASECFG" >$MEMORY/basecfg.ini 2>/dev/null
-
+echo -n " " >>$MEMORY/cmdline 
 eval echo $(cat /proc/cmdline $MEMORY/cmdline $BASECFG 2>/dev/null | tr -s ";" "," ) >$MEMORY/cmdline
 
 #init BASE layer
@@ -218,6 +217,7 @@ debug_shell
 mkdir -p $UNION/mnt/live/memory 
 #mkdir -p $UNION/mnt/live/etc
 cp liblinuxlive $UNION/mnt/live/liblinuxlive
+cp /etc/DISTRO_SPECS  $UNION/etc
 #cp /etc/resolv.conf $UNION/mnt/live/etc/ 2>/dev/null
 [ -d "$MEMORY/data/from/0" ] && ln -sf $MEMORY/data/from/0 $UNION/mnt/livemedia
 [ -d "$MEMORY/data/from/1" ] && ln -sf $MEMORY/data/from/1 $UNION/mnt/livedata

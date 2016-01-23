@@ -43,6 +43,10 @@ BIN_BTRFSCK=/sbin/btrfsck
 BIN_BLKID=/sbin/blkid.real
 BIN_LOSETUP=/sbin/losetup.real
 
+[ -f /etc/DISTRO_SPECS ] && . /etc/DISTRO_SPECS
+
+[ "$SYSMNT" ] && MEMORY=$SYSMNT || MEMORY=/memory
+
 
 export TEXTDOMAIN="uird"
 export TEXTDOMAINDIR="/usr/share/locale"
