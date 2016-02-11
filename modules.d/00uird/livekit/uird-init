@@ -217,7 +217,7 @@ debug_shell
 mkdir -p $UNION/mnt/live/memory 
 #mkdir -p $UNION/mnt/live/etc
 cp liblinuxlive $UNION/mnt/live/liblinuxlive
-[ -f /etc/DISTRO_SPECS ] && cp /etc/DISTRO_SPECS  $UNION/etc
+[ -f /etc/DISTRO_SPECS ] && cat /etc/DISTRO_SPECS |sort |uniq  > $UNION/etc/DISTRO_SPECS
 #cp /etc/resolv.conf $UNION/mnt/live/etc/ 2>/dev/null
 [ -d "$MEMORY/data/from/0" ] && ln -sf $MEMORY/data/from/0 $UNION/mnt/livemedia
 [ -d "$MEMORY/data/from/1" ] && ln -sf $MEMORY/data/from/1 $UNION/mnt/livedata
