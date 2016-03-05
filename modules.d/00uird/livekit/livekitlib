@@ -356,10 +356,10 @@ cmdline_value()
     # ADD_VALUE=$(echo -n " " | cat - $ADDFILE 2>/dev/null  | egrep -m1 -o "(^|[[:space:]])$1\+=[^[:space:]]+" | cut -d "=" -f 2- | head -n1)
     ADD_VALUE=$(echo -n " " | cat - $ADDFILE 2>/dev/null  | egrep -o "(^|[[:space:]])$1\+=[^[:space:]]+" | cut -d "=" -f 2- | tr [[:cntrl:]] , | sed s/,,*/,/g | sed s/^,// | sed s/,$//)
     if [ -z $ADD_VALUE ] ; then 
-      echo "$1"="$VALUE" >> /etc/initvars  
+      echo "$(echo $1 |sed 's/\./_/')"="$VALUE" >> /etc/initvars  
       echo "$VALUE" 
     else 
-      echo "$1"="$VALUE,$ADD_VALUE" >> /etc/initvars 
+      echo "$(echo $1 |sed 's/\./_/')"="$VALUE,$ADD_VALUE" >> /etc/initvars 
       echo "$VALUE,$ADD_VALUE"
     fi
 }
