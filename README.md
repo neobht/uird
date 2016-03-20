@@ -43,6 +43,8 @@
     uird.from=/MagOS;$( eval [ $(date +%u) -gt 5 ] && echo /MagOS-Data) - подключать MagOS-Data только по выходным
     uird.changes=$(mkdir -p /MagOS-Data/changes && echo /MagOS-Data/changes) 
 
+Для более подробного описания параметров смотрите встроенную [подсказку](https://github.com/neobht/uird/tree/master/initrd/usr/share/uird.help)
+
 ### Уровни для источников
 
 Вводится базовый уровень layer-base и соответствующий параметр uird.from=:
