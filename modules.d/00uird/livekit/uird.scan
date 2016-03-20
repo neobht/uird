@@ -1,0 +1,48 @@
+#!/bin/bash
+. /livekitlib || . ./livekitlib
+[ -f $BIN_BLKID ] || BIN_BLKID=/sbin/blkid
+> /tmp/uird_sources
+> /tmp/uird_homes
+
+mount_cycle(){
+    local DIR FOUND PRESERVE DEVICE
+        for DEVICE in $(list_block_devices) $(list_mounted_directories) ; do
+			DIR=$(device_mountdir $DEVICE)
+			ismountpoint $DIR
+				if [ $? -eq 0 ]; then
+					PRESERVE="true"
+				else
+					mount_device $1 $DIR ro || rmdir $DIR 2>/dev/null
+					PRESERVE=""
+				fi
+				[ -d $DIR ] && 	find_markers
+                
+                [ $PRESERVE=true ] ||  ( fumount $DIR ;	rmdir $DIR 2>/dev/null )
+               
+        done
+
+}
+
+find_markers() {
+	local  a b 
+	[ -f $DIR/sbin/init ] && LEGASY="$DEVICE $LEGASY"
+	for a in  $(find $DIR  -type f \( -name $(cmdline_value uird.ro | sed 's/,/ -or -name /g')  \)  -exec dirname {} \;) ; do 
+		echo $a |sed "s:$DIR:$DEVICE:" >> /tmp/uird_sources 
+	done 
+ 
+	for b in  $(find $DIR  -type f -name "*.bashrc"  -exec dirname {} \;) ; do 
+		echo $b |grep -qE "/etc|/initrd|/skel|/root" || dirname $b |sed "s:$DIR:$DEVICE:" >> /tmp/uird_homes;
+	done
+}
+
+mount_cycle 
+
+echo legasy - 
+echo "$LEGASY"
+echo ""
+echo sourses -
+cat /tmp/uird_sources |uniq
+echo ""
+echo homes -
+cat /tmp/uird_homes |sort |uniq
+

@@ -21,6 +21,7 @@ install() {
     inst "$moddir/livekit/livekitlib" "/livekitlib"
     inst "$moddir/livekit/uird-init" "/uird-init"
     inst "$moddir/livekit/liblinuxlive" "/liblinuxlive"
+    inst "$moddir/livekit/uird.scan" "/uird.scan"
     inst "$moddir/livekit/i18n/ru.mo" "/usr/share/locale/ru/LC_MESSAGES/uird.mo"
 
     #binaries

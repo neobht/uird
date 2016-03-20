@@ -98,22 +98,20 @@ fi
 
 debug_shell
 
-
-# start quickshell
-start_quickshell
-debug_shell
-
-
-# Resume from swsuspend
-resume_from_suspend
-debug_shell
-
-
 BASECFG=$(cmdline_value $UIRD_BASECFG)
 [ -z "$BASECFG" ] && BASECFG=/uird_configs/basecfg.ini
 #cat "$BASECFG" >$MEMORY/basecfg.ini 2>/dev/null
 echo -n " " >>$MEMORY/cmdline
 eval echo $(cat $MEMORY/cmdline $BASECFG 2>/dev/null | tr -s ";" "," ) >$MEMORY/cmdline
+
+# start quickshell
+start_quickshell
+debug_shell
+
+# Resume from swsuspend
+resume_from_suspend
+debug_shell
+
 
 RAMSIZE=$(cmdline_value $UIRD_RAMSIZE)
 if [ "$RAMSIZE" = "" ]; then RAMSIZE="70%"; fi
