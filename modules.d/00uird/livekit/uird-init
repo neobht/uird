@@ -104,6 +104,14 @@ BASECFG=$(cmdline_value $UIRD_BASECFG)
 echo -n " " >>$MEMORY/cmdline
 eval echo $(cat $MEMORY/cmdline $BASECFG 2>/dev/null | tr -s ";" "," ) >$MEMORY/cmdline
 
+#uird.scan
+[ $(cmdline_value $UIRD_SCAN) == "legacy"  ] && (export BASECFG ; /uird.scan --legacy) 
+[ $(cmdline_value $UIRD_SCAN) == "modules" ] && (export BASECFG ; /uird.scan --modules) 
+if [ "$(cmdline_parameter $UIRD_SCAN)" ] ; then
+/uird.scan
+shell_cmd help
+fi 
+
 # start quickshell
 start_quickshell
 debug_shell

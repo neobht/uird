@@ -150,6 +150,7 @@ NOT_ENOUGH_MEMORY=$($GETTEXT "not enough memory.")
 [ -z $UIRD_FIND_PARAMS ] && UIRD_FIND_PARAMS=uird.find_params
 [ -z $UIRD_HELP ] && UIRD_HELP=uird.help
 [ -z $UIRD_BREAK ] && UIRD_BREAK=uird.break
+[ -z $UIRD_SCAN ] && UIRD_SCAN=uird.scan
 
 # =================================================================
 # debug and output functions

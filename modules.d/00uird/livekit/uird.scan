@@ -1,5 +1,13 @@
 #!/bin/bash
-. /livekitlib || . ./livekitlib
+. /livekitlib 2>/dev/null 
+. ./livekitlib 2>/dev/null
+
+#testblock, 
+#+++++++++++++++++
+#BASECFG=./testcfg
+#[ -f $BASECFG ] || > $BASECFG
+#+++++++++++++++++
+
 [ -f $BIN_BLKID ] || BIN_BLKID=/sbin/blkid
 > /tmp/uird_sources
 > /tmp/uird_homes
@@ -12,7 +20,7 @@ mount_cycle(){
 				if [ $? -eq 0 ]; then
 					PRESERVE="true"
 				else
-					mount_device $1 $DIR ro || rmdir $DIR 2>/dev/null
+					mount_device $DEVICE $DIR ro || rmdir $DIR 2>/dev/null
 					PRESERVE=""
 				fi
 				[ -d $DIR ] && 	find_markers
@@ -25,7 +33,7 @@ mount_cycle(){
 
 find_markers() {
 	local  a b 
-	[ -f $DIR/sbin/init ] && LEGASY="$DEVICE $LEGASY"
+	[ -f $DIR/sbin/init ] && LEGACY="$DEVICE $LEGACY"
 	for a in  $(find $DIR  -type f \( -name $(cmdline_value uird.ro | sed 's/,/ -or -name /g')  \)  -exec dirname {} \;) ; do 
 		echo $a |sed "s:$DIR:$DEVICE:" >> /tmp/uird_sources 
 	done 
@@ -35,14 +43,63 @@ find_markers() {
 	done
 }
 
-mount_cycle 
-
-echo legasy - 
-echo "$LEGASY"
+listing () {
+echo legacy: 
+echo "$LEGACY"
 echo ""
-echo sourses -
+echo sourses:
 cat /tmp/uird_sources |uniq
 echo ""
-echo homes -
+echo homes:
 cat /tmp/uird_homes |sort |uniq
+}
+
+legacy () {
+	[ -d /sysroot ] || exit 1
+	LEGACY=$(echo $LEGACY |awk '{print $NF}')  
+
+	if grep -q uird.from $BASECFG ;then 
+		sed -i "s:^uird\.from=.*:uird\.from=$LEGACY:" $BASECFG
+	else
+		echo "uird.from=$LEGACY" >> $BASECFG
+	fi
+	if grep -q uird.ro $BASECFG ;then 
+		sed -i 's:^uird\.ro=.*:uird\.ro=\*layer-base/0:' $BASECFG
+	else
+		echo "uird.ro=*layer-base/0" >> $BASECFG
+	fi
+	if grep -q uird.load $BASECFG ;then 
+		sed -i 's:^uird\.load=.*:uird\.load=\*:' $BASECFG
+	else
+		echo "uird.load=*" >> $BASECFG
+	fi
+	}
+
+modules () {
+	[ -d /sysroot ] || exit 1
+	SOURCES=$(for a in $(cat /tmp/uird_sources |sort |uniq |grep -E "base|modules"); do dirname $a ;done |sort |uniq )
+	if grep -q uird.from $BASECFG ;then 
+		sed -i "s:^uird\.from=.*:uird\.from=$(echo $SOURCES |sed 's: :,:g'):" $BASECFG
+	else
+		echo "uird.from=$(echo $SOURCES |sed 's: :,:g')" >> $BASECFG
+	fi
+	
+	grep -q uird.ro $BASECFG   || echo "uird.ro=*.xzm,*.pfs"        >> $BASECFG
+	grep -q uird.load $BASECFG || echo "uird.load=/base/,/modules/" >> $BASECFG
+	
+	}
+
+echo "Please wait, disks are scanning....."
+echo ""
+mount_cycle 
+
+mode="--scan"
+[ -z $1 ] || mode="$1"
+
+case "$mode" in
+    --legacy    ) legacy;;
+    --modules   ) modules ;;
+    --scan      ) listing ;;
+esac 
+
 
