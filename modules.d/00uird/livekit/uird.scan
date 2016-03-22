@@ -21,11 +21,11 @@ mount_cycle(){
 					PRESERVE="true"
 				else
 					mount_device $DEVICE $DIR ro || rmdir $DIR 2>/dev/null
-					PRESERVE=""
+					PRESERVE="false"
 				fi
 				[ -d $DIR ] && 	find_markers
                 
-                [ $PRESERVE=true ] ||  ( fumount $DIR ;	rmdir $DIR 2>/dev/null )
+                [ $PRESERVE != "true" ] &&  ( fumount $DIR ;	rmdir $DIR 2>/dev/null )
                
         done
 
