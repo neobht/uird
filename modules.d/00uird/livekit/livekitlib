@@ -424,7 +424,7 @@ init_proc_sysfs()
 init_devs()
 {
     debug_log "init_devs" "$*"
-    echo /sbin/mdev > /proc/sys/kernel/hotplug
+    #echo /sbin/mdev > /proc/sys/kernel/hotplug
     mdev -s
     modprobe zram 2>/dev/null
     modprobe loop 2>/dev/null

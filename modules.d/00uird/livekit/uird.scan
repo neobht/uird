@@ -2,7 +2,7 @@
 . /livekitlib 2>/dev/null 
 . ./livekitlib 2>/dev/null
 
-#testblock, 
+#test block 
 #+++++++++++++++++
 #BASECFG=./testcfg
 #[ -f $BASECFG ] || > $BASECFG
@@ -33,7 +33,7 @@ mount_cycle(){
 
 find_markers() {
 	local  a b 
-	[ -f $DIR/sbin/init ] && LEGACY="$DEVICE $LEGACY"
+	[ -f $DIR/sbin/init ] && LEGACY="$LEGACY $DEVICE"
 	for a in  $(find $DIR  -type f \( -name $(cmdline_value uird.ro | sed 's/,/ -or -name /g')  \)  -exec dirname {} \;) ; do 
 		echo $a |sed "s:$DIR:$DEVICE:" >> /tmp/uird_sources 
 	done 
@@ -44,20 +44,33 @@ find_markers() {
 }
 
 listing () {
-echo legacy: 
-echo "$LEGACY"
+local a int
+int=1
+echo LEGACY: 
+for a in $LEGACY ; do
+	echo "legacy:${int} - ${a}"
+	int=$(expr $int + 1)
+done
+
 echo ""
-echo sourses:
+echo SOURCES:
 cat /tmp/uird_sources |uniq
 echo ""
-echo homes:
+echo HOMES:
 cat /tmp/uird_homes |sort |uniq
 }
 
 legacy () {
+	local dev
 	[ -d /sysroot ] || exit 1
-	LEGACY=$(echo $LEGACY |awk '{print $NF}')  
-
+	dev=$2
+	[ -z $2 ] && dev=1
+	LEGACY=$(echo $LEGACY" " |cut -d ' ' -f "$dev")
+	echo $LEGACY
+	if [ -z $LEGACY ] ; then
+		echo "can't find legacy linux installation"
+		exit 2
+	fi
 	if grep -q uird.from $BASECFG ;then 
 		sed -i "s:^uird\.from=.*:uird\.from=$LEGACY:" $BASECFG
 	else
@@ -78,6 +91,10 @@ legacy () {
 modules () {
 	[ -d /sysroot ] || exit 1
 	SOURCES=$(for a in $(cat /tmp/uird_sources |sort |uniq |grep -E "base|modules"); do dirname $a ;done |sort |uniq )
+	if [ -z $SOURCES ] ; then 
+		echo "can't find modules" 
+	exit 3
+	fi
 	if grep -q uird.from $BASECFG ;then 
 		sed -i "s:^uird\.from=.*:uird\.from=$(echo $SOURCES |sed 's: :,:g'):" $BASECFG
 	else
@@ -94,12 +111,10 @@ echo ""
 mount_cycle 
 
 mode="--scan"
-[ -z $1 ] || mode="$1"
+[ -z $1 ] || mode=$1
 
 case "$mode" in
-    --legacy    ) legacy;;
+    --legacy    ) legacy $@;;
     --modules   ) modules ;;
     --scan      ) listing ;;
 esac 
-
-
