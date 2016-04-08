@@ -136,6 +136,7 @@ BASECFG=$(cmdline_value $UIRD_BASECFG)
 echo -n " " >>$MEMORY/cmdline 
 eval echo $(cat /proc/cmdline $MEMORY/cmdline $BASECFG 2>/dev/null | tr -s ";" "," ) >$MEMORY/cmdline
 
+
 #init BASE layer
 [ "$(cmdline_value $UIRD_BREAK)" = "init_base" ] && shell_cmd "break"
 [ "$(cmdline_value $UIRD_FROM)" ] && init_layer $DATAMNT/from $LAYER_BASE $UIRD_FROM "check_SGN"
@@ -187,6 +188,7 @@ init_aufs
 [ "$(cmdline_value $UIRD_BREAK)" = "init_aufs" ] && shell_cmd "break"
 init_union "$CHANGES" "$UNION"
 debug_shell
+
 # init MOUNTS layer
 [ "$(cmdline_value $UIRD_BREAK)" = "mounts" ] && shell_cmd "break"
 [ "$(cmdline_value $UIRD_MOUNTS)" ] && init_layer $DATAMNT/mounts $LAYER_MOUNTS $UIRD_MOUNTS
@@ -207,6 +209,10 @@ debug_shell
 [ "$(cmdline_value $UIRD_BREAK)" = "set_homes" ] && shell_cmd "break"
 setup_homes "$LAYER_HOMES" "$UNION/home"
 debug_shell
+
+#init swap, resize tmpfs
+[ "$(cmdline_value $UIRD_BREAK)" = "init_swap" ] && shell_cmd "break"
+[ "$(cmdline_value $UIRD_SWAP)" ] && init_swap "$(cmdline_value $UIRD_SWAP)"
 
 # rootcopy
 #copy_rootcopy_content "$DATA" "$UNION"

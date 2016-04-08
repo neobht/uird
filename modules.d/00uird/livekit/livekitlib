@@ -85,6 +85,8 @@ SETUP_MACHINES_MOD=$($GETTEXT "Searching bundle for machine-depended changes:")
 SETUP_MACHINES_UNPACKING=$($GETTEXT "unpacking")
 SETUP_MACHINES_TO_RAM=$($GETTEXT "to RAM")
 SETUP_HOMES=$($GETTEXT "Mounting sources for homes directories:")
+SETUP_SWAP=$($GETTEXT "Trying to enable SWAP")
+RESIZE_TMPFS=$($GETTEXT "Resizing TMPFS to - ")
 
 INIT_IFCFG=$($GETTEXT "Initializing network services")
 UNION_APPEND_BUNDLES=$($GETTEXT "Mounting bundles to root:")
@@ -151,6 +153,7 @@ NOT_ENOUGH_MEMORY=$($GETTEXT "not enough memory.")
 [ -z $UIRD_HELP ] && UIRD_HELP=uird.help
 [ -z $UIRD_BREAK ] && UIRD_BREAK=uird.break
 [ -z $UIRD_SCAN ] && UIRD_SCAN=uird.scan
+[ -z $UIRD_SWAP ] && UIRD_SWAP=uird.swap
 
 # =================================================================
 # debug and output functions
@@ -1539,6 +1542,28 @@ setup_config()
     chmod 400 $MEMORY/$LIVEKITNAME.ini.gz $MEMORY/cmdline 2>/dev/null
 }
 
+# Init swap and resize tmpfs 
+init_swap () {
+	local newsize total FSWAP
+    debug_log "setting up swap"
+    echo_green_star
+    echolog "$SETUP_SWAP" 
+    if [ "$1" == "auto" ] ; then
+		FSWAP=$(list_swap_devices |head -n 1)
+		[ -b "$FSWAP" ] && swapon $FSWAP
+	elif [ -b "$1" ] ; then
+		FSWAP="$1"
+		swapon $FSWAP
+    fi
+	if  [ ! "$(cmdline_value $RAMSIZE)" ] ;then
+		#busybox free can't show  total (mem+swap)
+		total=$(expr $(echo $(free -m  |grep "^[M,S].*: " | awk '{print $2}' ) |sed 's/ / + /'))
+		newsize=$(expr $total / 3 \* 2) # 2/3 (ram+wap)
+		echo_green_star
+		echolog "$RESIZE_TMPFS ${newsize}M"
+		mount -o remount,size=${newsize}M $MEMORY
+	fi
+}
 
 # Setup changes
 # $1 = changes mount directory
