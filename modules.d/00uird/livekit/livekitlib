@@ -1551,14 +1551,15 @@ init_swap () {
     if [ "$1" == "auto" ] ; then
 		FSWAP=$(list_swap_devices |head -n 1)
 		[ -b "$FSWAP" ] && swapon $FSWAP
-	elif [ -b "$1" ] ; then
-		FSWAP="$1"
-		swapon $FSWAP
+	else 
+		for FSWAP in $(echo $1 | tr ";,_" " ") ;do
+			[ -b $FSWAP ] && swapon $FSWAP
+		done
     fi
 	if  [ ! "$(cmdline_value $RAMSIZE)" ] ;then
-		#busybox free can't show  total (mem+swap)
+		#busybox app "free" can't show  total (mem+swap)
 		total=$(expr $(echo $(free -m  |grep "^[M,S].*: " | awk '{print $2}' ) |sed 's/ / + /'))
-		newsize=$(expr $total / 3 \* 2) # 2/3 (ram+wap)
+		newsize=$(expr $total / 3 \* 2) # 2/3 (ram+swap)
 		echo_green_star
 		echolog "$RESIZE_TMPFS ${newsize}M"
 		mount -o remount,size=${newsize}M $MEMORY
