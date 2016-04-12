@@ -48,7 +48,7 @@ local a int
 int=1
 echo LEGACY: 
 for a in $LEGACY ; do
-	echo "legacy:${int} - ${a}"
+	echo "legacy:${int} - ${a}  ( $($BIN_BLKID |grep ${a} |cut -d " " -f2) )"
 	int=$(expr $int + 1)
 done
 
@@ -58,6 +58,9 @@ cat /tmp/uird_sources |uniq
 echo ""
 echo HOMES:
 cat /tmp/uird_homes |sort |uniq
+echo ""
+echo SWAP:
+list_swap_devices
 }
 
 legacy () {

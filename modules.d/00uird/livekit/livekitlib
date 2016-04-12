@@ -1544,22 +1544,36 @@ setup_config()
 
 # Init swap and resize tmpfs 
 init_swap () {
-	local newsize total FSWAP
+	local newsize total FSWAP ASWAP DSWAP
     debug_log "setting up swap"
     echo_green_star
     echolog "$SETUP_SWAP" 
     if [ "$1" == "auto" ] ; then
-		FSWAP=$(list_swap_devices |head -n 1)
-		[ -b "$FSWAP" ] && swapon $FSWAP
+		ASWAP=$(list_swap_devices |head -n 1)
+		[ -b "$ASWAP" ] && swapon $FSWAP
 	else 
-		for FSWAP in $(echo $1 | tr ";,_" " ") ;do
-			[ -b $FSWAP ] && swapon $FSWAP
+		FSWAP=""
+		for DSWAP in $(echo $1 | tr ";,_" " ") ;do
+			if [ -b $DSWAP ]; then 
+				swapon $DSWAP
+			else
+				FSWAP="$DSWAP $FSWAP"
+			fi
 		done
     fi
+    
+    if [ -n $FSWAP ] ; then
+		# TODO: mount sources and swapon files
+		# $FSWAP is list of local and lan swapfiles separated by space
+		# like this: /dev/sda1/path/file.swap file2.swap nfs://path/file.swap
+		# swap partitions are already active
+		echolog  "trying to mount and setup swap files: $FSWAP" 
+    fi
+    
 	if  [ ! "$(cmdline_value $RAMSIZE)" ] ;then
-		#busybox app "free" can't show  total (mem+swap)
+		#busybox's util "free" doesn't know the option -t   (total - mem+swap)
 		total=$(expr $(echo $(free -m  |grep "^[M,S].*: " | awk '{print $2}' ) |sed 's/ / + /'))
-		newsize=$(expr $total / 3 \* 2) # 2/3 (ram+swap)
+		newsize=$(expr $total / 10 \* 7) # ~70% (ram+swap)
 		echo_green_star
 		echolog "$RESIZE_TMPFS ${newsize}M"
 		mount -o remount,size=${newsize}M $MEMORY
