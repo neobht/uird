@@ -1550,7 +1550,7 @@ init_swap () {
     echolog "$SETUP_SWAP" 
     if [ "$1" == "auto" ] ; then
 		ASWAP=$(list_swap_devices |head -n 1)
-		[ -b "$ASWAP" ] && swapon $FSWAP
+		[ -b "$ASWAP" ] && swapon $ASWAP
 	else 
 		FSWAP=""
 		for DSWAP in $(echo $1 | tr ";,_" " ") ;do
@@ -1562,12 +1562,13 @@ init_swap () {
 		done
     fi
     
-    if [ -n $FSWAP ] ; then
+    if [ "${FSWAP}_" != "_" ] ; then
 		# TODO: mount sources and swapon files
 		# $FSWAP is list of local and lan swapfiles separated by space
 		# like this: /dev/sda1/path/file.swap file2.swap nfs://path/file.swap
 		# swap partitions are already active
 		echolog  "trying to mount and setup swap files: $FSWAP" 
+		echolog $FSAWP #test string
     fi
     
 	if  [ ! "$(cmdline_value $RAMSIZE)" ] ;then
