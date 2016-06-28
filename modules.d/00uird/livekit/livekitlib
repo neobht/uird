@@ -154,6 +154,7 @@ NOT_ENOUGH_MEMORY=$($GETTEXT "not enough memory.")
 [ -z $UIRD_BREAK ] && UIRD_BREAK=uird.break
 [ -z $UIRD_SCAN ] && UIRD_SCAN=uird.scan
 [ -z $UIRD_SWAP ] && UIRD_SWAP=uird.swap
+[ -z $UIRD_MODES ] && UIRD_MODES=uird.modes
 
 # =================================================================
 # debug and output functions
@@ -1442,6 +1443,20 @@ mount_data_source()
 
 }
 
+# check uird modes
+uird_modes() {
+	local MODES ARR_MODES mode
+	MACHINES_MODE=no
+	CLEAN_MODE=no
+	MODES=$(cmdline_value $UIRD_MODES)
+	ARR_MODES=$(echo $MODES | tr -s ";," " ")
+	for mode in $ARR_MODES ;do
+		[ "$mode" == "machines" ] && MACHINES_MODE=yes
+		echo "$mode" | grep -q ^[XxLl][Zz][Mm]$ && MACHINES_MODE=yes
+		[ "$mode" == "clean" ] && CLEAN_MODE=yes
+	done
+}
+
 # Initialization layer
 # $1 = data directory
 # $2 = layer directory
@@ -1616,7 +1631,7 @@ setup_machines()
     [ -z "$CHANGESVAL" ] && return
     MACHINES=$(cmdline_value $UIRD_MACHINES)
     [ -z "$MACHINES" ] && return
-
+    
     #In case we using lzm|xzm as changes= parameter
     if echo "$CHANGESVAL" | grep -q [XxLl][Zz][Mm]$ ;then
         echo_green_star
