@@ -154,7 +154,7 @@ NOT_ENOUGH_MEMORY=$($GETTEXT "not enough memory.")
 [ -z $UIRD_BREAK ] && UIRD_BREAK=uird.break
 [ -z $UIRD_SCAN ] && UIRD_SCAN=uird.scan
 [ -z $UIRD_SWAP ] && UIRD_SWAP=uird.swap
-[ -z $UIRD_MODES ] && UIRD_MODES=uird.modes
+[ -z $UIRD_MODE ] && UIRD_MODE=uird.mode
 
 # =================================================================
 # debug and output functions
@@ -1602,81 +1602,75 @@ init_swap () {
 setup_changes()
 {
     debug_log "setup changes" "$*"
-
+	[ "$(cmdline_value $UIRD_MODE)" != "changes" ] && return 
+    
     CHANGESVAL=$(cmdline_value $UIRD_CHANGES)
-    [ -z "$CHANGESVAL" ] && return
-
+    [ -z "$CHANGESVAL" ] && CHANGESVAL="changes"
     echo_green_star
     echolog "$SETUP_CHANGES" $brown"$2"$default
 
-    if [ "$CHANGESVAL" -a "$CHANGESVAL" != "xzm" ]; then
+    if ! echo "$CHANGESVAL" | grep -q [XxLl][Zz][Mm]$ ; then
         mount_data_source $CHANGESVAL $2 $1 ""
     else
-        rmdir $2
-    fi
-    posix_test $1 $2
-}
+		echo_green_star
+		echolog $SETUP_MACHINES_MOD $yellow"$CHANGESVAL"$default # text is not correct here
+		SOURCE=$CHANGESVAL
+		MNT_DIR=$1
+		if [ "$(echo $SOURCE | grep "://")" != ""  ]; then
+			init_ifcfg
+			echo $SOURCE | grep -iq ^"http://" && DATA_FROM=$(mount_httpfs $SOURCE $MNT_DIR)
+			echo $SOURCE | grep -iq ^"nfs://" && DATA_FROM=$(mount_nfs $SOURCE $MNT_DIR)
+			echo $SOURCE | grep -iq ^"cifs://" && DATA_FROM=$(mount_cifs $SOURCE $MNT_DIR)
+			echo $SOURCE | grep -iq ^"ssh://" && DATA_FROM=$(mount_sshfs $SOURCE $MNT_DIR)
+			echo $SOURCE | grep -iq ^"ftp://" && DATA_FROM=$(mount_curlftpfs $SOURCE $MNT_DIR)
+		else
+			DATA_FROM=$(find_data $SOURCE $MNT_DIR "")
+		fi
 
+		CHANGESMNT=$DATA_FROM
+		
+		if [ -f "$CHANGESMNT" ] ;then
+			echolog $default"  $SETUP_MACHINES_UNPACKING $yellow$CHANGESMNT$default $SETUP_MACHINES_TO_RAM \($2\)"
+			unsquashfs -f -dest $2 "$CHANGESMNT" # >/dev/null 2>&1
+		fi
+		echo "$CHANGESMNT" > $2/.savetomodule
+	fi
+	read aaaa ############## delete this string #################
+#   posix_test $1 $2
+}
 
 # $1 = machines directory
 # $2 = machines mount directory
 # $3 = changes directory
 # $4 = changes mount directory
-setup_machines()
-{
-    debug_log "setup machines" "$*"
+setup_machines() {
+    debug_log "setup_machines" "$*"
     local CHANGESMNT MACHINES SOURCE MNT_DIR
-
-    CHANGESVAL=$(cmdline_value $UIRD_CHANGES)
-    [ -z "$CHANGESVAL" ] && return
-    MACHINES=$(cmdline_value $UIRD_MACHINES)
-    [ -z "$MACHINES" ] && return
+	[ $(cmdline_value $UIRD_MODE) != "machines" ] && return
     
-    #In case we using lzm|xzm as changes= parameter
-    if echo "$CHANGESVAL" | grep -q [XxLl][Zz][Mm]$ ;then
-        echo_green_star
-        echolog "$SETUP_MACHINES" $yellow"$1"$default
-
-        mount_data_source $MACHINES $1 $2 ""
-
-        if [ "$CHANGESVAL" = "xzm" ] ;then
-            MUID=mac-$(cat /sys/class/net/eth0/address | tr -d :)
-            [ "$MUID" = "mac-" ] && MUID=vga-$(lspci -mm | grep -i vga | md5sum | cut -c 1-12)
-            [ -d "$1" ] && CHANGESMNT=$1
-
-            if [ -f "$CHANGESMNT/static/$MUID.xzm"  ] ;then 
-                CHANGESMNT=$CHANGESMNT/static/$MUID.xzm
-            else
-                CHANGESMNT=$CHANGESMNT/dynamic/$MUID.xzm
-            fi
-        else
-            echo_green_star
-            echolog $SETUP_MACHINES_MOD $yellow"$CHANGESVAL"$default
-            SOURCE=$CHANGESVAL
-            MNT_DIR=$4
-            if [ "$(echo $SOURCE | grep "://")" != ""  ]; then
-                init_ifcfg
-                echo $SOURCE | grep -iq ^"http://" && DATA_FROM=$(mount_httpfs $SOURCE $MNT_DIR)
-                echo $SOURCE | grep -iq ^"nfs://" && DATA_FROM=$(mount_nfs $SOURCE $MNT_DIR)
-                echo $SOURCE | grep -iq ^"cifs://" && DATA_FROM=$(mount_cifs $SOURCE $MNT_DIR)
-                echo $SOURCE | grep -iq ^"ssh://" && DATA_FROM=$(mount_sshfs $SOURCE $MNT_DIR)
-                echo $SOURCE | grep -iq ^"ftp://" && DATA_FROM=$(mount_curlftpfs $SOURCE $MNT_DIR)
-            else
-                DATA_FROM=$(find_data $SOURCE $MNT_DIR "")
-            fi
-
-            CHANGESMNT=$DATA_FROM
-
-        fi
-        if [ -f "$CHANGESMNT" ] ;then
+    MACHINES=$(cmdline_value $UIRD_CHANGES)
+    [ -z "$MACHINES" ] && MACHINES="machines"
+    
+    echo_green_star
+	echolog "$SETUP_MACHINES" $yellow"$1"$default
+	mount_data_source $MACHINES $1 $2 ""
+	
+    MUID=mac-$(cat /sys/class/net/eth0/address | tr -d :)
+    [ "$MUID" = "mac-" ] && MUID=vga-$(lspci -mm | grep -i vga | md5sum | cut -c 1-12)
+    [ -d "$1" ] && CHANGESMNT=$1
+	if [ -f "$CHANGESMNT/static/$MUID.xzm"  ] ;then 
+		CHANGESMNT=$CHANGESMNT/static/$MUID.xzm
+    else
+        CHANGESMNT=$CHANGESMNT/dynamic/$MUID.xzm
+    fi
+    
+    if [ -f "$CHANGESMNT" ] ;then
             echolog $default"  $SETUP_MACHINES_UNPACKING $yellow$CHANGESMNT$default $SETUP_MACHINES_TO_RAM"
             unsquashfs -f -dest $3 "$CHANGESMNT" >/dev/null 2>&1
-        fi
-        echo "$CHANGESMNT" | sed s=/machines/static/=/machines/dynamic/= > $3/.savetomodule
     fi
-
+   
+    echo "$CHANGESMNT" | sed s=/machines/static/=/machines/dynamic/= > $3/.savetomodule
 }
-
 
 # Setup homes
 # $1 = homes-layer

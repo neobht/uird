@@ -122,7 +122,7 @@ resume_from_suspend
 debug_shell
 
 # check uird modes 
-uird_modes
+#uird_modes
 
 RAMSIZE=$(cmdline_value $UIRD_RAMSIZE)
 if [ "$RAMSIZE" = "" ]; then RAMSIZE="70%"; fi
@@ -137,7 +137,6 @@ BASECFG=$(cmdline_value $UIRD_BASECFG)
 #cat "$BASECFG" >$MEMORY/basecfg.ini 2>/dev/null
 echo -n " " >>$MEMORY/cmdline 
 eval echo $(cat /proc/cmdline $MEMORY/cmdline $BASECFG 2>/dev/null | tr -s ";" "," ) >$MEMORY/cmdline
-
 
 #init BASE layer
 [ "$(cmdline_value $UIRD_BREAK)" = "init_base" ] && shell_cmd "break"
@@ -163,13 +162,13 @@ debug_shell
 setup_changes $DATAMNT/changes $CHANGES
 
 #clear changes dir if CLEAN mode is enabled
-if [ "$CLEAN_MODE" == "yes" ] ; then 
+if [ "$(cmdline_value $UIRD_MODE)" = "clear" -o "$(cmdline_value $UIRD_MODE)" = "hybrid" ] ; then 
 rm -rf ${CHANGES}/* 
 echo $(date) >  ${CHANGES}/cleared_by_uird
 fi
 
 debug_shell
-#setting up machines
+#setting up machines mode
 [ "$(cmdline_value $UIRD_BREAK)" = "machines" ] && shell_cmd "break"
 setup_machines $MACHINES $DATAMNT/machines $CHANGES $DATAMNT/changes
 debug_shell
