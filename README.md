@@ -124,7 +124,6 @@
     uird.from=/MagOS;/MagOS-Data
     uird.changes=/MagOS-Data/changes
     uird.cache=/MagOS-Data/cache
-    uird.machines=/MagOS-Data/machines
     uird.home=/MagOS-Data/homes
     
 !!! Если параметр uird.basecfg= не задан, то используется /uird_configs/basecfg.ini внутри initrd.
