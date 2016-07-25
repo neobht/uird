@@ -31,17 +31,18 @@
     uird.homes[+]=             - источники, где хранятся домашние директории пользователей (объединяются AUFS) 
     uird.home=                 - источник, где хранятся домашние директории пользователей 
     uird.changes=              - источник, где хранить персистентные изменения
-    uird.machines=             - источник, где хранятся машинно-зависимые персистентные изменения
     uird.mounts=               - источники , которые будут смонтированы в указанные точки монтирования
     uird.find_params[+]=       - параметры для утилиты find при поиске модулей (например: -maxdepth,2)
     uird.help                  - печатает подсказку по параметрам UIRD
     uird.break=STAGE           - остановка загрузки на стадии STAGE и включение режима отладки (debug) 
+    uird.mode=MODE             - режим работы сохраниениями (clean, clear, changes, machines)
+    uird.scan=                 - поиск установленных OC и компонентов для определения параметров uird
 
 
 В качестве значений параметров могут быть использованы команды shell:
 
-    uird.from=/MagOS;$( eval [ $(date +%u) -gt 5 ] && echo /MagOS-Data) - подключать MagOS-Data только по выходным
-    uird.changes=$(mkdir -p /MagOS-Data/changes && echo /MagOS-Data/changes) 
+    uird.from="/MagOS;$( eval [ $(date +%u) -gt 5 ] && echo /MagOS-Data)" - подключать MagOS-Data только по выходным
+    uird.changes="$(mkdir -p /MagOS-Data/changes && echo /MagOS-Data/changes)" 
 
 Для более подробного описания параметров смотрите встроенную [подсказку](https://github.com/neobht/uird/tree/master/initrd/usr/share/uird.help)
 
@@ -123,7 +124,6 @@
     uird.from=/MagOS;/MagOS-Data
     uird.changes=/MagOS-Data/changes
     uird.cache=/MagOS-Data/cache
-    uird.machines=/MagOS-Data/machines
     uird.home=/MagOS-Data/homes
     
 !!! Если параметр uird.basecfg= не задан, то используется /uird_configs/basecfg.ini внутри initrd.
