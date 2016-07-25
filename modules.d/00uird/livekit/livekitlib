@@ -1629,13 +1629,12 @@ setup_changes()
 
 		CHANGESMNT=$DATA_FROM
 		
-		if [ -f "$CHANGESMNT" ] ;then
+		if [ -f "$CHANGESMNT" ] ;then 
 			echolog $default"  $SETUP_MACHINES_UNPACKING $yellow$CHANGESMNT$default $SETUP_MACHINES_TO_RAM \($2\)"
-			unsquashfs -f -dest $2 "$CHANGESMNT" # >/dev/null 2>&1
+			unsquashfs -f -d "$2"  "$CHANGESMNT" # >/dev/null 2>&1
 		fi
 		echo "$CHANGESMNT" > $2/.savetomodule
 	fi
-	read aaaa ############## delete this string #################
 #   posix_test $1 $2
 }
 
@@ -1649,7 +1648,8 @@ setup_machines() {
 	[ $(cmdline_value $UIRD_MODE) != "machines" ] && return
     
     MACHINES=$(cmdline_value $UIRD_CHANGES)
-    [ -z "$MACHINES" ] && MACHINES="machines"
+    [ "$MACHINES" == "/MagOS-Data/changes" ] && MACHINES="/MagOS-Data/machines"
+    [ -z "$MACHINES" ] && MACHINES="/MagOS-Data/machines"
     
     echo_green_star
 	echolog "$SETUP_MACHINES" $yellow"$1"$default
@@ -1666,7 +1666,7 @@ setup_machines() {
     
     if [ -f "$CHANGESMNT" ] ;then
             echolog $default"  $SETUP_MACHINES_UNPACKING $yellow$CHANGESMNT$default $SETUP_MACHINES_TO_RAM"
-            unsquashfs -f -dest $3 "$CHANGESMNT" >/dev/null 2>&1
+            unsquashfs -f -d "$3" "$CHANGESMNT" >/dev/null 2>&1
     fi
    
     echo "$CHANGESMNT" | sed s=/machines/static/=/machines/dynamic/= > $3/.savetomodule

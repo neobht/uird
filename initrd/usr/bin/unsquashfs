@@ -1,0 +1,26 @@
+#!/bin/bash
+force=""
+filexzm=""
+destdir=$(pwd)
+for a in "$@" ; do
+[ -f "$a" ] && filexzm=$a
+done 
+set -- `getopt "fd:"  "$@"`
+while [ ! -z "$1" ] ; do
+  case "$1" in
+    -f)  force="f"; shift ;;
+    -d)  destdir="$2"; shift 2 ;;
+    *) break;;
+  esac
+done
+[ -f $filexzm ] || exit
+
+. /livekitlib
+mkdir -p /tmp/tmpmntdir
+mount_device  $filexzm /tmp/tmpmntdir
+cp  -a"$force" /tmp/tmpmntdir/* ${destdir}/
+umount  /tmp/tmpmntdir
+rm -rf /tmp/tmpmntdir
+
+
+
