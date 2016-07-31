@@ -220,7 +220,7 @@ debug_shell
 
 #init swap, resize tmpfs
 [ "$(cmdline_value $UIRD_BREAK)" = "init_swap" ] && shell_cmd "break"
-[ "$(cmdline_value $UIRD_SWAP)" ] && init_swap "$(cmdline_value $UIRD_SWAP)"
+[ "$(cmdline_value $UIRD_SWAP)" ] && init_swap "$(cmdline_value $UIRD_SWAP)" $DATAMNT/swapfiles
 
 # rootcopy
 #copy_rootcopy_content "$DATA" "$UNION"

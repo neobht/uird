@@ -1443,20 +1443,6 @@ mount_data_source()
 
 }
 
-# check uird modes
-uird_modes() {
-	local MODES ARR_MODES mode
-	MACHINES_MODE=no
-	CLEAN_MODE=no
-	MODES=$(cmdline_value $UIRD_MODES)
-	ARR_MODES=$(echo $MODES | tr -s ";," " ")
-	for mode in $ARR_MODES ;do
-		[ "$mode" == "machines" ] && MACHINES_MODE=yes
-		echo "$mode" | grep -q ^[XxLl][Zz][Mm]$ && MACHINES_MODE=yes
-		[ "$mode" == "clean" ] && CLEAN_MODE=yes
-	done
-}
-
 # Initialization layer
 # $1 = data directory
 # $2 = layer directory
@@ -1559,7 +1545,7 @@ setup_config()
 
 # Init swap and resize tmpfs 
 init_swap () {
-	local newsize total FSWAP ASWAP DSWAP
+	local newsize total FSWAP ASWAP DSWAP SOURCE SWAP_FROM 
     debug_log "setting up swap"
     echo_green_star
     echolog "$SETUP_SWAP" 
@@ -1569,23 +1555,36 @@ init_swap () {
 	else 
 		FSWAP=""
 		for DSWAP in $(echo $1 | tr ";,_" " ") ;do
+			DSWAP=$(uuid_label_to_dev $DSWAP) 
 			if [ -b $DSWAP ]; then 
 				swapon $DSWAP
 			else
 				FSWAP="$DSWAP $FSWAP"
 			fi
 		done
-    fi
-    
+    fi   
+    ############################################################################# do not tested yet
     if [ "${FSWAP}_" != "_" ] ; then
-		# TODO: mount sources and swapon files
-		# $FSWAP is list of local and lan swapfiles separated by space
-		# like this: /dev/sda1/path/file.swap file2.swap nfs://path/file.swap
-		# swap partitions are already active
-		echolog  "trying to mount and setup swap files: $FSWAP" 
-		echolog $FSAWP #test string
-    fi
-    
+		MNT_DIR=$2
+		for SOURCE in  $(echo $FSWAP) ; do
+			if [ "$(echo $SOURCE | grep "://")" != ""  ]; then
+				init_ifcfg
+				echo $SOURCE | grep -iq ^"http://" && SWAP_FROM=$(mount_httpfs $SOURCE $MNT_DIR)
+				echo $SOURCE | grep -iq ^"nfs://" &&  SWAP_FROM=$(mount_nfs $SOURCE $MNT_DIR)
+				echo $SOURCE | grep -iq ^"cifs://" && SWAP_FROM=$(mount_cifs $SOURCE $MNT_DIR)
+				echo $SOURCE | grep -iq ^"ssh://" &&  SWAP_FROM=$(mount_sshfs $SOURCE $MNT_DIR)
+				echo $SOURCE | grep -iq ^"ftp://" &&  SWAP_FROM=$(mount_curlftpfs $SOURCE $MNT_DIR)
+			else
+				SWAP_FROM=$(find_data $SOURCE $MNT_DIR "")
+			fi
+			if [ -f "$SWAP_FROM" ] ;then 
+				echolog  "trying to mount and setup swap file: $FSWAP"
+				swapon  "$SWAP_FROM" # >/dev/null 2>&1
+			fi
+		done
+	fi
+    ##############################################################################
+	
 	if  [ ! "$(cmdline_value $RAMSIZE)" ] ;then
 		#busybox's util "free" doesn't know the option -t   (total - mem+swap)
 		total=$(expr $(echo $(free -m  |grep "^[M,S].*: " | awk '{print $2}' ) |sed 's/ / + /'))
@@ -1647,10 +1646,9 @@ setup_machines() {
     local CHANGESMNT MACHINES SOURCE MNT_DIR
 	[ $(cmdline_value $UIRD_MODE) != "machines" ] && return
     
-    MACHINES=$(cmdline_value $UIRD_CHANGES)
-    [ "$MACHINES" == "/MagOS-Data/changes" ] && MACHINES="/MagOS-Data/machines"
-    [ -z "$MACHINES" ] && MACHINES="/MagOS-Data/machines"
-    
+    MACHINES=$(echo $(cmdline_value $UIRD_CHANGES) |sed 's:changes:machines:')
+    cat /proc/cmdline |grep -q "uird.changes=" && MACHINES=$(cmdline_value $UIRD_CHANGES) 
+            
     echo_green_star
 	echolog "$SETUP_MACHINES" $yellow"$1"$default
 	mount_data_source $MACHINES $1 $2 ""
