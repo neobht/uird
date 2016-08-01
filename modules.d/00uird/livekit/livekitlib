@@ -1563,7 +1563,7 @@ init_swap () {
 			fi
 		done
     fi   
-    ############################################################################# do not tested yet
+    ############################################################################# need tests
     if [ "${FSWAP}_" != "_" ] ; then
 		MNT_DIR=$2
 		for SOURCE in  $(echo $FSWAP) ; do
@@ -1578,8 +1578,16 @@ init_swap () {
 				SWAP_FROM=$(find_data $SOURCE $MNT_DIR "")
 			fi
 			if [ -f "$SWAP_FROM" ] ;then 
-				echolog  "trying to mount and setup swap file: $FSWAP"
-				swapon  "$SWAP_FROM" # >/dev/null 2>&1
+				if swapon "$SWAP_FROM" >/dev/null 2>&1 ; then  
+					echolog  "swap file $FSWAP enabled"
+				else
+					LOOPDEV=$(losetup -f)
+					[ -z "$LOOPDEV" ] && LOOPDEV=$(mknod_next_loop_dev)
+					$BIN_LOSETUP $LOOPDEV "$SWAP_FROM"
+					mkswap $LOOPDEV >/dev/null
+					swapon $LOOPDEV 
+					echolog  "enable swap file: $FSWAP, setup a loop device as wrapper for it to work"
+				fi
 			fi
 		done
 	fi
