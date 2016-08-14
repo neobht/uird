@@ -2,16 +2,12 @@
 !!! This text was translated from russian  by the Google service !!!
 !!! If you can translate better, please visit www.magos-linux.ru !!!
 
-uird.ramsize= - параметр задает размер доступного для записи слоя корневой fs при нахождении этого 
-                слоя в RAM (чистый режим). Размер задается в процентах от общего объема оперативной 
-                памяти. При наличии swap этот размер может превышать 100%, тогда rw слой будет 
-                увеличиваться за счет раздела swap. 
+uird.ramsize= - parametr sets the tmpfs size   
 
-Пример:
+Examples:
 uird.ramsize=80%
-Такая запись означает: при общем размере RAM 10 гигабайт tmpfs rw слоя может занимать до 8 гигабайт;
-размер увеличивается динамически по мере прирастания изменений.
+This string means: set the size of tmpfs to 80% оf RAM size 
 uird.ramsize=200%
-Такая запись означает: при размере RAM 2 и наличии swap (более 2 Гб)  размер rw слоя расположенного в 
-tmpfs может достигать 4 гигабайт (200% от 2Гб RAM) за счет использовагния раздела swap. 
+This string means: set the size of tmpfs to 200% оf RAM size, tmpfs can be more then RAM only if
+swap partition or file is in use.
 **************************************************************************************************

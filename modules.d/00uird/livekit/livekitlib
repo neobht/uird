@@ -841,6 +841,10 @@ mount_sshfs()
         $BIN_SSHFS ${1/ssh:??/} $2 $OPTIONS </dev/console >/dev/console 2>/dev/console
         ERR=$?
         [ $ERR -eq 0 ] && break
+        # is not tested, just guess
+        $BIN_SSHFS $(dirname ${1/ssh:??/}) $2 $OPTIONS </dev/console >/dev/console 2>/dev/console
+        [ $ERR -eq 0 ] && break
+        ###########################
         times=$(expr $times - 1)
     done
     [ $ERR -eq 0 ] || return
@@ -1569,7 +1573,7 @@ init_swap () {
 		for SOURCE in  $(echo $FSWAP) ; do
 			if [ "$(echo $SOURCE | grep "://")" != ""  ]; then
 				init_ifcfg
-				echo $SOURCE | grep -iq ^"http://" && SWAP_FROM=$(mount_httpfs $SOURCE $MNT_DIR)
+				# echo $SOURCE | grep -iq ^"http://" && SWAP_FROM=$(mount_httpfs $SOURCE $MNT_DIR)
 				echo $SOURCE | grep -iq ^"nfs://" &&  SWAP_FROM=$(mount_nfs $SOURCE $MNT_DIR)
 				echo $SOURCE | grep -iq ^"cifs://" && SWAP_FROM=$(mount_cifs $SOURCE $MNT_DIR)
 				echo $SOURCE | grep -iq ^"ssh://" &&  SWAP_FROM=$(mount_sshfs $SOURCE $MNT_DIR)
@@ -1578,15 +1582,17 @@ init_swap () {
 				SWAP_FROM=$(find_data $SOURCE $MNT_DIR "")
 			fi
 			if [ -f "$SWAP_FROM" ] ;then 
-				if swapon "$SWAP_FROM" >/dev/null 2>&1 ; then  
+				if swapon "$SWAP_FROM" >/dev/null 2>&1 ; then
+					echo_green_star  
 					echolog  "swap file $FSWAP enabled"
 				else
 					LOOPDEV=$(losetup -f)
 					[ -z "$LOOPDEV" ] && LOOPDEV=$(mknod_next_loop_dev)
 					$BIN_LOSETUP $LOOPDEV "$SWAP_FROM"
 					mkswap $LOOPDEV >/dev/null
-					swapon $LOOPDEV 
-					echolog  "enable swap file: $FSWAP, setup a loop device as wrapper for it to work"
+					swapon $LOOPDEV
+					echo_green_star 
+					echolog  "enable swap file: $FSWAP, setup a loop device $LOOPDEV as wrapper for it to work"
 				fi
 			fi
 		done
