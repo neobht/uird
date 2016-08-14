@@ -841,10 +841,11 @@ mount_sshfs()
         $BIN_SSHFS ${1/ssh:??/} $2 $OPTIONS </dev/console >/dev/console 2>/dev/console
         ERR=$?
         [ $ERR -eq 0 ] && break
-        # is not tested, just guess
+        # is not tested, just guess ############
         $BIN_SSHFS $(dirname ${1/ssh:??/}) $2 $OPTIONS </dev/console >/dev/console 2>/dev/console
+        ERR=$?
         [ $ERR -eq 0 ] && break
-        ###########################
+        ########################################
         times=$(expr $times - 1)
     done
     [ $ERR -eq 0 ] || return
