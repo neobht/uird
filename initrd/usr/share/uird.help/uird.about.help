@@ -44,7 +44,10 @@ UIRD boot params:
     - uird.homes[+]=      - list of sources which will be cascade mounted in /home mount point (AUFS)
     - uird.home=          - source which will be mounted in /home mount point
     - uird.changes=       - source, for storage of persistent changes
-    - uird.machines=      - source which consist of  machine-dependent system changes.
+    - uird.mode=          - uird modes
+    - uird.break=STAGE    - stop the boot in STAGE and swith to debug mode
+    - uird.swap           - setting up swap
+    - uird.scan           - uird scanner
     - uird.find_params[+]= - the additional parameters for the "find" command, 
     - quickshell, qs      - a simple linux command line mode in initial stage of uird-init
     - qse                 - a simple linux command line mode in final stage of uird-init
