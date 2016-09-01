@@ -236,9 +236,15 @@ debug_shell
 
 # old compatibility to linuxlive init
 mkdir -p $UNION/mnt/live/memory 
-#mkdir -p $UNION/mnt/live/etc
 cp liblinuxlive $UNION/mnt/live/liblinuxlive
+
+# copy livekitlib, initvars, etc to $UNION/...
+LIBDIR=$(echo $LIVEKITNAME | tr '[:upper:]' '[:lower:]')
+mkdir -p $UNION/usr/lib/${LIBDIR}/scripts
+cp livekitlib $UNION/usr/lib/${LIBDIR}/scripts
+cp uird.scan $UNION/usr/lib/${LIBDIR}/scripts
 [ -f /etc/initvars ] && cat /etc/initvars |sort |uniq  > $UNION/etc/initvars
+
 #cp /etc/resolv.conf $UNION/mnt/live/etc/ 2>/dev/null
 [ -d "$MEMORY/data/from/0" ] && ln -sf $MEMORY/data/from/0 $UNION/mnt/livemedia
 [ -d "$MEMORY/data/from/1" ] && ln -sf $MEMORY/data/from/1 $UNION/mnt/livedata

@@ -1,9 +1,12 @@
 #!/bin/bash
+# import livekitlib in uird
 . /livekitlib 2>/dev/null 
-. ./livekitlib 2>/dev/null
+# import livekitlib in system
+. $(dirname  $(which uird.scan))/livekitlib 2>/dev/null
 
 #test block 
 #+++++++++++++++++
+# . ./livekitlib 2>/dev/null
 #BASECFG=./testcfg
 #[ -f $BASECFG ] || > $BASECFG
 #+++++++++++++++++
