@@ -1645,7 +1645,7 @@ setup_changes()
 			echolog $default"  $SETUP_MACHINES_UNPACKING $yellow$CHANGESMNT$default $SETUP_MACHINES_TO_RAM \($2\)"
 			unsquashfs -f -d "$2"  "$CHANGESMNT" # >/dev/null 2>&1
 		fi
-		echo "$CHANGESMNT" > $2/.savetomodule
+		echo "$CHANGESVAL" > $2/.savetomodule
 	fi
 #   posix_test $1 $2
 }
