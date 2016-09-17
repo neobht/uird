@@ -1680,7 +1680,8 @@ setup_machines() {
             unsquashfs -f -d "$3" "$CHANGESMNT" >/dev/null 2>&1
     fi
    
-    echo "$CHANGESMNT" | sed s=/machines/static/=/machines/dynamic/= > $3/.savetomodule
+    #echo "$CHANGESMNT" | sed s=/machines/static/=/machines/dynamic/= > $3/.savetomodule
+	echo ${MACHINES}/dynamic/$MUID.xzm > $3/.savetomodule
 }
 
 # Setup homes
