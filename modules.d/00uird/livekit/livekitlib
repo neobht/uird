@@ -581,7 +581,7 @@ list_partition_devices()
 {
     debug_log "list_partition_devices" "$*"
     if [ "$(cmdline_parameter nohd)" != "" ]; then return 1; fi
-    egrep -v 'loop|major|^$| [0-9] [a-z]' /proc/partitions | sed -r "s:^[0-9 ]+:/dev/:"
+    egrep -v 'ram|loop|major|^$| [0-9] [a-z]' /proc/partitions | sed -r "s:^[0-9 ]+:/dev/:"
     if [ -e /dev/mapper/control ]; then # list LVM partitions if available
         ls -1 /dev/mapper/ | grep -v "^control\$" | sed -r "s:^:/dev/mapper/:"
     fi
