@@ -1372,14 +1372,14 @@ download_data_pxe()
     fi
 
     cat "$1/PXEFILELIST" | while read FILE; do
-    if [ "$PROTOCOL" = "http" ]; then
-        wget -O "$1/$LIVEKITNAME/$FILE" "http://$SERVER:$PORT/$FILE"
-    else
-        echo "* $FILE ..." >&2
-        tftp -g -r $FILE -l "$1/$LIVEKITNAME/$FILE" $SERVER
-    fi
-#done
-#   done
+	if [ "$PROTOCOL" = "http" ]; then
+    	    wget -O "$1/$LIVEKITNAME/$FILE" "http://$SERVER:$PORT/$FILE"
+	else
+    	    echo "* $FILE ..." >&2
+    	    tftp -g -r $FILE -l "$1/$LIVEKITNAME/$FILE" $SERVER
+	fi
+    done
+   done
 
    echo "$1/$LIVEKITNAME"
 }
