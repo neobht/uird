@@ -1010,7 +1010,8 @@ find_filepath()
 #convert UUID@/path and LABEL@/path to /dev/sd??/path 
 # $1 = LABEL@/path/to/file
 # if function can't find label or uuid - echo $1
-uuid_label_to_dev () {
+uuid_label_to_dev() 
+{
     local DEV DEVPATH
     DEV=$($BIN_BLKID | grep -m1 $(echo $1 |sed 's:@.*$::') | awk -F: '{print $1}')  
     if [ -z $DEV ] ; then
@@ -1018,7 +1019,7 @@ uuid_label_to_dev () {
     else 
         DEVPATH=$(echo $1 |sed "s:^.*@:${DEV}:")
     fi
-echo $DEVPATH
+    echo $DEVPATH
 }
 
 
@@ -1377,8 +1378,8 @@ download_data_pxe()
         echo "* $FILE ..." >&2
         tftp -g -r $FILE -l "$1/$LIVEKITNAME/$FILE" $SERVER
     fi
-done
-   done
+#done
+#   done
 
    echo "$1/$LIVEKITNAME"
 }
@@ -1547,7 +1548,8 @@ setup_config()
 }
 
 # Init swap and resize tmpfs 
-init_swap () {
+init_swap() 
+{
 	local newsize total FSWAP ASWAP DSWAP SOURCE SWAP_FROM 
     debug_log "setting up swap"
     echo_green_star
@@ -1636,6 +1638,7 @@ setup_changes()
 			echo $SOURCE | grep -iq ^"ssh://" && DATA_FROM=$(mount_sshfs $SOURCE $MNT_DIR)
 			echo $SOURCE | grep -iq ^"ftp://" && DATA_FROM=$(mount_curlftpfs $SOURCE $MNT_DIR)
 		else
+    			echo $SOURCE | grep -q "@"  && SOURCE=$(uuid_label_to_dev $SOURCE) 
 			DATA_FROM=$(find_data $SOURCE $MNT_DIR "")
 		fi
 
@@ -1645,7 +1648,9 @@ setup_changes()
 			echolog $default"  $SETUP_MACHINES_UNPACKING $yellow$CHANGESMNT$default $SETUP_MACHINES_TO_RAM \($2\)"
 			unsquashfs -f -d "$2"  "$CHANGESMNT" # >/dev/null 2>&1
 		fi
-		echo "$CHANGESVAL" > $2/.savetomodule
+		echo "$CHANGESMNT" > $2/.savetomodule
+		touch $1/.lock
+		losetup $(losetup -f) $1/.lock
 	fi
 #   posix_test $1 $2
 }
