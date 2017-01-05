@@ -2,7 +2,7 @@
 cd dracut/modules.d
 ln -s ../../modules.d/* ../modules.d/ 2>/dev/null
 cd ../..
-./dracut/dracut.sh -l -N  -f -m "base uird uird-network ntfs kernel-modules"  \
+./dracut/dracut.sh -l -N --strip -f -m "base uird uird-network ntfs kernel-modules kernel-network-modules"  \
 	-d "loop cryptoloop zram aes-generic aes-i586 pata_acpi ata_generic ahci xhci-hcd \
 	    usb-storage uhci-hcd hid usbhid ehci-hcd ohci-hcd ehci-pci ehci-platform hid-generic \
 	    sr_mod sd_mod scsi_mod \ 
