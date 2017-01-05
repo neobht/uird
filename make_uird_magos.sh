@@ -9,7 +9,7 @@ cd ../..
 	     jbd jbd2 lockd evdev sunrpc \
 	    af_packet \
 	    =ide =ata =ethernet =usb/storage =usb/host =nfs" \
-        --filesystems "aufs squashfs vfat msdos iso9660 isofs xfs ext3 ext4 fuse nfs cifs udf nls_cp866 nls_utf8 reiserfs overlay" \
+        --filesystems "aufs squashfs vfat msdos iso9660 isofs xfs ext3 fuse nfs cifs udf nls_cp866 nls_utf8 reiserfs overlay" \
         -i initrd / \
         -i configs / \
         -c dracut.conf -v -M uird.magos.cpio.xz $(uname -r)  >dracut_magos.log 2>&1
