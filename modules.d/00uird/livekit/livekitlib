@@ -1645,12 +1645,13 @@ setup_changes()
 		CHANGESMNT=$DATA_FROM
 		
 		if [ -f "$CHANGESMNT" ] ;then 
-			echolog $default"  $SETUP_MACHINES_UNPACKING $yellow$CHANGESMNT$default $SETUP_MACHINES_TO_RAM \($2\)"
-			unsquashfs -f -d "$2"  "$CHANGESMNT" # >/dev/null 2>&1
+			echolog $default"  $SETUP_MACHINES_UNPACKING $yellow$CHANGESMNT$default $SETUP_MACHINES_TO_RAM ($2)"
+			unsquashfs -f -d "$2" "$CHANGESMNT" # >/dev/null 2>&1
 		fi
+		[ -z "$CHANGESMNT" ] && CHANGESMNT=$CHANGESVAL
 		echo "$CHANGESMNT" > $2/.savetomodule
-		touch $1/.lock
-		losetup $(losetup -f) $1/.lock
+		touch $(dirname $CHANGESMNT)/.lock
+		losetup $(losetup -f) $(dirname $CHANGESMNT)/.lock
 	fi
 #   posix_test $1 $2
 }
