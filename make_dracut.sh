@@ -4,5 +4,6 @@ git submodule update
 cd dracut
 make clean
 ./configure --disable-documentation
-make && make install
+make 
+# make install
 cd ..
