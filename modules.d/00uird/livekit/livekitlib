@@ -1637,21 +1637,26 @@ setup_changes()
 			echo $SOURCE | grep -iq ^"cifs://" && DATA_FROM=$(mount_cifs $SOURCE $MNT_DIR)
 			echo $SOURCE | grep -iq ^"ssh://" && DATA_FROM=$(mount_sshfs $SOURCE $MNT_DIR)
 			echo $SOURCE | grep -iq ^"ftp://" && DATA_FROM=$(mount_curlftpfs $SOURCE $MNT_DIR)
+			DATA_FROM_DIR=$DATA_FROM
 		else
     			echo $SOURCE | grep -q "@"  && SOURCE=$(uuid_label_to_dev $SOURCE) 
 			DATA_FROM=$(find_data $SOURCE $MNT_DIR "")
+			DATA_FROM_DIR=$(find_data $(dirname $SOURCE) $MNT_DIR "")
 		fi
 
-		CHANGESMNT=$DATA_FROM
+		CHANGESMNT="$DATA_FROM"
 		
-		if [ -f "$CHANGESMNT" ] ;then 
+		if [ -f "$CHANGESMNT" ] ; then 
 			echolog $default"  $SETUP_MACHINES_UNPACKING $yellow$CHANGESMNT$default $SETUP_MACHINES_TO_RAM ($2)"
 			unsquashfs -f -d "$2" "$CHANGESMNT" # >/dev/null 2>&1
 		fi
-		[ -z "$CHANGESMNT" ] && CHANGESMNT=$CHANGESVAL
-		echo "$CHANGESMNT" > $2/.savetomodule
-		touch $(dirname $CHANGESMNT)/.lock
-		losetup $(losetup -f) $(dirname $CHANGESMNT)/.lock
+		[ -z "$CHANGESMNT" -a -w $DATA_FROM_DIR ] && CHANGESMNT="$DATA_FROM_DIR/$(basename $SOURCE)"
+		
+		if [ "$CHANGESMNT" ] ; then
+		    echo "$CHANGESMNT" > $2/.savetomodule
+		    touch $(dirname $CHANGESMNT)/.lock
+		    losetup $(losetup -f) $(dirname $CHANGESMNT)/.lock
+		fi
 	fi
 #   posix_test $1 $2
 }

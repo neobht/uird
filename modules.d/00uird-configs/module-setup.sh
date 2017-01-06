@@ -14,6 +14,6 @@ depends() {
 
 
 install() {
-    
-}
+    return 0
+    }
 

@@ -37,6 +37,7 @@ install() {
 
 #    dracut_install /usr/bin/mplayer    
 
+
     dracut_install /usr/bin/ssh
 
 #    inst /usr/bin/git
@@ -57,8 +58,11 @@ install() {
 #		/usr/lib64/git-core/git-rebase--interactive \
 #		/usr/lib64/git-core/git-rebase--merge
 #    inst_libdir_file /usr/lib64/git-core/*
-#	cc
-    inst cc
-    inst make
+
+#    inst pkg-config
+#    inst cc
+#    inst make
+#    inst sort
+#    inst cp
 }
 
