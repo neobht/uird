@@ -29,6 +29,8 @@ install() {
     [ -x "$initdir/bin/bash" ] || inst $(type -p bash) "/bin/bash"
     inst $(type -p blkid) /sbin/blkid.real
     inst $(type -p losetup) /sbin/losetup.real
+    [ "$(uname -i)" = "x86_64" -a -x /usr/lib/magos/bin64/losetup ] && inst $(type -p /usr/lib/magos/bin64/losetup ) /sbin/losetup.crypto
+    [ "$(uname -i)" != "x86_64" -a -x /usr/lib/magos/bin/losetup  ] && inst $(type -p /usr/lib/magos/bin/losetup )   /sbin/losetup.crypto
 
     _binaries="locale dialog gettext loadkeys resume rsync fsck fsck.ext2 fsck.ext3 fsck.ext4 fsck.exfat fsck.vfat fsck.xfs fsck.btrfs btrfsck ntfsfix"
     for _i in $_binaries; do

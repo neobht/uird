@@ -42,6 +42,7 @@ BIN_FSCK=/sbin/fsck
 BIN_BTRFSCK=/sbin/btrfsck
 BIN_BLKID=/sbin/blkid.real
 BIN_LOSETUP=/sbin/losetup.real
+BIN_LOSETUP_CRYPTO=/sbin/losetup.crypto
 
 [ -f /etc/initvars ] && . /etc/initvars
 
@@ -753,12 +754,12 @@ mount_device()
         echolog "$MOUNT_DEVICE_ENC" $green"$DEV"$default
         times=3
         while [ $times -gt 0 ]; do
-            $BIN_LOSETUP -e AES256 "$LOOPDEV" "$DEV" >/dev/console </dev/console 2>/dev/console
+            $BIN_LOSETUP_CRYPTO -e AES256 "$LOOPDEV" "$DEV" >/dev/console </dev/console 2>/dev/console
             [ $(cmdline_parameter fsck) ] && fsck_device "$LOOPDEV"
             mount -n -o $OPTIONS "$LOOPDEV" "$2" >/dev/null 2>&1
             ERR=$?
             [ $ERR -eq 0 ] && break
-            $BIN_LOSETUP -d "$LOOPDEV"
+            $BIN_LOSETUP_CRYPTO -d "$LOOPDEV"
             times=$(expr $times - 1)
         done
     fi
