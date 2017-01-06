@@ -1650,7 +1650,7 @@ setup_changes()
 			echolog $default"  $SETUP_MACHINES_UNPACKING $yellow$CHANGESMNT$default $SETUP_MACHINES_TO_RAM ($2)"
 			unsquashfs -f -d "$2" "$CHANGESMNT" # >/dev/null 2>&1
 		fi
-		[ -z "$CHANGESMNT" -a -w $DATA_FROM_DIR ] && CHANGESMNT="$DATA_FROM_DIR/$(basename $SOURCE)"
+		[ "$DATA_FROM_DIR" ] && CHANGESMNT="$DATA_FROM_DIR/$(basename $SOURCE)"
 		
 		if [ "$CHANGESMNT" ] ; then
 		    echo "$CHANGESMNT" > $2/.savetomodule
