@@ -2,13 +2,13 @@
 cd dracut/modules.d
 ln -s ../../modules.d/* ../modules.d/ 2>/dev/null
 cd ../..
-./dracut/dracut.sh -l -N --strip -f -m "base uird uird-network ntfs kernel-modules kernel-network-modules"  \
-	-d "loop cryptoloop zram aes-generic aes-i586 aes-x86_64 pata_acpi ata_generic ahci xhci-hcd xhci-pci xhci-plat-hcd ohci-pci \
-	    usb-storage uhci-hcd hid usbhid ehci-hcd ohci-hcd ehci-pci ehci-platform hid-generic \
-	    sr_mod sd_mod scsi_mod \ 
-	    jbd jbd2 lockd evdev sunrpc \
-	    af_packet \
-	    =ide =ata =ethernet =usb/storage =usb/host =nfs" \
+#./dracut/dracut.sh -l -N --strip -f -m "base uird uird-network ntfs kernel-modules kernel-network-modules"  \
+./dracut/dracut.sh -l -N --strip -f -m "base uird uird-network ntfs kernel-modules"  \
+	-d "loop cryptoloop zram aes-generic aes-i586 aes-x86_64 pata_acpi ata_generic ahci xhci-hcd xhci-pci xhci-plat-hcd ohci-pci  usb-storage uhci-hcd hid usbhid ehci-hcd ohci-hcd ehci-pci ehci-platform hid-generic 
+	    sr_mod sd_mod scsi_mod 
+	    jbd jbd2 lockd evdev sunrpc 
+	    af_packet 
+	    =drivers/ide =drivers/ata  =drivers/net/ethernet =drivers/usb/storage =drivers/usb/host =fs/nfs" \
         --filesystems "aufs squashfs vfat msdos iso9660 isofs xfs ext3 fuse nfs cifs udf nls_cp866 nls_utf8 reiserfs overlay" \
         -i initrd / \
         -i configs / \
