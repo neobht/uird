@@ -86,8 +86,10 @@ SETUP_MACHINES_MOD=$($GETTEXT "Searching bundle for machine-depended changes:")
 SETUP_MACHINES_UNPACKING=$($GETTEXT "unpacking")
 SETUP_MACHINES_TO_RAM=$($GETTEXT "to RAM")
 SETUP_HOMES=$($GETTEXT "Mounting sources for homes directories:")
+
 SETUP_SWAP=$($GETTEXT "Trying to enable SWAP")
 RESIZE_TMPFS=$($GETTEXT "Resizing TMPFS to - ")
+SETUP_SYSCP=$($GETTEXT "Coping some UIRD files to system")
 
 INIT_IFCFG=$($GETTEXT "Initializing network services")
 UNION_APPEND_BUNDLES=$($GETTEXT "Mounting bundles to root:")
@@ -99,7 +101,7 @@ FSCK_DEVICE=$($GETTEXT "Checking filesystem: ")
 MOUNT_DEVICE_ENC=$($GETTEXT "Mounting encrypted filesystem: ")
 
 NOT_ENOUGH_MEMORY=$($GETTEXT "not enough memory.")
-
+ 
 
 
 ##### UIRD cmdline parameters aliases
@@ -127,6 +129,7 @@ NOT_ENOUGH_MEMORY=$($GETTEXT "not enough memory.")
 # uird.find_params[+]=       - параметры для утилиты find при поиске модулей
 # uird.help                  - печатает подсказку по параметрам UIRD
 # uird.break=                - остановка загрузки на определенном этапе и включение режима отладки
+# uird.syscp+=               - копирование файлов из UIRD в систему
 
 [ -f "/uird_configs/uird_aliases" ] && . /uird_configs/uird_aliases
 
@@ -156,6 +159,7 @@ NOT_ENOUGH_MEMORY=$($GETTEXT "not enough memory.")
 [ -z $UIRD_SCAN ] && UIRD_SCAN=uird.scan
 [ -z $UIRD_SWAP ] && UIRD_SWAP=uird.swap
 [ -z $UIRD_MODE ] && UIRD_MODE=uird.mode
+[ -z $UIRD_SYSCP ] && UIRD_SYSCP=uird.syscp
 
 # =================================================================
 # debug and output functions
@@ -1448,6 +1452,26 @@ mount_data_source()
 
 }
 
+# copy files from UIRD to system
+# $1 - uird.syscp value
+# $2 - union dir 
+syscp() {
+	debug_log "syscp" "$*"
+	echo_green_star
+    echolog "$SETUP_SYSCP" 
+	local  SYSCP ARR_SYSCP FILEFROM FILETO FILEFROMTO UNION
+    ARR_SYSCP=$(echo $1 | tr -s ";," "\n" |uniq)
+    for FILEFROMTO in $ARR_SYSCP; do
+        FILEFROMTO=$FILEFROMTO"::"
+        FILEFROM=${FILEFROMTO%%::*}
+        FILETO=${FILEFROMTO#*::}
+        mkdir -p ${2}${FILETO%%::*}
+        cp -fr ${FILEFROM} ${2}${FILETO%%::*}
+        echo -ne $blue"  * "$default
+        echo "${FILEFROM} -->  ${FILETO%%::*}"
+    done
+}
+
 # Initialization layer
 # $1 = data directory
 # $2 = layer directory
@@ -1547,6 +1571,7 @@ setup_config()
     grep '^CMDLINE=' "$PATHINI" | sed s/^CMDLINE=// | tr -d [:cntrl:]\'\" >>$MEMORY/cmdline
     chmod 400 $MEMORY/$LIVEKITNAME.ini.gz $MEMORY/cmdline 2>/dev/null
 }
+
 
 # Init swap and resize tmpfs 
 init_swap() 

@@ -236,21 +236,16 @@ debug_shell
 
 # old compatibility to linuxlive init
 mkdir -p $UNION/mnt/live/memory 
-cp liblinuxlive $UNION/mnt/live/liblinuxlive
-
-# copy livekitlib, initvars, etc to $UNION/...
-LIBDIR=$(echo $LIVEKITNAME | tr '[:upper:]' '[:lower:]')
-mkdir -p $UNION/usr/lib/${LIBDIR}/scripts
-cp livekitlib $UNION/usr/lib/${LIBDIR}/scripts
-cp uird.scan $UNION/usr/lib/${LIBDIR}/scripts
-[ -f /etc/initvars ] && cat /etc/initvars |sort |uniq  > $UNION/etc/initvars
-
 #cp /etc/resolv.conf $UNION/mnt/live/etc/ 2>/dev/null
 [ -d "$MEMORY/data/from/0" -a ! -d $UNION/mnt/livemedia ] && ln -sf $MEMORY/data/from/0 $UNION/mnt/livemedia
 [ -d "$MEMORY/data/from/1" -a ! -d $UNION/mnt/livedata ] && ln -sf $MEMORY/data/from/1 $UNION/mnt/livedata
 [ -d "$MEMORY/bundles" -a ! -d $UNION/mnt/live/memory/images ] && ln -sf $MEMORY/bundles $UNION/mnt/live/memory/images
 [ -d "$MEMORY/changes" -a ! -d $UNION/mnt/live/memory/changes ] && ln -sf $MEMORY/changes $UNION/mnt/live/memory/changes
 debug_shell
+
+# copy some files to system
+syscp "$(cmdline_value $UIRD_SYSCP)" $UNION 
+[ -f /etc/initvars ] && cat /etc/initvars |sort |uniq  > $UNION/etc/initvars
 
 [ "$(cmdline_value $UIRD_BREAK)" = "rc.preinit" ] && shell_cmd "break"
 cd $UNION
