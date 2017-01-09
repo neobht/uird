@@ -5,6 +5,7 @@
     *.ROM - RO слой
     *.RWM - RW слой
     *.XZM - RO слой с squashfs 
+    *.XZM.CP - распаковывается в корень системы
 
     *.RWM.ENC - RW слой криптованый
     *.ROM.ENC - RO слой криптованый
@@ -37,7 +38,8 @@
     uird.break=STAGE           - остановка загрузки на стадии STAGE и включение режима отладки (debug) 
     uird.mode=MODE             - режим работы сохраниениями (clean, clear, changes, machines)
     uird.scan=                 - поиск установленных OC и компонентов для определения параметров uird
-    uird.swap=                 - список SWAP разделов и/или файлов для подключения, разделитель в списке ";" или ","  
+    uird.swap=                 - список SWAP разделов и/или файлов для подключения, разделитель в списке ";" или ","
+    uird.syscp[+]=             - список файлов (каталогов) для копирования из UIRD в систему /путь/файл::/путь/каталог 
 
 
 В качестве значений параметров могут быть использованы команды shell:
@@ -115,17 +117,18 @@
 
 ### Структура конфигурационного файла basecfg.ini по умолчанию
 
-    uird.config=MagOS.ini
-    uird.ramsize=70%
-    uird.ro=*.xzm;*.rom;*.rom.enc;*.pfs;*.sfs
-    uird.rw=*.rwm;*.rwm.enc
-    uird.cp=*.xzm.cp,*/rootcopy
-    uird.load=/base/,/modules/,rootcopy
-    uird.noload=
-    uird.from=/MagOS;/MagOS-Data
-    uird.changes=/MagOS-Data/changes
-    uird.cache=/MagOS-Data/cache
-    uird.home=/MagOS-Data/homes
+  uird.config=MagOS.ini
+  uird.ramsize=70%
+  uird.ro=*.xzm;*.rom;*.rom.enc;*.pfs
+  uird.rw=*.rwm;*.rwm.enc
+  uird.cp=*.xzm.cp,*/rootcopy
+  uird.load=/base/,/modules/,rootcopy
+  uird.noload=/MagOS-Data/changes,/MagOS-Data/homes
+  uird.from=/MagOS;/MagOS-Data
+  uird.find_params=-maxdepth_3
+  uird.mode=clean 
+  uird.changes=/MagOS-Data/changes
+  uird.syscp=/livekitlib::/usr/lib/magos/scripts;/uird.scan::/usr/lib/magos/scripts;/liblinuxlive::/mnt/live/liblinuxlive
     
 !!! Если параметр uird.basecfg= не задан, то используется /uird_configs/basecfg.ini внутри initrd.
 
