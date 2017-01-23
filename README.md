@@ -117,18 +117,18 @@
 
 ### Структура конфигурационного файла basecfg.ini по умолчанию
 
-  uird.config=MagOS.ini
-  uird.ramsize=70%
-  uird.ro=*.xzm;*.rom;*.rom.enc;*.pfs
-  uird.rw=*.rwm;*.rwm.enc
-  uird.cp=*.xzm.cp,*/rootcopy
-  uird.load=/base/,/modules/,rootcopy
-  uird.noload=/MagOS-Data/changes,/MagOS-Data/homes
-  uird.from=/MagOS;/MagOS-Data
-  uird.find_params=-maxdepth_3
-  uird.mode=clean 
-  uird.changes=/MagOS-Data/changes
-  uird.syscp=/livekitlib::/usr/lib/magos/scripts;/uird.scan::/usr/lib/magos/scripts;/liblinuxlive::/mnt/live/liblinuxlive
+      uird.config=MagOS.ini
+      uird.ramsize=70%
+      uird.ro=*.xzm;*.rom;*.rom.enc;*.pfs
+      uird.rw=*.rwm;*.rwm.enc
+      uird.cp=*.xzm.cp,*/rootcopy
+      uird.load=/base/,/modules/,rootcopy
+      uird.noload=/MagOS-Data/changes,/MagOS-Data/homes
+      uird.from=/MagOS;/MagOS-Data
+      uird.find_params=-maxdepth_3
+      uird.mode=clean 
+      uird.changes=/MagOS-Data/changes
+      uird.syscp=/livekitlib::/usr/lib/magos/scripts;/uird.scan::/usr/lib/magos/scripts;/liblinuxlive::/mnt/live/liblinuxlive
     
 !!! Если параметр uird.basecfg= не задан, то используется /uird_configs/basecfg.ini внутри initrd.
 
