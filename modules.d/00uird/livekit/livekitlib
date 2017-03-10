@@ -1894,8 +1894,8 @@ union_append_bundles()
         PRESERVE="true"
     else
         MID_BUN=${BUNDLE#*$1}
-        [ -x "$5/$MID_BUN" -a "$(cmdline_value $UIRD_COPY2CACHE)" ] && BUNDLE="$5/$MID_BUN"
-        [ -x "$4/$MID_BUN" -a "$(cmdline_value $UIRD_COPY2RAM)" ] && BUNDLE="$4/$MID_BUN"
+        [ -e "$5/$MID_BUN" -a "$(cmdline_value $UIRD_COPY2CACHE)" ] && BUNDLE="$5/$MID_BUN"
+        [ -e "$4/$MID_BUN" -a "$(cmdline_value $UIRD_COPY2RAM)" ] && BUNDLE="$4/$MID_BUN"
 
         FS="$(device_bestfs "$BUNDLE")"
         OPTIONS="$(fs_options $FS mount)"
