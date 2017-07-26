@@ -157,6 +157,10 @@ debug_shell
 setup_config
 debug_shell
 
+#init swap, resize tmpfs
+[ "$(cmdline_value $UIRD_BREAK)" = "init_swap" ] && shell_cmd "break"
+[ "$(cmdline_value $UIRD_SWAP)" ] && init_swap "$(cmdline_value $UIRD_SWAP)" $DATAMNT/swapfiles
+
 #setting up source for changes
 [ "$(cmdline_value $UIRD_BREAK)" = "changes" ] && shell_cmd "break"
 setup_changes $DATAMNT/changes $CHANGES
@@ -218,9 +222,7 @@ debug_shell
 setup_homes "$LAYER_HOMES" "$UNION/home"
 debug_shell
 
-#init swap, resize tmpfs
-[ "$(cmdline_value $UIRD_BREAK)" = "init_swap" ] && shell_cmd "break"
-[ "$(cmdline_value $UIRD_SWAP)" ] && init_swap "$(cmdline_value $UIRD_SWAP)" $DATAMNT/swapfiles
+
 
 # rootcopy
 #copy_rootcopy_content "$DATA" "$UNION"
