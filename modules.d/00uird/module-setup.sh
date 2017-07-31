@@ -15,7 +15,7 @@ installkernel() {
     return 0
 }
 
-bins="locale dialog gettext loadkeys resume rsync fsck fsck.ext2 fsck.ext3 fsck.ext4 fsck.exfat fsck.vfat fsck.xfs fsck.btrfs etette btrfsck ntfsfix"
+bins="locale dialog gettext loadkeys resume rsync fsck fsck.ext2 fsck.ext3 fsck.ext4 fsck.exfat fsck.vfat fsck.xfs fsck.btrfs btrfsck ntfsfix"
 
 install() {
     local _i _progs _path _busybox _binaries
