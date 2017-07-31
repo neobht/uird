@@ -15,7 +15,7 @@ installkernel() {
     return 0
 }
 
-bins="locale dialog gettext loadkeys resume rsync fsck fsck.ext2 fsck.ext3 fsck.ext4 fsck.exfat fsck.vfat fsck.xfs fsck.btrfs btrfsck ntfsfix"
+bins="locale dialog gettext loadkeys resume rsync fsck fsck.ext2 fsck.ext3 fsck.ext4 fsck.exfat fsck.vfat fsck.xfs fsck.btrfs etette btrfsck ntfsfix"
 
 install() {
     local _i _progs _path _busybox _binaries
@@ -34,13 +34,12 @@ install() {
     [ "$(uname -i)" = "x86_64" -a -x /usr/lib/magos/bin64/losetup ] && inst $(type -p /usr/lib/magos/bin64/losetup ) /sbin/losetup.crypto
     [ "$(uname -i)" != "x86_64" -a -x /usr/lib/magos/bin/losetup  ] && inst $(type -p /usr/lib/magos/bin/losetup )   /sbin/losetup.crypto
 
-    : > ./not_found.log
     _binaries=""
     for bin in  $bins ; do
       if which $bin  ; then 
 	 _binaries="${_binaries} $bin"
       else
-	echo "executable file:  $bin - is not found" >> ./not_found.log  
+	echo "executable file:  $bin - not found" >> ./not_found.log  
       fi 
     done
 	 
