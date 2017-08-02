@@ -1,5 +1,5 @@
 **************************************************************************************************
-uird.basecfg= - задает расположение конфигурационного файла basecfg. ini
+uird.basecfg= - задает расположение конфигурационного файла basecfg.ini
 
 basecfg.ini - базовый конфигурационный файл uird, содержит параметры uird в формате ключ=значение
 
@@ -15,6 +15,5 @@ uird.noload=
 uird.from=/MagOS;/MagOS-Data
 uird.changes=/MagOS-Data/changes
 uird.cache=/MagOS-Data/cache
-uird.machines=/MagOS-Data/machines
 uird.home=/MagOS-Data/homes
 **************************************************************************************************
