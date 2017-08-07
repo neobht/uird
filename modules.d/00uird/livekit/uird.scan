@@ -1,9 +1,7 @@
 #!/bin/bash
-# import livekitlib in uird
-. /livekitlib 2>/dev/null 
-# import livekitlib in system
-. $(dirname  $(which uird.scan))/livekitlib 2>/dev/null
-
+# import livekitlib in uird  or in system
+. /livekitlib 2>/dev/null || . $(dirname  $(which uird.scan))/livekitlib 2>/dev/null
+ 
 #test block 
 #+++++++++++++++++
 # . ./livekitlib 2>/dev/null
