@@ -10,6 +10,10 @@
 #+++++++++++++++++
 
 [ -f $BIN_BLKID ] || BIN_BLKID=/sbin/blkid
+. /etc/initvars 2>/dev/null
+
+FIND_PARAMS=$(echo $(cmdline_value $UIRD_FIND_PARAMS) | tr ";,_" " ")
+
 > /tmp/uird_sources
 > /tmp/uird_homes
 
@@ -21,10 +25,14 @@ mount_cycle(){
 				if [ $? -eq 0 ]; then
 					PRESERVE="true"
 				else
-					mount_device $DEVICE $DIR ro || rmdir $DIR 2>/dev/null
+					mount_device $DEVICE $DIR ro 
+					if [ $? -ne  0 ] ; then  
+						echo "can't mount $DEVICE"
+						continue
+					fi
 					PRESERVE="false"
 				fi
-				[ -d $DIR ] && 	find_markers
+                [ -d $DIR ] && 	find_markers
                 
                 [ $PRESERVE != "true" ] &&  ( fumount $DIR ;	rmdir $DIR 2>/dev/null )
                
@@ -35,11 +43,11 @@ mount_cycle(){
 find_markers() {
 	local  a b 
 	[ -f $DIR/sbin/init ] && LEGACY="$LEGACY $DEVICE"
-	for a in  $(find $DIR  -type f \( -name $(cmdline_value uird.ro | sed 's/,/ -or -name /g')  \)  -exec dirname {} \;) ; do 
+	for a in  $(find $DIR  $FIND_PARAMS -type f \( -name $(cmdline_value uird.ro | sed 's/,/ -or -name /g')  \)  -exec dirname {} \;) ; do 
 		echo $a |sed "s:$DIR:$DEVICE:" >> /tmp/uird_sources 
 	done 
  
-	for b in  $(find $DIR  -type f -name "*.bashrc"  -exec dirname {} \;) ; do 
+	for b in  $(find $DIR  $FIND_PARAMS -type f -name "*.bashrc"  -exec dirname {} \;) ; do 
 		echo $b |grep -qE "/etc|/initrd|/skel|/root" || dirname $b |sed "s:$DIR:$DEVICE:" >> /tmp/uird_homes;
 	done
 }
