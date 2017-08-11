@@ -617,9 +617,6 @@ list_block_devices()
 {
 	debug_log "list_block_devices" "$*"
 	#waiting partitions, it need for card readers  with some empty slots
-	while  [ $(cat /proc/partitions |tail -n1 |awk '{print $1}') -eq 1 ] ; do 
-		sleep 0.5
-	done 
     if [ "$(cmdline_parameter nocd)" = "" ]; then
         list_cdrom_devices
     fi
@@ -632,7 +629,7 @@ uird_scan () {
 [ $1 ] || [  "$(cmdline_parameter $UIRD_SCAN)" ] || return
 export BASECFG 
 if echo "$1" |grep -q legacy ;then 
-	/uird.scan --legacy  $(echo $1 |grep  : |sed 's/^.*://') || shell_cmd "help"
+	/uird.scan --legacy  $(echo $1 |grep  : |sed 's|^.*:||') || shell_cmd "help"
 elif  [ "$1" == "modules" ] ;then 
 	/uird.scan --modules  || shell_cmd "help" 
 else

@@ -2,6 +2,9 @@
 # import livekitlib in uird  or in system
 . /livekitlib 2>/dev/null || . $(dirname  $(which uird.scan))/livekitlib 2>/dev/null
  
+[ -f $BIN_BLKID ] || BIN_BLKID=/sbin/blkid
+. /etc/initvars 2>/dev/null
+
 #test block 
 #+++++++++++++++++
 # . ./livekitlib 2>/dev/null
@@ -9,51 +12,46 @@
 #[ -f $BASECFG ] || > $BASECFG
 #+++++++++++++++++
 
-[ -f $BIN_BLKID ] || BIN_BLKID=/sbin/blkid
-. /etc/initvars 2>/dev/null
-
 FIND_PARAMS=$(echo $(cmdline_value $UIRD_FIND_PARAMS) | tr ";,_" " ")
 
 > /tmp/uird_sources
 > /tmp/uird_homes
 
 mount_cycle(){
-    local DIR FOUND PRESERVE DEVICE
-        for DEVICE in $(list_block_devices) $(list_mounted_directories) ; do
-			DIR=$(device_mountdir $DEVICE)
+    local DIR FOUND PRESERVE  
+        for SCANDEVICE in $(list_block_devices) $(list_mounted_directories) ; do
+			DIR=$(device_mountdir $SCANDEVICE)
 			ismountpoint $DIR
 				if [ $? -eq 0 ]; then
 					PRESERVE="true"
 				else
-					mount_device $DEVICE $DIR ro 
+					mount_device $SCANDEVICE $DIR ro 
 					if [ $? -ne  0 ] ; then  
-						echo "can't mount $DEVICE"
+						echo "can't mount $SCANDEVICE" >&2
 						continue
 					fi
 					PRESERVE="false"
 				fi
-                [ -d $DIR ] && 	find_markers
-                
+                [ -d $DIR ] && $1 $2                
                 [ $PRESERVE != "true" ] &&  ( fumount $DIR ;	rmdir $DIR 2>/dev/null )
-               
         done
 
 }
 
 find_markers() {
 	local  a b 
-	[ -f $DIR/sbin/init ] && LEGACY="$LEGACY $DEVICE"
+	[ -f $DIR/sbin/init ] && LEGACY="$LEGACY $SCANDEVICE"
 	for a in  $(find $DIR  $FIND_PARAMS -type f \( -name $(cmdline_value uird.ro | sed 's/,/ -or -name /g')  \)  -exec dirname {} \;) ; do 
-		echo $a |sed "s:$DIR:$DEVICE:" >> /tmp/uird_sources 
+		echo $a |sed "s:$DIR:$SCANDEVICE:" >> /tmp/uird_sources 
 	done 
- 
 	for b in  $(find $DIR  $FIND_PARAMS -type f -name "*.bashrc"  -exec dirname {} \;) ; do 
-		echo $b |grep -qE "/etc|/initrd|/skel|/root" || dirname $b |sed "s:$DIR:$DEVICE:" >> /tmp/uird_homes;
+		echo $b |grep -qE "/etc|/initrd|/skel|/root" || dirname $b |sed "s:$DIR:$SCANDEVICE:" >> /tmp/uird_homes;
 	done
 }
 
 listing () {
 local a int
+mount_cycle find_markers 
 int=1
 echo LEGACY: 
 for a in $LEGACY ; do
@@ -72,13 +70,35 @@ echo SWAP:
 list_swap_devices
 }
 
+
 legacy () {
+if  echo $1 |grep -q "^[[:digit:]]*$"  ; then
+	int=$1
+	echo $(mount_cycle find_legacy )
+else 
+	file=$1
+	echo $file |grep -q "@"  && file=$(uuid_label_to_dev $file)
+    echo /dev$(find_data ${file}/sbin/init |sed 's:/sbin/init::')
+fi
+}
+
+find_legacy () {
+	if [ -f $DIR/sbin/init ] ;then
+	   if [ $int -eq 1 ] ; then
+			echo $SCANDEVICE
+			break
+	   fi
+	int=$(($int -1))
+	[ $int -le 1 ] && break
+	fi 
+}
+
+legacy_cfg () {
 	local dev
-	[ -d /sysroot ] || exit 1
+	#[ -d /sysroot ] || exit 1
 	dev=$2
 	[ -z $2 ] && dev=1
-	LEGACY=$(echo $LEGACY" " |cut -d ' ' -f "$dev")
-	echo $LEGACY
+	LEGACY=$(legacy $dev)
 	if [ -z $LEGACY ] ; then
 		echo "can't find legacy linux installation"
 		exit 2
@@ -120,13 +140,13 @@ modules () {
 
 echo "Please wait, disks are scanning....."
 echo ""
-mount_cycle 
+ 
 
 mode="--scan"
 [ -z $1 ] || mode=$1
 
 case "$mode" in
-    --legacy    ) legacy $@;;
+    --legacy    ) legacy_cfg $@;;
     --modules   ) modules ;;
     --scan      ) listing ;;
 esac 

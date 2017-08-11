@@ -104,6 +104,11 @@ BASECFG=$(cmdline_value $UIRD_BASECFG)
 echo -n " " >>$MEMORY/cmdline
 eval echo $(cat $MEMORY/cmdline $BASECFG 2>/dev/null | tr -s ";" "," ) >$MEMORY/cmdline
 
+#Waits partitions initialization. It need for  cardreaders with some empty slots
+while  [ $(cat /proc/partitions |tail -n1 |awk '{print $1}') -eq 1 ] ; do 
+		sleep 0.3
+done 
+
 #uird.scan
 SCANPAR=$(cmdline_value $UIRD_SCAN)
 uird_scan $SCANPAR 
