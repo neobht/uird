@@ -24,7 +24,6 @@ UNION=$NEWROOT
 
 [ "$SYSMNT" ] && MEMORY=$SYSMNT || MEMORY=/memory
 
-
 BUNDLES=$MEMORY/bundles
 CHANGES=$MEMORY/changes
 MACHINES=$MEMORY/machines
@@ -99,7 +98,16 @@ fi
 debug_shell
 
 BASECFG=$(cmdline_value $UIRD_BASECFG)
-[ -z "$BASECFG" ] && BASECFG=/uird_configs/basecfg.ini
+if ! [ -f "$BASECFG" ]  ; then
+echo "UIRD need correct uird.basecfg cmdline parameter"
+shell_cmd "help"
+fi
+
+#get livekitname 
+[ -z $LIVEKITNAME ] && LIVEKITNAME=$(basename $BASECFG)
+sed -i "s:LIVEKITNAME.*: LIVEKITNAME=$LIVEKITNAME:"  /etc/initvars
+
+
 #cat "$BASECFG" >$MEMORY/basecfg.ini 2>/dev/null
 echo -n " " >>$MEMORY/cmdline
 eval echo $(cat $MEMORY/cmdline $BASECFG 2>/dev/null | tr -s ";" "," ) >$MEMORY/cmdline
@@ -109,9 +117,8 @@ while  [ $(cat /proc/partitions |tail -n1 |awk '{print $1}') -eq 1 ] ; do
 		sleep 0.3
 done 
 
-#uird.scan
-SCANPAR=$(cmdline_value $UIRD_SCAN)
-uird_scan $SCANPAR 
+#start uird.scan
+uird_scan
 
 # start quickshell
 start_quickshell
@@ -120,9 +127,6 @@ debug_shell
 # Resume from swsuspend
 resume_from_suspend
 debug_shell
-
-# check uird modes 
-#uird_modes
 
 RAMSIZE=$(cmdline_value $UIRD_RAMSIZE)
 if [ "$RAMSIZE" = "" ]; then RAMSIZE="70%"; fi
@@ -264,6 +268,7 @@ mkdir -p $UNION/proc $UNION/sys $UNION/dev $UNION/$MEMORY
 #need TODO
 mount --move $MEMORY $UNION/$MEMORY
 #mount --move / $UNION/initramfs
+
 
 header "$HEADER_END $LIVEKITNAME"
 debug_shell

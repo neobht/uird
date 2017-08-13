@@ -78,7 +78,12 @@ if  echo $1 |grep -q "^[[:digit:]]*$"  ; then
 else 
 	file=$1
 	echo $file |grep -q "@"  && file=$(uuid_label_to_dev $file)
-    echo /dev$(find_data ${file}/sbin/init |sed 's:/sbin/init::')
+	found=$(find_data ${file}/sbin/init |sed 's:/sbin/init::')
+    if [ -z $found ] ; then  
+		return
+    else
+		echo /dev$found
+	fi
 fi
 }
 
