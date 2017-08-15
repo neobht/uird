@@ -254,6 +254,9 @@ shell_cmd()
         echo
     fi
 }
+
+
+
 # start quickshell
 start_quickshell()
 {

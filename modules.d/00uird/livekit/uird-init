@@ -36,7 +36,7 @@ LAYER_MOUNTS=$MEMORY/layer-mounts
 #MOUNTDIR=$DATAMNT
 MOUNTDIR=$LAYER_BASE
 
-[ -z $LIVEKITNAME ] && LIVEKITNAME="MagOS"
+#[ -z $LIVEKITNAME ] && LIVEKITNAME="MagOS"
 
 echo "0" >/proc/sys/kernel/printk
 
@@ -47,7 +47,6 @@ loadkeys /usr/lib/kbd/ru.map >/dev/null
 #echo $LANG
 header $HEADER_START 
 header "[ $(cat /uird_version) $LANG]"
-
 
 debug_start
 debug_shell
@@ -60,10 +59,20 @@ debug_shell
 init_devs
 debug_shell
 
-mkdir -p $MEMORY
+mkdir -p $MEMORY  /tmp
 
-getcmdline >$MEMORY/cmdline
-eval echo $(cat /proc/cmdline $MEMORY/cmdline 2>/dev/null | tr -s ";" "," ) >$MEMORY/cmdline
+#find uird parameters in basecfg and cmdline
+getcmdline > /tmp/cmdline
+eval echo $(cat /proc/cmdline /tmp/cmdline 2>/dev/null | tr -s ";" "," ) > /tmp/cmdline
+ln -s  /tmp/cmdline $MEMORY/cmdline
+BASECFG=$(cmdline_value $UIRD_BASECFG)
+[ -f "$BASECFG" ]  || BASECFG=/uird_configs/$BASECFG
+if ! [ -f "$BASECFG" ]  ; then
+echo "$BASECFG is not  correct uird.basecfg value"
+shell_cmd "help"
+fi
+echo -n " " >> /tmp/cmdline
+eval echo $(cat /tmp/cmdline $BASECFG 2>/dev/null | tr -s ";" "," ) > /tmp/cmdline
 
 
 # print help
@@ -72,7 +81,7 @@ if cat $MEMORY/cmdline |grep -q help ; then
     header "$HELP_SYSTEM" 
     echo ""
     param_list=$( eval echo "$UIRD_BASECFG $UIRD_CONFIG $UIRD_SGNFILES $UIRD_RO $UIRD_RW $UIRD_CP $UIRD_COPY2RAM \
-        $UIRD_COPY2CACHE $UIRD_RAMSIZE $UIRD_IP  $UIRD_NETFSOPT  $UIRD_LOAD $UIRD_NOLOAD  \
+        $UIRD_COPY2CACHE $UIRD_RAMSIZE $UIRD_IP  $UIRD_NETFSOPT  $UIRD_LOAD $UIRD_NOLOAD  $UIRD_MODE $UIRD_SYSCP \
         $UIRD_FROM  $UIRD_CACHE $UIRD_HOMES $UIRD_HOME $UIRD_CHANGES $UIRD_MACHINES $UIRD_FIND_PARAMS $UIRD_MOUNTS $UIRD_BREAK" )
     help_dir=/usr/share/uird.help
     [ -d /usr/share/uird.help/${LANG} ] &&  help_dir=/usr/share/uird.help/${LANG} 
@@ -93,24 +102,11 @@ if cat $MEMORY/cmdline |grep -q help ; then
     fi
     shell_cmd "help"
 fi
-
-
 debug_shell
-
-BASECFG=$(cmdline_value $UIRD_BASECFG)
-if ! [ -f "$BASECFG" ]  ; then
-echo "UIRD need correct uird.basecfg cmdline parameter"
-shell_cmd "help"
-fi
 
 #get livekitname 
 [ -z $LIVEKITNAME ] && LIVEKITNAME=$(basename $BASECFG)
 sed -i "s:LIVEKITNAME.*: LIVEKITNAME=$LIVEKITNAME:"  /etc/initvars
-
-
-#cat "$BASECFG" >$MEMORY/basecfg.ini 2>/dev/null
-echo -n " " >>$MEMORY/cmdline
-eval echo $(cat $MEMORY/cmdline $BASECFG 2>/dev/null | tr -s ";" "," ) >$MEMORY/cmdline
 
 #Waits partitions initialization. It need for  cardreaders with some empty slots
 while  [ $(cat /proc/partitions |tail -n1 |awk '{print $1}') -eq 1 ] ; do 
@@ -133,14 +129,7 @@ if [ "$RAMSIZE" = "" ]; then RAMSIZE="70%"; fi
 mount -t tmpfs -o "size=$RAMSIZE" tmpfs $MEMORY
 
 mkdir -p $MOUNTDIR $CHANGES
-
-getcmdline >$MEMORY/cmdline
-
-BASECFG=$(cmdline_value $UIRD_BASECFG)
-[ -z "$BASECFG" ] && BASECFG=/uird_configs/basecfg.ini
-#cat "$BASECFG" >$MEMORY/basecfg.ini 2>/dev/null
-echo -n " " >>$MEMORY/cmdline 
-eval echo $(cat /proc/cmdline $MEMORY/cmdline $BASECFG 2>/dev/null | tr -s ";" "," ) >$MEMORY/cmdline
+mv  /tmp/cmdline $MEMORY/cmdline
 
 #init BASE layer
 [ "$(cmdline_value $UIRD_BREAK)" = "init_base" ] && shell_cmd "break"
