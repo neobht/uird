@@ -6,17 +6,12 @@
 
 . /livekitlib
 
-#. /lib/magos-lib.sh
-
 #Messages
 HEADER_START=$($GETTEXT "Starting UIRD init <http://magos-linux.ru>")
 HEADER_END=$($GETTEXT "UIRD init is finished, starting")
 RC_PREINIT=$($GETTEXT "Running rc.preinit scripts")
 MNT_REFRESH=$($GETTEXT "Updating directory /mnt")
 HELP_SYSTEM=$($GETTEXT "UIRD help system")
-
-
-#transfer_initramfs
 
 UNION=$NEWROOT
 
@@ -33,24 +28,18 @@ LAYER_BASE=$MEMORY/layer-base
 LAYER_CACHE=$MEMORY/layer-cache
 LAYER_HOMES=$MEMORY/layer-homes
 LAYER_MOUNTS=$MEMORY/layer-mounts
-#MOUNTDIR=$DATAMNT
 MOUNTDIR=$LAYER_BASE
-
-#[ -z $LIVEKITNAME ] && LIVEKITNAME="MagOS"
 
 echo "0" >/proc/sys/kernel/printk
 
-#loadfont < /usr/lib/consolefonts/UniCyr_8x14.psf
 loadfont < /usr/lib/consolefonts/ter-u16n.psf >/dev/null
 loadkeys /usr/lib/kbd/ru.map >/dev/null
 
-#echo $LANG
 header $HEADER_START 
 header "[ $(cat /uird_version) $LANG]"
 
 debug_start
 debug_shell
-
 
 [ -d /lib/modules/"$(uname -r)" ] || [ -d /lib64/modules/"$(uname -r)" ] || ( echolog "!!! Ядро и модули ядра не совпадают !!!" && exit 1)
 
@@ -66,14 +55,13 @@ getcmdline > /tmp/cmdline
 eval echo $(cat /proc/cmdline /tmp/cmdline 2>/dev/null | tr -s ";" "," ) > /tmp/cmdline
 ln -s  /tmp/cmdline $MEMORY/cmdline
 BASECFG=$(cmdline_value $UIRD_BASECFG)
-[ -f "$BASECFG" ]  || BASECFG=/uird_configs/$BASECFG
-if ! [ -f "$BASECFG" ]  ; then
+[ -f "$BASECFG" -o "$BASECFG" == "help" ]  || BASECFG=/uird_configs/$BASECFG
+if ! [ -f "$BASECFG" -o "$BASECFG" == "help" ]  ; then
 echo "$BASECFG is not  correct uird.basecfg value"
 shell_cmd "help"
 fi
 echo -n " " >> /tmp/cmdline
 eval echo $(cat /tmp/cmdline $BASECFG 2>/dev/null | tr -s ";" "," ) > /tmp/cmdline
-
 
 # print help
 if cat $MEMORY/cmdline |grep -q help ; then
@@ -88,11 +76,18 @@ if cat $MEMORY/cmdline |grep -q help ; then
     for par in $param_list ;do
         if [ "help" == "$(cmdline_value $par)" ] ; then 
             header "-=-=-=- $par -=-=-=-"
-            echo "default is:  $(for a in $(cat /etc/cmdline.d/01-default.conf) ;do echo $a ;done |grep "$par" )"
             cat ${help_dir}/${par}.help 
             echo "ENTER --> next page"
-            read qqq 
+            read qqq
+            if [ "$par" ==  "$UIRD_BASECFG" ] ; then
+			echo "default is:  $(cat /etc/cmdline.d/01-default.conf |grep "$par" )"
+				for cfg in /uird_configs/* ; do
+					echo "-=-=-=- $cfg -=-=-=-"
+					cat $cfg
+				done | less
+            fi
         fi
+        
     done 
     if [ "$(cmdline_parameter $UIRD_HELP)" ] ;then
         for file in $(ls -1 ${help_dir}/*.help) ;do
@@ -182,10 +177,6 @@ debug_shell
 [ "$(cmdline_value $UIRD_CACHE)" ] && copy_to_ram $LAYER_CACHE "$COPY2RAM"
 debug_shell
 
-# setup persistent changes, if possible
-#persistent_changes "$DATA" "$CHANGES"
-
-
 # init aufs filesystem
 init_aufs
 
@@ -200,12 +191,6 @@ debug_shell
 debug_shell
 
 # add data to union
-#[ "$(cmdline_value $UIRD_BREAK)" = "append_copy2ram" ] && shell_cmd "break"
-#[ "$(cmdline_value $UIRD_COPY2RAM)$(cmdline_parameter $UIRD_COPY2RAM)" ] && union_append_bundles $COPY2RAM "$BUNDLES" "$UNION"
-#debug_shell
-#[ "$(cmdline_value $UIRD_BREAK)" = "append_cache" ] && shell_cmd "break"
-#[ "$(cmdline_value $UIRD_CACHE)" ] && union_append_bundles $LAYER_CACHE "$BUNDLES" "$UNION"
-#debug_shell
 [ "$(cmdline_value $UIRD_BREAK)" = "append_bundles" ] && shell_cmd "break"
 [ "$(cmdline_value $UIRD_FROM)" ] && union_append_bundles $LAYER_BASE "$BUNDLES" "$UNION" "$COPY2RAM" "$LAYER_CACHE"
 debug_shell
@@ -214,11 +199,6 @@ debug_shell
 [ "$(cmdline_value $UIRD_BREAK)" = "set_homes" ] && shell_cmd "break"
 setup_homes "$LAYER_HOMES" "$UNION/home"
 debug_shell
-
-
-
-# rootcopy
-#copy_rootcopy_content "$DATA" "$UNION"
 
 #echo_green_star
 #echolog "Обновление файла /etc/fstab"
@@ -231,7 +211,6 @@ debug_shell
 
 # old compatibility to linuxlive init
 mkdir -p $UNION/mnt/live/memory 
-#cp /etc/resolv.conf $UNION/mnt/live/etc/ 2>/dev/null
 [ -d "$MEMORY/data/from/0" -a ! -d $UNION/mnt/livemedia ] && ln -sf $MEMORY/data/from/0 $UNION/mnt/livemedia
 [ -d "$MEMORY/data/from/1" -a ! -d $UNION/mnt/livedata ] && ln -sf $MEMORY/data/from/1 $UNION/mnt/livedata
 [ -d "$MEMORY/bundles" -a ! -d $UNION/mnt/live/memory/images ] && ln -sf $MEMORY/bundles $UNION/mnt/live/memory/images
