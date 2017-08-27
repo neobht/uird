@@ -3,7 +3,7 @@ echo $date > ./not_found.log
 cd dracut/modules.d
 ln -s ../../modules.d/* ../modules.d/ 2>/dev/null
 cd ../..
-filesystems="aufs squashfs vfat msdos iso9660 isofs xfs fuse nfs cifs udf nls_cp866 nls_utf8 reiserfs overlay ext3"
+filesystems="aufs squashfs vfat msdos iso9660 isofs xfs fuse nfs cifs udf nls_cp866 nls_utf8 reiserfs overlay ext3 ntfs"
 kernelmods="loop cryptoloop cbc zram aes-generic aes-i586 aes-x86_64 pata_acpi ata_generic ahci xhci-hcd xhci-pci xhci-plat-hcd ohci-pci  usb-storage uhci-hcd hid usbhid ehci-hcd ohci-hcd ehci-pci ehci-platform hid-generic sr_mod sd_mod scsi_mod jbd jbd2 lockd evdev sunrpc lz4 af_packet"
 
 FS=''
