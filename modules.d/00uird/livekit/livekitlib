@@ -777,6 +777,7 @@ mount_device()
     fi
 
     if [ $ERR -ne 0 ] && [ -f "$DEV" ] && echo "$DEV" | grep -q .enc$ ; then
+    	modprobe cryptoloop
         LOOPDEV=$(losetup -f)
         [ -z "$LOOPDEV" ] && LOOPDEV=$(mknod_next_loop_dev)
         OPTIONS=$(echo "$OPTIONS" | sed -r "s/,loop//g")
