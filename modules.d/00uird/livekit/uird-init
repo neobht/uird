@@ -227,7 +227,7 @@ echo_green_star
 echolog $RC_PREINIT
 [ -x "etc/rc.d/rc.preinit" ] && /bin/bash etc/rc.d/rc.preinit
 debug_shell
-mv /var/log/magos $UNION/var/log/ 2>/dev/null
+mv /var/log/* $UNION/var/log/ 2>/dev/null
 
 #need for usable_root of dracut
 mkdir -p $UNION/proc $UNION/sys $UNION/dev $UNION/$MEMORY 

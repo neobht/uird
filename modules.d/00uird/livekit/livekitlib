@@ -737,7 +737,6 @@ fumount()
 # $2 = mountpoint, eg. /mnt/hda1
 # $3 = optional mount options, for example "ro", or "remount,rw"
 # $4 = optional filesystem name, in order to skip autodetection
-#
 mount_device()
 {
     debug_log "mount_device" "$*"
@@ -757,7 +756,7 @@ mount_device()
     if [ "$OPTIONS" ]; then OPTIONS="$OPTIONS"; else OPTIONS=""; fi
     if [ -f "$DEV" ]; then OPTIONS="$OPTIONS,loop"; fi
     if [ -d "$DEV" ]; then OPTIONS="$OPTIONS,rbind"; fi
-    if [ "$3" ]; then OPTIONS="$OPTIONS,$3"; fi
+    if [ "$3" ]; then OPTIONS="$OPTIONS,$(echo $3 | tr -s "_" " " )"; fi
     OPTIONS=$(echo "$OPTIONS" | sed -r "s/^,+//")
 
     if [ "$FS" = "-t ntfs-3g" ]; then
@@ -772,6 +771,8 @@ mount_device()
                 fsck_device "$DEV" $FS_T
             fi
         fi
+        echo " mount -n -o $OPTIONS $FS "$DEV" "$2" "
+        sleep 3
         mount -n -o $OPTIONS $FS "$DEV" "$2" >/dev/null 2>&1
         ERR=$?
     fi
@@ -820,7 +821,7 @@ mount_device()
 # Mount http filesystem from the given server
 # $1 = server
 # $2 = mountdir
-#
+# 
 mount_httpfs()
 {
     debug_log "mount_httpfs" "$*"
@@ -1421,6 +1422,8 @@ download_data_pxe()
 # $2 = destination directory
 # $3 = mount point directory
 # $4 = check SGN
+# $5 = mount options
+
 mount_data_source()
 {
     debug_log "mount_data_source" "$*"
@@ -1428,7 +1431,8 @@ mount_data_source()
     DST_DIR=$2
     MNT_DIR=$3
     SGN_CHECK=$4
-
+	MNT_OPTS=$5
+		
     echo -ne $blue"  * "$default
 
     echolog "$MOUNT_DATA_SOURCE" $yellow"$SOURCE"$default
@@ -1437,20 +1441,20 @@ mount_data_source()
 
     if [ "$(echo $SOURCE | grep "://")" != ""  ]; then
         init_ifcfg
-        echo $SOURCE | grep -iq ^"http://" && DATA_FROM=$(mount_httpfs $SOURCE $MNT_DIR)
-        echo $SOURCE | grep -iq ^"nfs://" && DATA_FROM=$(mount_nfs $SOURCE $MNT_DIR)
-        echo $SOURCE | grep -iq ^"cifs://" && DATA_FROM=$(mount_cifs $SOURCE $MNT_DIR)
-        echo $SOURCE | grep -iq ^"ssh://" && DATA_FROM=$(mount_sshfs $SOURCE $MNT_DIR)
-        echo $SOURCE | grep -iq ^"ftp://" && DATA_FROM=$(mount_curlftpfs $SOURCE $MNT_DIR)
+        echo $SOURCE | grep -iq ^"http://" && DATA_FROM=$(mount_httpfs $SOURCE $MNT_DIR $MNT_OPTS)
+        echo $SOURCE | grep -iq ^"nfs://" && DATA_FROM=$(mount_nfs $SOURCE $MNT_DIR $MNT_OPTS)
+        echo $SOURCE | grep -iq ^"cifs://" && DATA_FROM=$(mount_cifs $SOURCE $MNT_DIR $MNT_OPTS)
+        echo $SOURCE | grep -iq ^"ssh://" && DATA_FROM=$(mount_sshfs $SOURCE $MNT_DIR $MNT_OPTS)
+        echo $SOURCE | grep -iq ^"ftp://" && DATA_FROM=$(mount_curlftpfs $SOURCE $MNT_DIR $MNT_OPTS)
         echo $SOURCE | grep -iq ^"rsync://" && mount_rsync $SOURCE $MNT_DIR && DATA_FROM=$MNT_DIR
     else
         echo $SOURCE | grep -q "@"  && SOURCE=$(uuid_label_to_dev $SOURCE) 
         DATA_FROM=$(find_data $SOURCE $MNT_DIR $SGN_CHECK)
-        [ -b "$DATA_FROM" ] && mount_device $DATA_FROM $DST_DIR # mount block device
+        [ -b "$DATA_FROM" ] && mount_device $DATA_FROM $DST_DIR  $MNT_OPTS # mount block device
     fi
     if [ -r "$DATA_FROM" ] ;then
-        [ -d "$DATA_FROM" ] && mount_device $DATA_FROM $DST_DIR # mount dir
-        [ -f "$DATA_FROM" ] && mount_device $DATA_FROM $DST_DIR # mount again, it may be loop device
+        [ -d "$DATA_FROM" ] && mount_device $DATA_FROM $DST_DIR  $MNT_OPTS# mount dir
+        [ -f "$DATA_FROM" ] && mount_device $DATA_FROM $DST_DIR  $MNT_OPTS# mount again, it may be loop device
         echolog "$MOUNT_DATA_SOURCE_USING" $yellow$DATA_FROM$default
     else
         rmdir $DST_DIR
@@ -1498,6 +1502,8 @@ syscp() {
     done
 }
 
+
+
 # Initialization layer
 # $1 = data directory
 # $2 = layer directory
@@ -1516,19 +1522,20 @@ init_layer()
     FROM=$(cmdline_value $CMD_PARAM)
     ARR_FROM=$(echo $FROM | tr -s ";," " ")
     for DATAFROMTO in $ARR_FROM; do
-        DATAFROMTO=$DATAFROMTO"::"
-        DATAFROM=${DATAFROMTO%%::*}
-        DATATO=${DATAFROMTO#*::}
+		PARS=$(echo $DATAFROMTO |sed 's/::/  /g')
+		DATAFROM=$(echo $PARS |cut -f1 -d " ")
+        DATATO=$(echo $PARS |cut -f2 -d " ")
+        MNTOPTS=$(echo $PARS |cut -f3 -d " ")
         if [ "$DATAFROM" ]; then
             DATA=$2/$NUM_SUBL
             DATAMNTM=$1/$NUM_SUBL
-            mount_data_source $DATAFROM $DATA $DATAMNTM "$( [ $4 ] && echo $(($NUM_SUBL+1)) || echo '')"
+            mount_data_source $DATAFROM $DATA $DATAMNTM "$( [ $4 ] && echo $(($NUM_SUBL+1)) || echo '')" $MNTOPTS
             #   [ -d "$DATA/$LIVEKITNAME" ] && DATA="$DATA/$LIVEKITNAME"
             #   [ -f "$DATA/$SGN" ] || DATA=""
             #   grep -q "`head -1 /VERSION`" $DATA/[Vv][Ee][Rr][Ss][Ii][Oo][Nn] 2>/dev/null || DATA=""
             if [ "$DATATO" ]; then
-                mkdir -p $UNION/${DATATO%%::*}
-                mount -o bind $DATA $UNION/${DATATO%%::*}
+                mkdir -p $UNION/$DATATO
+                mount -o bind $DATA $UNION/$DATATO
             fi
         fi
 
