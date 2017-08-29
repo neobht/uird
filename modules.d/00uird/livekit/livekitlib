@@ -756,9 +756,8 @@ mount_device()
     if [ "$OPTIONS" ]; then OPTIONS="$OPTIONS"; else OPTIONS=""; fi
     if [ -f "$DEV" ]; then OPTIONS="$OPTIONS,loop"; fi
     if [ -d "$DEV" ]; then OPTIONS="$OPTIONS,rbind"; fi
-    if [ "$3" ]; then OPTIONS="$OPTIONS,$(echo $3 | tr -s "_" " " )"; fi
-    OPTIONS=$(echo "$OPTIONS" | sed -r "s/^,+//")
-
+    if [ "$3" ]; then  OPTIONS="$OPTIONS,$(echo $3 | tr -s "#" "," )" ; fi
+	OPTIONS=$(echo "$OPTIONS" | sed -r "s/^,+//")
     if [ "$FS" = "-t ntfs-3g" ]; then
         [ $(cmdline_parameter fsck) ] && fsck_device "$DEV" ntfs
         ntfsmount "$DEV" "$2" -o $OPTIONS >/dev/null 2>&1
@@ -771,8 +770,7 @@ mount_device()
                 fsck_device "$DEV" $FS_T
             fi
         fi
-        echo " mount -n -o $OPTIONS $FS "$DEV" "$2" "
-        sleep 3
+        echo " mount -n -o $OPTIONS $FS "$DEV" "$2" "  >> /var/log/mounting
         mount -n -o $OPTIONS $FS "$DEV" "$2" >/dev/null 2>&1
         ERR=$?
     fi
@@ -1452,9 +1450,10 @@ mount_data_source()
         DATA_FROM=$(find_data $SOURCE $MNT_DIR $SGN_CHECK)
         [ -b "$DATA_FROM" ] && mount_device $DATA_FROM $DST_DIR  $MNT_OPTS # mount block device
     fi
-    if [ -r "$DATA_FROM" ] ;then
-        [ -d "$DATA_FROM" ] && mount_device $DATA_FROM $DST_DIR  $MNT_OPTS# mount dir
-        [ -f "$DATA_FROM" ] && mount_device $DATA_FROM $DST_DIR  $MNT_OPTS# mount again, it may be loop device
+    if  [ -r "$DATA_FROM" ] ;then
+		echo "mount_device $DATA_FROM $DST_DIR  $MNT_OPTS"
+        [ -d "$DATA_FROM" ] && mount_device $DATA_FROM $DST_DIR  $MNT_OPTS # mount dir
+        [ -f "$DATA_FROM" ] && mount_device $DATA_FROM $DST_DIR  $MNT_OPTS # mount again, it may be loop device
         echolog "$MOUNT_DATA_SOURCE_USING" $yellow$DATA_FROM$default
     else
         rmdir $DST_DIR
@@ -1502,8 +1501,6 @@ syscp() {
     done
 }
 
-
-
 # Initialization layer
 # $1 = data directory
 # $2 = layer directory
@@ -1515,7 +1512,6 @@ init_layer()
 
     echo_green_star
     echolog "$INIT_LAYER" $brown$(basename $2) " -> " $1$default
-
     local NUM_SUBL FROM CMD_PARAM ARR_FROM DATAFROMTO DATAFROM DATATO DATA DATAMNTM
     NUM_SUBL=0
     CMD_PARAM=$3
@@ -1529,20 +1525,17 @@ init_layer()
         if [ "$DATAFROM" ]; then
             DATA=$2/$NUM_SUBL
             DATAMNTM=$1/$NUM_SUBL
-            mount_data_source $DATAFROM $DATA $DATAMNTM "$( [ $4 ] && echo $(($NUM_SUBL+1)) || echo '')" $MNTOPTS
-            #   [ -d "$DATA/$LIVEKITNAME" ] && DATA="$DATA/$LIVEKITNAME"
-            #   [ -f "$DATA/$SGN" ] || DATA=""
-            #   grep -q "`head -1 /VERSION`" $DATA/[Vv][Ee][Rr][Ss][Ii][Oo][Nn] 2>/dev/null || DATA=""
+            mount_data_source $DATAFROM $DATA $DATAMNTM  "$( [ $4 ] && echo $(($NUM_SUBL+1)) || echo '')"  $MNTOPTS
             if [ "$DATATO" ]; then
                 mkdir -p $UNION/$DATATO
                 mount -o bind $DATA $UNION/$DATATO
             fi
         fi
-
         NUM_SUBL=$((NUM_SUBL+1))
     done
 
 }
+
 # Test filesystem POSIX compatible
 posix_test()
 {
