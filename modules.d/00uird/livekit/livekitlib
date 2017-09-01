@@ -740,7 +740,7 @@ fumount()
 mount_device()
 {
     debug_log "mount_device" "$*"
-    local FS DEV LOOPDEV OPTIONS FILESYSTEM ERR
+    local FS DEV LOOPDEV OPTIONS FILESYSTEM ERR OPTIONS
 
     # make sure we have enough arguments
     if [ "$2" = "" ]; then return 1; fi
@@ -769,9 +769,9 @@ mount_device()
             if [ "$FS_T" == "ext2" -o  "$FS_T" == "ext3" -o "$FS_T" == "ext4" -o "$FS_T" == "btrfs" -o "$FS_T" == "vfat" -o "$FS_T" == "exfat" -o "$FS_T" == "xfs" ]; then 
                 fsck_device "$DEV" $FS_T
             fi
-        fi
-        echo " mount -n -o $OPTIONS $FS "$DEV" "$2" "  >> /var/log/mounting
-        mount -n -o $OPTIONS $FS "$DEV" "$2" >/dev/null 2>&1
+        fi 
+        echo "mount -n -o $OPTIONS $FS "$DEV" "$2" " >> /var/log/uird.dbg.log
+        mount -n -o $OPTIONS $FS "$DEV" "$2" >> /var/log/uird.dbg.log 2>&1
         ERR=$?
     fi
 
@@ -984,6 +984,7 @@ ismountpoint()
 # $2 = path/filename
 # $3 = device mountpoint
 # $4 = check SGN
+# $5 = mount options
 find_filepath()
 {
     debug_log "find_filepath" "$*"
@@ -1002,7 +1003,7 @@ find_filepath()
 
     FOUND=$(ls -A1d $DIR/$2 2>/dev/null | head -n 1 | tr -s '/')
     
-    if [ "$(cmdline_value $UIRD_SGNFILES)" -a "$4" != "" ] ; then
+    if [ "$(cmdline_value $UIRD_SGNFILES)" -a "$4" != "no" ] ; then
         SGN_FILES="$(cmdline_value $UIRD_SGNFILES)"
         ARR_SGN_FILES=$(echo $SGN_FILES | tr -s "," ";")
         SGN_FILE=$(echo $ARR_SGN_FILES | cut -d ";" -f "$4")
@@ -1026,7 +1027,8 @@ find_filepath()
         # Only in the case it was not mounted already before.
         if [ "$PRESERVE" != "true" ]; then
             fumount $DIR
-            mount_device $1 $DIR rw
+            echo "mount_device $1 $DIR rw,$5" >> /var/log/uird.dbg.log
+            mount_device $1 $DIR rw,$5
             if [ $? -ne 0 ]; then
                 rmdir $DIR 2>/dev/null
                 return 2
@@ -1058,6 +1060,7 @@ uuid_label_to_dev()
 # $1 = filename or device-path or devicepath/filename
 # $2 = device mountpoint
 # $3 = check SGN
+# $4 = mount options
 
 find_file()
 {
@@ -1081,7 +1084,8 @@ find_file()
         PATHPART="$FIND";
         for DEVICE in $(list_mounted_directories) $(list_block_devices); do
             if ! grep -q ":$DEVICE@$PATHPART:" /tmp/_findfile 2>/dev/null; then
-                find_filepath "$DEVICE" "$PATHPART" "$2" "$3"
+                echo "find_filepath "$DEVICE" "$PATHPART" "$2" "$3" "$4"" >> /var/log/uird.dbg.log
+                find_filepath "$DEVICE" "$PATHPART" "$2" "$3" "$4"
                 if [ $? -eq 0 ]; then return 0; fi
                 echo ":$DEVICE@$PATHPART:" >>/tmp/_findfile
             fi
@@ -1089,7 +1093,8 @@ find_file()
     else
         # try to find PATHPART only on the given device
         PATHPART=$(echo "$FIND" | sed -r 's:^/dev/[^/]+(.*):\1:') #'
-        find_filepath "$DEVPART" "$PATHPART" "$2" "$3"
+        echo "find_filepath "$DEVPART" "$PATHPART" "$2" "$3" "$4"" >> /var/log/uird.dbg.log
+        find_filepath "$DEVPART" "$PATHPART" "$2" "$3" "$4"
     fi
 }
 
@@ -1100,6 +1105,7 @@ find_file()
 # $1 = file or directory to find
 # $2 = device mountpoint
 # $3 = check SGN
+# $4 = mount options
 find_data()
 {
     debug_log "find_data" "$*"
@@ -1108,14 +1114,15 @@ find_data()
     TIMEOUT=$(cmdline_value scantimeout | sed -r 's/[^0-9]*([0-9]+).*/\1/') #'
     if [ "$TIMEOUT" = "" ]; then TIMEOUT=10; fi
 
-    RESULT=$(find_file "$1" "$2" "$3")
+    echo "find_file "$1" "$2" "$3" "$4"" >> /var/log/uird.dbg.log
+    RESULT=$(find_file "$1" "$2" "$3" "$4")
 
     while [ $TIMEOUT -gt 0 -a "$RESULT" = "" ]; do
         echo -ne "." >&2
         #echolog $green"$FIND_DATA"$default >&2
         sleep 1
         TIMEOUT=$((TIMEOUT-1))
-        RESULT=$(find_file "$1" "$2" "$3")
+        RESULT=$(find_file "$1" "$2" "$3"  "$4" )
     done
 
     echo $RESULT
@@ -1424,6 +1431,7 @@ download_data_pxe()
 
 mount_data_source()
 {
+	local SOURCE DST_DIR MNT_DIR SGN_CHECK  MNT_OPTS
     debug_log "mount_data_source" "$*"
     SOURCE=$1
     DST_DIR=$2
@@ -1446,8 +1454,9 @@ mount_data_source()
         echo $SOURCE | grep -iq ^"ftp://" && DATA_FROM=$(mount_curlftpfs $SOURCE $MNT_DIR $MNT_OPTS)
         echo $SOURCE | grep -iq ^"rsync://" && mount_rsync $SOURCE $MNT_DIR && DATA_FROM=$MNT_DIR
     else
-        echo $SOURCE | grep -q "@"  && SOURCE=$(uuid_label_to_dev $SOURCE) 
-        DATA_FROM=$(find_data $SOURCE $MNT_DIR $SGN_CHECK)
+        echo $SOURCE | grep -q "@"  && SOURCE=$(uuid_label_to_dev $SOURCE)
+        echo "find_data $SOURCE $MNT_DIR $SGN_CHECK $MNT_OPTS" >> /var/log/uird.dbg.log 
+        DATA_FROM=$(find_data $SOURCE $MNT_DIR  $SGN_CHECK $MNT_OPTS)
         [ -b "$DATA_FROM" ] && mount_device $DATA_FROM $DST_DIR  $MNT_OPTS # mount block device
     fi
     if  [ -r "$DATA_FROM" ] ;then
@@ -1506,13 +1515,13 @@ syscp() {
 # $2 = layer directory
 # $3 = cmdline param name
 # $4 = check SGN
-init_layer()
+init_layer() 
 {
     debug_log "init_layer" "$*"
 
     echo_green_star
     echolog "$INIT_LAYER" $brown$(basename $2) " -> " $1$default
-    local NUM_SUBL FROM CMD_PARAM ARR_FROM DATAFROMTO DATAFROM DATATO DATA DATAMNTM
+    local NUM_SUBL FROM CMD_PARAM ARR_FROM DATAFROMTO DATAFROM DATATO DATA DATAMNTM MNTOPTS qpar par2
     NUM_SUBL=0
     CMD_PARAM=$3
     FROM=$(cmdline_value $CMD_PARAM)
@@ -1520,15 +1529,25 @@ init_layer()
     for DATAFROMTO in $ARR_FROM; do
 		PARS=$(echo $DATAFROMTO |sed 's/::/  /g')
 		DATAFROM=$(echo $PARS |cut -f1 -d " ")
-        DATATO=$(echo $PARS |cut -f2 -d " ")
-        MNTOPTS=$(echo $PARS |cut -f3 -d " ")
+        qpar=$(echo $PARS |wc -w) ; DATATO="" ; MNTOPTS=""
+        if [ $qpar -ge 2 ] ; then 
+			par2=$(echo $PARS |cut -f2 -d " ")
+			if echo $par2 |grep "^\/.*" ; then
+				DATATO=$par2
+			else
+				MNTOPTS=$par2
+			fi
+		[ $qpar -eq 3 ] && MNTOPTS=$(echo $PARS |cut -f3 -d " ")
+        fi
         if [ "$DATAFROM" ]; then
             DATA=$2/$NUM_SUBL
             DATAMNTM=$1/$NUM_SUBL
+            echo "mount_data_source $DATAFROM $DATA $DATAMNTM  "$( [ $4 ] && echo $(($NUM_SUBL+1)) || echo 'no')"  $MNTOPTS" >> /var/log/uird.dbg.log
             mount_data_source $DATAFROM $DATA $DATAMNTM  "$( [ $4 ] && echo $(($NUM_SUBL+1)) || echo '')"  $MNTOPTS
             if [ "$DATATO" ]; then
                 mkdir -p $UNION/$DATATO
-                mount -o bind $DATA $UNION/$DATATO
+                echo  "mount -o bind,$(echo $MNTOPTS | tr -s "#" "," ) $DATA $UNION/$DATATO" >> /var/log/uird.dbg.log
+                mount -o bind,$(echo $MNTOPTS | tr -s "#" "," ) $DATA $UNION/$DATATO >> /var/log/uird.dbg.log 2>&1
             fi
         fi
         NUM_SUBL=$((NUM_SUBL+1))
