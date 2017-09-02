@@ -126,10 +126,16 @@ mount -t tmpfs -o "size=$RAMSIZE" tmpfs $MEMORY
 mkdir -p $MOUNTDIR $CHANGES
 mv  /tmp/cmdline $MEMORY/cmdline
 
+# init MOUNTS layer
+[ "$(cmdline_value $UIRD_BREAK)" = "mounts" ] && shell_cmd "break"
+[ "$(cmdline_value $UIRD_MOUNTS)" ] && init_layer $DATAMNT/mounts $LAYER_MOUNTS $UIRD_MOUNTS
+debug_shell
+
 #init BASE layer
 [ "$(cmdline_value $UIRD_BREAK)" = "init_base" ] && shell_cmd "break"
 [ "$(cmdline_value $UIRD_FROM)" ] && init_layer $DATAMNT/from $LAYER_BASE $UIRD_FROM "check_SGN"
 debug_shell
+
 # init CACHE layer
 [ "$(cmdline_value $UIRD_BREAK)" = "init_cache" ] && shell_cmd "break"
 [ "$(cmdline_value $UIRD_CACHE)" ] && init_layer $DATAMNT/cache $LAYER_CACHE $UIRD_CACHE
@@ -185,10 +191,8 @@ init_aufs
 init_union "$CHANGES" "$UNION"
 debug_shell
 
-# init MOUNTS layer
-[ "$(cmdline_value $UIRD_BREAK)" = "mounts" ] && shell_cmd "break"
-[ "$(cmdline_value $UIRD_MOUNTS)" ] && init_layer $DATAMNT/mounts $LAYER_MOUNTS $UIRD_MOUNTS
-debug_shell
+#mount binds
+mount_binds
 
 # add data to union
 [ "$(cmdline_value $UIRD_BREAK)" = "append_bundles" ] && shell_cmd "break"

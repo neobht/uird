@@ -1541,12 +1541,20 @@ init_layer()
             DATAMNTM=$1/$NUM_SUBL
             mount_data_source $DATAFROM $DATA $DATAMNTM  "$( [ $4 ] && echo $(($NUM_SUBL+1)) || echo 'nosgn')"  $MNTOPTS
             if [ "$DATATO" ]; then
-                mkdir -p $UNION/$DATATO
-                mount -o bind,$(echo $MNTOPTS | tr -s "#" "," ) $DATA $UNION/$DATATO >> /var/log/uird.dbg.log 2>&1
+            echo "${DATA};$DATATO" >> /tmp/binds.lst 
             fi
         fi
         NUM_SUBL=$((NUM_SUBL+1))
     done
+}
+
+mount_binds () 
+{
+	local str
+	for str in $(cat /tmp/binds.lst) ; do
+	mkdir -p $UNION/$(echo $str |cut -f2 -d ";")
+    mount -o bind  $(echo $str |cut -f1 -d ";")  ${UNION}/$(echo $str |cut -f2 -d ";") >> /var/log/uird.dbg.log 2>&1
+	done
 }
 
 # Test filesystem POSIX compatible
