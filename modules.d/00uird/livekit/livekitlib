@@ -1003,7 +1003,7 @@ find_filepath()
 
     FOUND=$(ls -A1d $DIR/$2 2>/dev/null | head -n 1 | tr -s '/')
     
-    if [ "$(cmdline_value $UIRD_SGNFILES)" -a "$4" != "no" ] ; then
+    if [ "$(cmdline_value $UIRD_SGNFILES)" -a "$4" != "nosgn" ] ; then
         SGN_FILES="$(cmdline_value $UIRD_SGNFILES)"
         ARR_SGN_FILES=$(echo $SGN_FILES | tr -s "," ";")
         SGN_FILE=$(echo $ARR_SGN_FILES | cut -d ";" -f "$4")
@@ -1027,7 +1027,6 @@ find_filepath()
         # Only in the case it was not mounted already before.
         if [ "$PRESERVE" != "true" ]; then
             fumount $DIR
-            echo "mount_device $1 $DIR rw,$5" >> /var/log/uird.dbg.log
             mount_device $1 $DIR rw,$5
             if [ $? -ne 0 ]; then
                 rmdir $DIR 2>/dev/null
@@ -1084,7 +1083,6 @@ find_file()
         PATHPART="$FIND";
         for DEVICE in $(list_mounted_directories) $(list_block_devices); do
             if ! grep -q ":$DEVICE@$PATHPART:" /tmp/_findfile 2>/dev/null; then
-                echo "find_filepath "$DEVICE" "$PATHPART" "$2" "$3" "$4"" >> /var/log/uird.dbg.log
                 find_filepath "$DEVICE" "$PATHPART" "$2" "$3" "$4"
                 if [ $? -eq 0 ]; then return 0; fi
                 echo ":$DEVICE@$PATHPART:" >>/tmp/_findfile
@@ -1093,7 +1091,6 @@ find_file()
     else
         # try to find PATHPART only on the given device
         PATHPART=$(echo "$FIND" | sed -r 's:^/dev/[^/]+(.*):\1:') #'
-        echo "find_filepath "$DEVPART" "$PATHPART" "$2" "$3" "$4"" >> /var/log/uird.dbg.log
         find_filepath "$DEVPART" "$PATHPART" "$2" "$3" "$4"
     fi
 }
@@ -1436,8 +1433,8 @@ mount_data_source()
     SOURCE=$1
     DST_DIR=$2
     MNT_DIR=$3
-    SGN_CHECK=$4
-	MNT_OPTS=$5
+    SGN_CHECK=$4 #; echo SGN_CHECK-----$SGN_CHECK >> /var/log/uird.dbg.log 
+	MNT_OPTS=$5 #; echo MNTOPTS-----$MNTOPTS >> /var/log/uird.dbg.log
 		
     echo -ne $blue"  * "$default
 
@@ -1456,7 +1453,7 @@ mount_data_source()
     else
         echo $SOURCE | grep -q "@"  && SOURCE=$(uuid_label_to_dev $SOURCE)
         echo "find_data $SOURCE $MNT_DIR $SGN_CHECK $MNT_OPTS" >> /var/log/uird.dbg.log 
-        DATA_FROM=$(find_data $SOURCE $MNT_DIR  $SGN_CHECK $MNT_OPTS)
+        DATA_FROM=$(find_data $SOURCE $MNT_DIR $SGN_CHECK $MNT_OPTS)
         [ -b "$DATA_FROM" ] && mount_device $DATA_FROM $DST_DIR  $MNT_OPTS # mount block device
     fi
     if  [ -r "$DATA_FROM" ] ;then
@@ -1529,7 +1526,7 @@ init_layer()
     for DATAFROMTO in $ARR_FROM; do
 		PARS=$(echo $DATAFROMTO |sed 's/::/  /g')
 		DATAFROM=$(echo $PARS |cut -f1 -d " ")
-        qpar=$(echo $PARS |wc -w) ; DATATO="" ; MNTOPTS=""
+        qpar=$(echo $PARS |wc -w)  ; MNTOPTS='' ; DATATO=''
         if [ $qpar -ge 2 ] ; then 
 			par2=$(echo $PARS |cut -f2 -d " ")
 			if echo $par2 |grep "^\/.*" ; then
@@ -1542,17 +1539,14 @@ init_layer()
         if [ "$DATAFROM" ]; then
             DATA=$2/$NUM_SUBL
             DATAMNTM=$1/$NUM_SUBL
-            echo "mount_data_source $DATAFROM $DATA $DATAMNTM  "$( [ $4 ] && echo $(($NUM_SUBL+1)) || echo 'no')"  $MNTOPTS" >> /var/log/uird.dbg.log
-            mount_data_source $DATAFROM $DATA $DATAMNTM  "$( [ $4 ] && echo $(($NUM_SUBL+1)) || echo '')"  $MNTOPTS
+            mount_data_source $DATAFROM $DATA $DATAMNTM  "$( [ $4 ] && echo $(($NUM_SUBL+1)) || echo 'nosgn')"  $MNTOPTS
             if [ "$DATATO" ]; then
                 mkdir -p $UNION/$DATATO
-                echo  "mount -o bind,$(echo $MNTOPTS | tr -s "#" "," ) $DATA $UNION/$DATATO" >> /var/log/uird.dbg.log
                 mount -o bind,$(echo $MNTOPTS | tr -s "#" "," ) $DATA $UNION/$DATATO >> /var/log/uird.dbg.log 2>&1
             fi
         fi
         NUM_SUBL=$((NUM_SUBL+1))
     done
-
 }
 
 # Test filesystem POSIX compatible
