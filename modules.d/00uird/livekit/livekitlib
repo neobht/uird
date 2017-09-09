@@ -591,18 +591,18 @@ list_partition_devices()
 {
     debug_log "list_partition_devices" "$*"
     if [ "$(cmdline_parameter nohd)" != "" ]; then return 1; fi
-    egrep -v 'ram|loop|major|^$| [0-9] [a-z]' /proc/partitions | sed -r "s:^[0-9 ]+:/dev/:"
+    egrep -v 'ram|loop|major|sr|^$| [0-9] [a-z]' /proc/partitions | grep [0-9] | sed -r "s:^[0-9 ]+:/dev/:" |grep [0-9]
+    # egrep -v 'ram|loop|major|^$| [0-9] [a-z]' /proc/partitions | sed -r "s:^[0-9 ]+:/dev/:"
     if [ -e /dev/mapper/control ]; then # list LVM partitions if available
         ls -1 /dev/mapper/ | grep -v "^control\$" | sed -r "s:^:/dev/mapper/:"
     fi
 }
-
+# FUNCTION IS NEVER USED
 # List all disk devices
-#
 list_disk_devices()
 {
-    debug_log "list_disk_devices" "$*"
-    list_partition_devices | egrep -v "[0-9]"
+  debug_log "list_disk_devices" "$*"
+  list_partition_devices |sed 's/[0-9]$//' |uniq
 }
 
 # List all partitions marked as Linux Swap
@@ -619,11 +619,8 @@ list_swap_devices()
 list_block_devices()
 {
 	debug_log "list_block_devices" "$*"
-	#waiting partitions, it need for card readers  with some empty slots
-    if [ "$(cmdline_parameter nocd)" = "" ]; then
-        list_cdrom_devices
-    fi
-		list_partition_devices
+    list_partition_devices
+    [ "$(cmdline_parameter nocd)" = "" ] &&  list_cdrom_devices
 }
 
 
@@ -756,7 +753,7 @@ mount_device()
     if [ "$OPTIONS" ]; then OPTIONS="$OPTIONS"; else OPTIONS=""; fi
     if [ -f "$DEV" ]; then OPTIONS="$OPTIONS,loop"; fi
     if [ -d "$DEV" ]; then OPTIONS="$OPTIONS,rbind"; fi
-    if [ "$3" ]; then  OPTIONS="$OPTIONS,$(echo $3 | tr -s "#" "," )" ; fi
+    if [ "$3" ]; then  OPTIONS="$OPTIONS,$(echo $3 | tr -s "+" "," )" ; fi
 	OPTIONS=$(echo "$OPTIONS" | sed -r "s/^,+//")
     if [ "$FS" = "-t ntfs-3g" ]; then
         [ $(cmdline_parameter fsck) ] && fsck_device "$DEV" ntfs
@@ -1433,8 +1430,8 @@ mount_data_source()
     SOURCE=$1
     DST_DIR=$2
     MNT_DIR=$3
-    SGN_CHECK=$4 #; echo SGN_CHECK-----$SGN_CHECK >> /var/log/uird.dbg.log 
-	MNT_OPTS=$5 #; echo MNTOPTS-----$MNTOPTS >> /var/log/uird.dbg.log
+    SGN_CHECK=$4 
+	MNT_OPTS=$5 
 		
     echo -ne $blue"  * "$default
 
@@ -1541,7 +1538,8 @@ init_layer()
             DATAMNTM=$1/$NUM_SUBL
             mount_data_source $DATAFROM $DATA $DATAMNTM  "$( [ $4 ] && echo $(($NUM_SUBL+1)) || echo 'nosgn')"  $MNTOPTS
             if [ "$DATATO" ]; then
-            echo "${DATA};$DATATO" >> /tmp/binds.lst 
+				MOUNTBINDS="${MOUNTBINDS} ${DATA};$DATATO"
+				echo "MOUNTBINDS: $MOUNTBINDS" >> /var/log/uird.dbg.log
             fi
         fi
         NUM_SUBL=$((NUM_SUBL+1))
@@ -1551,10 +1549,12 @@ init_layer()
 mount_binds () 
 {
 	local str
-	for str in $(cat /tmp/binds.lst) ; do
-	mkdir -p $UNION/$(echo $str |cut -f2 -d ";")
-    mount -o bind  $(echo $str |cut -f1 -d ";")  ${UNION}/$(echo $str |cut -f2 -d ";") >> /var/log/uird.dbg.log 2>&1
+	if [ $MOUNTBINDS ] ; then 
+	for str in ${MOUNTBINDS} ; do
+		mkdir -p $UNION/$(echo $str |cut -f2 -d ";")
+		mount -o bind  $(echo $str |cut -f1 -d ";")  ${UNION}/$(echo $str |cut -f2 -d ";") >> /var/log/uird.dbg.log 2>&1
 	done
+	fi
 }
 
 # Test filesystem POSIX compatible
