@@ -589,8 +589,12 @@ list_partition_devices()
 {
     debug_log "list_partition_devices" "$*"
     if [ "$(cmdline_parameter nohd)" != "" ]; then return 1; fi
-    egrep -v 'ram|loop|major|sr|^$| [0-9] [a-z]' /proc/partitions | grep [0-9] | sed -r "s:^[0-9 ]+:/dev/:"
-    # egrep -v 'ram|loop|major|^$| [0-9] [a-z]' /proc/partitions | sed -r "s:^[0-9 ]+:/dev/:"
+    MOUNTED=$(cat /proc/mounts | grep 'sd.[[:digit:]]' | cut -d " " -f 1 |sort -u)
+    #mounted first
+    for DEV in $MOUNTED ; do echo $DEV ; done
+    for DEV in $MOUNTED $(egrep -v 'ram|loop|major|sr|^$| [0-9] [a-z]' /proc/partitions | grep [0-9] | sed -r "s:^[0-9 ]+:/dev/:") ; do
+    echo $DEV 
+    done | sort | uniq -u
     if [ -e /dev/mapper/control ]; then # list LVM partitions if available
         ls -1 /dev/mapper/ | grep -v "^control\$" | sed -r "s:^:/dev/mapper/:"
     fi
@@ -1104,7 +1108,7 @@ find_data()
     TIMEOUT=$(cmdline_value scantimeout | sed -r 's/[^0-9]*([0-9]+).*/\1/') #'
     if [ "$TIMEOUT" = "" ]; then TIMEOUT=10; fi
 
-    echo "find_file "$1" "$2" "$3" "$4"" >> /var/log/uird.dbg.log
+    log "find_file "$1" "$2" "$3" "$4"" 
     RESULT=$(find_file "$1" "$2" "$3" "$4")
 
     while [ $TIMEOUT -gt 0 -a "$RESULT" = "" ]; do
