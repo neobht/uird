@@ -768,7 +768,7 @@ mount_device()
             fi
         fi 
         log "mount -n -o $OPTIONS $FS "$DEV" "$2" " 
-        mount -n -o $OPTIONS $FS "$DEV" "$2" 
+        mount -n -o $OPTIONS $FS "$DEV" "$2" 2> /dev/null  
         ERR=$?
     fi
 
