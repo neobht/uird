@@ -757,7 +757,7 @@ mount_device()
 	OPTIONS=$(echo "$OPTIONS" | sed -r "s/^,+//")
     if [ "$FS" = "-t ntfs-3g" ]; then
         [ $(cmdline_parameter fsck) ] && fsck_device "$DEV" ntfs
-        ntfsmount "$DEV" "$2" -o $OPTIONS >/dev/null 2>&1
+        ntfsmount "$DEV" "$2" -o $OPTIONS >>/var/log/uird.dbg.log  2>&1
         ERR=$?
     else
         if [ $(cmdline_parameter fsck) ];then
@@ -768,7 +768,7 @@ mount_device()
             fi
         fi 
         log "mount -n -o $OPTIONS $FS "$DEV" "$2" " 
-        mount -n -o $OPTIONS $FS "$DEV" "$2" 2> /dev/null  
+        mount -n -o $OPTIONS $FS "$DEV" "$2"  >>/var/log/uird.dbg.log 2>&1
         ERR=$?
     fi
 
@@ -782,7 +782,7 @@ mount_device()
         while [ $times -gt 0 ]; do
             $BIN_LOSETUP_CRYPTO -e AES256 "$LOOPDEV" "$DEV" >/dev/console </dev/console 2>/dev/console
             [ $(cmdline_parameter fsck) ] && fsck_device "$LOOPDEV"
-            mount -n -o $OPTIONS "$LOOPDEV" "$2" >/dev/null 2>&1
+            mount -n -o $OPTIONS "$LOOPDEV" "$2" >>/var/log/uird.dbg.log 2>&1
             ERR=$?
             [ $ERR -eq 0 ] && break
             $BIN_LOSETUP_CRYPTO -d "$LOOPDEV"
@@ -1069,8 +1069,9 @@ find_file()
     echo $FIND |grep -q "@"  && FIND=$(uuid_label_to_dev $FIND)
     
     # if parameter is just a device, echo it and exit
-    if [ -b "$FIND" -o -c "$FIND" -o "$FIND" = "" ]; then echo "$FIND"; return; fi
-
+    #if [ -b "$FIND" -o -c "$FIND" -o "$FIND" = "" ]; then echo "$FIND"; return; fi
+     if [ -c "$FIND" -o "$FIND" = "" ]; then echo "$FIND"; return; fi
+     
     # If path doesn't start with /dev/, try to find the exact path on all devices
     # First, split DEV/PATH parts
     DEVPART=$(echo "$FIND" | egrep -o "^/dev/[^/]+")
@@ -1088,6 +1089,7 @@ find_file()
     else
         # try to find PATHPART only on the given device
         PATHPART=$(echo "$FIND" | sed -r 's:^/dev/[^/]+(.*):\1:') #'
+        [ $PATHPART ] || PATHPART="/" 
         find_filepath "$DEVPART" "$PATHPART" "$2" "$3" "$4"
     fi
 }
