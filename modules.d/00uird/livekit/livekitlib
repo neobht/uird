@@ -48,6 +48,8 @@ BIN_LOSETUP_CRYPTO=/sbin/losetup.crypto
 
 [ "$SYSMNT" ] && MEMORY=$SYSMNT || MEMORY=/memory
 
+FSCHECKED=""
+MOUNTBINDS=""
 
 export TEXTDOMAIN="uird"
 export TEXTDOMAINDIR="/usr/share/locale"
@@ -679,6 +681,7 @@ is_supported_filesystem()
 fsck_device()
 {
     debug_log "fsck_device" "$*"
+    echo $FSCHECKED |grep -q "$1" && return
     [ -b "$1" -o -f "$1" ] || return
     if [ -f "$1" ] ;then
         echo $1 | grep -q ".img$" || return
@@ -693,6 +696,8 @@ fsck_device()
     else
         $BIN_FSCK -a $([ "$2" ] && echo "-t $2") $1  </dev/console >/dev/console 2>/dev/console
     fi
+    log "FSCHECKED: $1 exitcode  - $?"
+    FSCHECKED="$FSCHECKED $1" 
 }
 
 # unmount all parameters. If the parameter is not mountpoint but
