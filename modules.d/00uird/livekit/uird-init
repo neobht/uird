@@ -214,10 +214,9 @@ rmdir $UNION/mnt/* 2>/dev/null
 debug_shell
 
 # old compatibility to linuxlive init
-mkdir -p $UNION/mnt/live/memory $UNION/mnt/livemedia $UNION/mnt/livedata
-[ -d "$MEMORY/layer-base/0" -a ! -d $UNION/mnt/livemedia/MagOS ] && ln -sf $MEMORY/layer-base/0 $UNION/mnt/livemedia/MagOS
-[ -d "$MEMORY/layer-base/1" -a ! -d $UNION/mnt/livedata/MagOS-Data ] && ln -sf $MEMORY/layer-base/1 $UNION/mnt/livedata/MagOS-Data
-[ -e $UNION/mnt/livedata/MagOS-Data ] ||  ln -sf ../livemedia/MagOS  $UNION/mnt/livedata/MagOS-Data
+mkdir -p $UNION/mnt/live/memory 
+[ -d "$MEMORY/data/from/0" -a ! -d $UNION/mnt/livemedia ] && ln -sf $MEMORY/data/from/0 $UNION/mnt/livemedia
+[ -d "$MEMORY/data/from/1" -a ! -d $UNION/mnt/livedata ] && ln -sf $MEMORY/data/from/1 $UNION/mnt/livedata
 [ -d "$MEMORY/bundles" -a ! -d $UNION/mnt/live/memory/images ] && ln -sf $MEMORY/bundles $UNION/mnt/live/memory/images
 [ -d "$MEMORY/changes" -a ! -d $UNION/mnt/live/memory/changes ] && ln -sf $MEMORY/changes $UNION/mnt/live/memory/changes
 debug_shell
