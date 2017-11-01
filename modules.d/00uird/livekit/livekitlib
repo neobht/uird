@@ -32,6 +32,7 @@ purple='\033[0;35m'
 default='\033[0m'
 
 # BINARY
+BIN_BTFS=/sbin/btfs
 BIN_RSYNC=/sbin/rsync
 BIN_HTTPFS=/sbin/httpfs
 BIN_CURLFTPFS=/sbin/curlftpfs
@@ -72,7 +73,7 @@ INIT_LAYER=$($GETTEXT "Initializing:")
 MOUNT_DATA_SOURCE=$($GETTEXT "Searching and initializing source:")
 MOUNT_DATA_SOURCE_USING="    "$($GETTEXT "using source:")
 MOUNT_DATA_SOURCE_NOT_FOUND="    "$($GETTEXT "source not found or not initialized")
-MOUNT_DATA_SOURCE_ASK="    "$($GETTEXT "[S]hutdown, [R]eboot, [C]ontinue ?")
+MOUNT_DATA_SOURCE_ASK="    "$($GETTEXT "[S]hutdown, [R]eboot, [C]ontinue, [T]ry again ?")
 
 TESTING_FOR_POSIX=$($GETTEXT "Testing filesystem for POSIX compatibility")
 POSIX_NOT_COMPATIBLE="    "$($GETTEXT "POSIX not available, using POSIXOVL")
@@ -817,6 +818,22 @@ mount_device()
     return $ERR
 }
 
+# Mount http filesystem from the given server
+# $1 = magnet link
+# $2 = mountdir
+# 
+mount_btfs()
+{
+    debug_log "mount_btfs" "$*"
+    mkdir -p $2
+    $BIN_BTFS "$1"  $2 || return
+    if [ -f $2/$(basename $1) ] ;then
+        echo $2/$(basename $1)
+    else
+        echo $2
+    fi
+}
+
 
 # Mount http filesystem from the given server
 # $1 = server
@@ -1455,6 +1472,9 @@ mount_data_source()
         echo $SOURCE | grep -iq ^"ssh://" && DATA_FROM=$(mount_sshfs $SOURCE $MNT_DIR $MNT_OPTS)
         echo $SOURCE | grep -iq ^"ftp://" && DATA_FROM=$(mount_curlftpfs $SOURCE $MNT_DIR $MNT_OPTS)
         echo $SOURCE | grep -iq ^"rsync://" && mount_rsync $SOURCE $MNT_DIR && DATA_FROM=$MNT_DIR
+    elif [ "$(echo $SOURCE | grep "magnet:")" != ""  ]; then
+        init_ifcfg
+		echo $SOURCE | grep -iq ^"magnet:" && DATA_FROM=$(mount_btfs "$SOURCE" $MNT_DIR $MNT_OPTS)
     else
         echo $SOURCE | grep -q "@"  && SOURCE=$(uuid_label_to_dev $SOURCE)
         log "find_data $SOURCE $MNT_DIR $SGN_CHECK $MNT_OPTS"
@@ -1479,6 +1499,13 @@ mount_data_source()
             "R" | "r" )
                 #reboot
                 reboot -f
+             ;;
+            "T" | "t" )
+                #Try again
+                echo -ne  "Changing SOURCE  [ Hit enter for - ${green}${1}${default} ]:  " 
+                read SRC
+                [ "$SRC" == "" ] && SRC="$1"
+                mount_data_source "$SRC" "$2" "$3" $4 $5
             ;;
             "C" | "c" )
                 #continue
@@ -1911,9 +1938,6 @@ list_modules()
     NOLOAD=$(cmdline_value $UIRD_NOLOAD | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')
     find_modules "$1" | sort | while read LINE; do
     MODNAME=$(echo $LINE | cut -b ${#1}- | cut -b 2-)
-    #      if [ "$(echo $LINE | grep /optional/)" ]; then
-    #         if [ ! "$LOAD" -o ! "$(echo $MODNAME | egrep -i "$LOAD")" ]; then continue; fi
-    #      fi
     if [ "$LOAD" -a "$(echo $MODNAME | egrep -i "$LOAD")" ]; then 
         if [ "$NOLOAD" -a "$(echo $MODNAME | egrep -i "$NOLOAD")" ]; then continue; fi
         echo $LINE
@@ -1940,7 +1964,10 @@ union_append_bundles()
 
     echo_green_star
     echolog "$UNION_APPEND_BUNDLES" $brown$1$default 
-    list_modules "$1" | while read BUNDLE; do
+    
+    add_bundle () {
+	BUNDLE=$1
+	shift
     BUN="$(basename "$BUNDLE")"
     mkdir -p "$2/$BUN"
 
@@ -1959,14 +1986,9 @@ union_append_bundles()
 
         if [ "$CP" -a "$(echo $BUNDLE | egrep -i "$CP")" ]; then
             echolog "  $blue-->" $purple"$BUNDLE"$green" [режим CP] "$default
-            #if [ "$FS" = "-t squashfs" ]; then
-            #    unsquashfs $BUNDLE $3
-            #else    
-            #echo "==============$OPTIONS======$FS+++++++++"
+
             mount -o $OPTIONS $FS "$BUNDLE" "$2/$BUN"
             cp -a "$2/$BUN"/. $3 2>/dev/null
-            #fumount "$2/$BUN"
-            #fi
             continue
         elif [ "$RW" -a "$(echo $BUNDLE | egrep -i "$RW")" ]; then
             MOD=rw+wh
@@ -1977,7 +1999,16 @@ union_append_bundles()
         mount -o $OPTIONS $FS "$BUNDLE" "$2/$BUN"
         mount -o remount,add:1:"$2/$BUN"="$MOD" aufs "$3"
     fi
+}
+
+for BUNDLE in $(list_modules "$1") ; do
+if [ $(cmdline_parameter parallel) ] ; then
+    ( add_bundle $BUNDLE $@ ) &
+ else 
+     add_bundle $BUNDLE $@
+fi
 done
+wait
 }
 
 # Copy content of rootcopy directory to union
@@ -1999,26 +2030,48 @@ copy_rootcopy_content()
 # $2 = target directory
 # $3 = target name
 # $4 = cmdline param
+
 copy_to()
 {
     debug_log "copy_to" "$*"
-    local C2PARAM MODNAME
-    C2PARAM="$(echo $4 | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')"
-    list_modules "$1" | while read MODULE; do
+     local C2PARAM MODNAME BUNDLE
+    c2 () {
+		log "c2 $@"
+		C2PARAM=$4
+		MODULE=$5
         MODNAME=$(echo $MODULE | cut -b ${#1}- | cut -b 2-)
-        [ "$C2PARAM" ] && ! [ "$(echo $MODNAME | egrep -i $C2PARAM )" ] && continue
+        [ "$C2PARAM" ] && ! [ "$(echo $MODNAME | egrep -i $C2PARAM )" ] && return
         TARGET=$(dirname "$MODULE" | cut -b ${#1}- | cut -b 2-)
         mkdir -p "$2/$TARGET"
-        echolog $yellow"  $3 $blue<- $purple$(basename $MODULE)"$green
         if [ -f "$BIN_RSYNC" ]; then
-            $BIN_RSYNC --progress -a "$MODULE" "$2/$TARGET"
+                  "$BIN_RSYNC"  -a  $MODULE  $2/${TARGET}
         else
-            cp "$MODULE" "$2/$TARGET"
-        fi
-
-        if [ $? -ne 0 ]; then fatal "$NOT_ENOUGH_MEMORY"; fi
-        #      echo $2
+                  cp -fr $MODULE  $2/${TARGET}
+		fi
+	}
+	C2PARAM="$(echo $4 | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')"
+	fullist=$(list_modules "$1")
+	for aaa in $fullist ; do 	
+		[ "$C2PARAM" ] && ! [ "$(echo $aaa | egrep -i $C2PARAM )" ] && continue
+		echolog $yellow"  $3 $blue<- $purple$(basename "$aaa")"$green ; 
+	done
+			#timer
+			REWRITE="\e[25D\e[1A\e[K"
+			seq 1000 | ( while read c ; do
+			echo -e "${REWRITE}$c"
+			sleep 1
+			done )  &
+			timerPID="$!"
+   for SOURCE  in $(find  "$1"  -maxdepth 1 -mindepth 1) ; do
+		LAYER_LIST=$(echo $fullist |grep "$SOURCE")
+		(for BUNDLE in  $LAYER_LIST ; do
+  		c2  "$1" "$2" "$3" "$C2PARAM" $BUNDLE 
+	    done) &
+	    PIDS="$PIDS $!"
     done
+    wait $PIDS
+	kill -1 $timerPID >/dev/null 2>&1
+	# if [ $? -ne 0 ]; then fatal "$NOT_ENOUGH_MEMORY"; fi
 }
 
 # Copy modules to RAM directory
@@ -2032,6 +2085,7 @@ copy_to_ram()
         [ "$2" = "" ] && return
         echo_green_star
         echolog "$COPY_TO_RAM"
+        log "$(cmdline_value $UIRD_COPY2RAM)$(cmdline_value toram)"
         copy_to $1 $2 RAM "$(cmdline_value $UIRD_COPY2RAM)$(cmdline_value toram)"
     fi
 }

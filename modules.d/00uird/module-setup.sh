@@ -15,7 +15,7 @@ installkernel() {
     return 0
 }
 
-bins="locale dialog gettext loadkeys resume rsync fsck fsck.ext2 fsck.ext3 fsck.ext4 fsck.exfat fsck.vfat fsck.xfs fsck.btrfs btrfsck ntfsfix"
+bins="locale dialog gettext loadkeys resume rsync fsck fsck.ext2 fsck.ext3 fsck.ext4 fsck.exfat fsck.vfat fsck.xfs fsck.btrfs btrfsck ntfsfix btfs"
 
 install() {
     local _i _progs _path _busybox _binaries
@@ -52,7 +52,7 @@ install() {
     _progs=""
     for _i in $($_busybox --list)
     do
-        _progs="$_progs $_i"
+		[ "_i" != "bash" -a "_i" != "sh" ] && _progs="$_progs $_i"
     done
 
     for _i in $_progs; do
