@@ -2057,8 +2057,8 @@ copy_to()
 	done
 			#timer
 			REWRITE="\e[25D\e[1A\e[K"
-			seq 1000 | ( while read c ; do
-			echo -e "${REWRITE}$c"
+			seq 10000 | ( while read c ; do
+			echo -e "${REWRITE}$c:  $(du -hd 0 $2 |cut -f1)"
 			sleep 1
 			done )  &
 			timerPID="$!"
