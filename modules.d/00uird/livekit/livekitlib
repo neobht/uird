@@ -765,6 +765,9 @@ mount_device()
         [ $(cmdline_parameter fsck) ] && fsck_device "$DEV" ntfs
         ntfsmount "$DEV" "$2" -o $OPTIONS >>/var/log/uird.dbg.log  2>&1
         ERR=$?
+    elif [ -f $DEV ] ; then 
+		echo $DEV |grep -q "\.torrent$" && (  init_ifcfg ; mount_btfs $DEV $2 )
+		ERR=$?
     else
         if [ $(cmdline_parameter fsck) ];then
             FS_T=$(echo $FS | sed "s/-t //"| tr -d " ")
@@ -1936,7 +1939,7 @@ list_modules()
 
     LOAD=$(cmdline_value $UIRD_LOAD | sed -r 's/\?/./g' |  sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')
     NOLOAD=$(cmdline_value $UIRD_NOLOAD | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')
-    find_modules "$1" | sort | while read LINE; do
+    find_modules "$1" | sort | uniq | while read LINE; do
     MODNAME=$(echo $LINE | cut -b ${#1}- | cut -b 2-)
     if [ "$LOAD" -a "$(echo $MODNAME | egrep -i "$LOAD")" ]; then 
         if [ "$NOLOAD" -a "$(echo $MODNAME | egrep -i "$NOLOAD")" ]; then continue; fi
@@ -2055,22 +2058,26 @@ copy_to()
 		[ "$C2PARAM" ] && ! [ "$(echo $aaa | egrep -i $C2PARAM )" ] && continue
 		echolog $yellow"  $3 $blue<- $purple$(basename "$aaa")"$green ; 
 	done
-			#timer
-			REWRITE="\e[25D\e[1A\e[K"
-			seq 10000 | ( while read c ; do
-			echo -e "${REWRITE}$c:  $(du -hd 0 $2 |cut -f1)"
-			sleep 1
-			done )  &
-			timerPID="$!"
+			
    for SOURCE  in $(find  "$1"  -maxdepth 1 -mindepth 1) ; do
 		LAYER_LIST=$(echo $fullist |grep "$SOURCE")
 		(for BUNDLE in  $LAYER_LIST ; do
   		c2  "$1" "$2" "$3" "$C2PARAM" $BUNDLE 
 	    done) &
-	    PIDS="$PIDS $!"
+	    PIDSS="$PIDSS $!"
     done
-    wait $PIDS
-	kill -1 $timerPID >/dev/null 2>&1
+    echo "" # this string will be rewriting by the next code
+	REWRITE="\e[25D\e[1A\e[K" ; sek=0 
+	 while true ; do
+			BREAK=yes
+			for PiD in $PIDSS ; do
+				pidof bash |grep -q $PiD  && BREAK=no
+			done
+			[ "$BREAK" == "yes" ] && break
+			echo -e "${REWRITE}* Time: $sek  Size: $(du -hd 0 $2 |cut -f1)"
+			sleep 2 ; sek=$(( $sek + 2 ))
+	done
+    wait 
 	# if [ $? -ne 0 ]; then fatal "$NOT_ENOUGH_MEMORY"; fi
 }
 
