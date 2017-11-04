@@ -165,6 +165,7 @@ NOT_ENOUGH_MEMORY=$($GETTEXT "not enough memory.")
 [ -z $UIRD_SWAP ] && UIRD_SWAP=uird.swap
 [ -z $UIRD_MODE ] && UIRD_MODE=uird.mode
 [ -z $UIRD_SYSCP ] && UIRD_SYSCP=uird.syscp
+[ -z $UIRD_ARIA2RAM ] && UIRD_ARIA2RAM=uird.aria2ram 
 
 # =================================================================
 # debug and output functions
@@ -1075,7 +1076,6 @@ uuid_label_to_dev()
     echo $DEVPATH
 }
 
-
 # Find file in computer by mounting disks or other storage devices
 # and searching for $1 in the mounted directory
 # $1 = filename or device-path or devicepath/filename
@@ -1105,7 +1105,7 @@ find_file()
     if [ "$DEVPART" = "" ]; then
         # no device is specified. Search all devices for filename $FIND
         PATHPART="$FIND";
-        for DEVICE in $(list_mounted_directories) $(list_block_devices); do
+        for DEVICE in $(list_mounted_directories)  $(list_block_devices); do
             if ! grep -q ":$DEVICE@$PATHPART:" /tmp/_findfile 2>/dev/null; then
                 find_filepath "$DEVICE" "$PATHPART" "$2" "$3" "$4"
                 if [ $? -eq 0 ]; then return 0; fi
@@ -2028,6 +2028,43 @@ copy_rootcopy_content()
     fi
 }
 
+# $1 copy target dir
+# $2... marker files (dirs), it may be /proc/PID
+Copy_timer () {
+local file TARGET_DIR MARKERS_LIST REWRITE 
+TARGET_DIR=$1
+shift
+MARKERS_LIST="$@"
+REWRITE="\e[25D\e[1A\e[K" ; sek=0 
+while true ; do
+			BREAK=yes
+			echo -ne $green
+			echo -e "${REWRITE}* Time: $sek  Size: $(du -hd 0 $TARGET_DIR 2>/dev/null |cut -f1)"
+			for file in $MARKERS_LIST ; do
+				[ -e $file ]  && BREAK=no
+			done
+			[ "$BREAK" == "yes" ] && break
+			sleep 2 ; sek=$(( $sek + 2 ))
+			echo -ne $default
+done
+}
+
+aria2_preload () {
+local PiD ARIA_IN
+mkdir -p $1
+ARIA_IN=$(cmdline_value $UIRD_ARIA2RAM |sed 's/+/  /g' |sed 's/::/  /g')
+[ $(cmdline_value $UIRD_ARIA2RAM |grep -q ::) ] &&  ARIA_IN="$ARIA_IN -Z"
+init_ifcfg
+echolog "Aria2c preload media" $green${ARIA_IN} " -> " $brown$1$default
+aria2c  --no-netrc --check-certificate=false --seed-time=0 $ARIA_IN -d $1
+#PiD=/proc/$! 
+#echo "Copy_timer $PiD $1 "
+#Copy_timer $1 $PiD  
+#hack to find_file
+mkdir $MOUNTDIR/100
+mount -o bind $1 $MOUNTDIR/100
+}
+
 # Copy modules to directory
 # $1 = data directory
 # $2 = target directory
@@ -2064,19 +2101,9 @@ copy_to()
 		(for BUNDLE in  $LAYER_LIST ; do
   		c2  "$1" "$2" "$3" "$C2PARAM" $BUNDLE 
 	    done) &
-	    PIDSS="$PIDSS $!"
+	    PIDSS="$PIDSS /proc/$!"
     done
-    echo "" # this string will be rewriting by the next code
-	REWRITE="\e[25D\e[1A\e[K" ; sek=0 
-	 while true ; do
-			BREAK=yes
-			for PiD in $PIDSS ; do
-				pidof bash |grep -q $PiD  && BREAK=no
-			done
-			[ "$BREAK" == "yes" ] && break
-			echo -e "${REWRITE}* Time: $sek  Size: $(du -hd 0 $2 |cut -f1)"
-			sleep 2 ; sek=$(( $sek + 2 ))
-	done
+    Copy_timer $2 $PIDSS
     wait 
 	# if [ $? -ne 0 ]; then fatal "$NOT_ENOUGH_MEMORY"; fi
 }
