@@ -2031,7 +2031,7 @@ copy_rootcopy_content()
 # $1 copy target dir
 # $2... marker files (dirs), it may be /proc/PID
 Copy_timer () {
-local file TARGET_DIR MARKERS_LIST REWRITE 
+local file TARGET_DIR MARKERS_LIST REWRITE traff
 TARGET_DIR=$1
 shift
 MARKERS_LIST="$@"
@@ -2039,7 +2039,8 @@ REWRITE="\e[25D\e[1A\e[K" ; sek=0
 while true ; do
 			BREAK=yes
 			echo -ne $green
-			echo -e "${REWRITE}* Time: $sek  Size: $(du -hd 0 $TARGET_DIR 2>/dev/null |cut -f1)"
+			traff="$(cat /proc/net/dev | tail -n1 | awk '{print $2}') "
+			echo -e "${REWRITE}* Time: ${sek};	$TARGET_DIR size: $(du -hd 0 $TARGET_DIR |cut -f1 );	loaded: $(((${traff}+1) / 1048576))M  "
 			for file in $MARKERS_LIST ; do
 				[ -e $file ]  && BREAK=no
 			done
@@ -2056,10 +2057,10 @@ ARIA_IN=$(cmdline_value $UIRD_ARIA2RAM |sed 's/+/  /g' |sed 's/::/  /g')
 [ $(cmdline_value $UIRD_ARIA2RAM |grep -q ::) ] &&  ARIA_IN="$ARIA_IN -Z"
 init_ifcfg
 echolog "Aria2c preload media" $green${ARIA_IN} " -> " $brown$1$default
-aria2c  --no-netrc --check-certificate=false --seed-time=0 $ARIA_IN -d $1
-#PiD=/proc/$! 
-#echo "Copy_timer $PiD $1 "
-#Copy_timer $1 $PiD  
+aria2c  -q --no-netrc --seed-time=0 $ARIA_IN -d $1 >/dev/null 2>&1  &
+PiD=/proc/$! 
+echo "Copy_timer $PiD $1 "
+Copy_timer $1 $PiD  
 #hack to find_file
 mkdir $MOUNTDIR/100
 mount -o bind $1 $MOUNTDIR/100
