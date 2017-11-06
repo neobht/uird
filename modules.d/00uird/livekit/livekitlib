@@ -2031,7 +2031,7 @@ copy_rootcopy_content()
 # $1 copy target dir
 # $2... marker files (dirs), it may be /proc/PID
 Copy_timer () {
-local file TARGET_DIR MARKERS_LIST REWRITE traff
+local file TARGET_DIR MARKERS_LIST REWRITE traff iface
 TARGET_DIR=$1
 shift
 MARKERS_LIST="$@"
@@ -2040,12 +2040,13 @@ while true ; do
 			BREAK=yes
 			echo -ne $green
 			traff="$(cat /proc/net/dev | tail -n1 | awk '{print $2}') "
-			echo -e "${REWRITE}* Time: ${sek};	$TARGET_DIR size: $(du -hd 0 $TARGET_DIR |cut -f1 );	loaded: $(((${traff}+1) / 1048576))M  "
+			iface="$(cat /proc/net/dev | tail -n1 | awk '{print $1}') "
+			echo -e "${REWRITE}* Time: ${sek};   ${TARGET_DIR}: $(du -hd 0 $TARGET_DIR |cut -f1 );   $iface $(((${traff}+1) / 1048576))M  "
 			for file in $MARKERS_LIST ; do
 				[ -e $file ]  && BREAK=no
 			done
 			[ "$BREAK" == "yes" ] && break
-			sleep 2 ; sek=$(( $sek + 2 ))
+			sleep 1 ; sek=$(( $sek + 1 ))
 			echo -ne $default
 done
 }
