@@ -1489,6 +1489,9 @@ mount_data_source()
         [ -d "$DATA_FROM" ] && mount_device $DATA_FROM $DST_DIR  $MNT_OPTS # mount dir
         [ -f "$DATA_FROM" ] && mount_device $DATA_FROM $DST_DIR  $MNT_OPTS # mount again, it may be loop device
         echolog "$MOUNT_DATA_SOURCE_USING" $yellow$DATA_FROM$default
+    elif [ $(cmdline_parameter force) ] ; then
+        echolog $red"$MOUNT_DATA_SOURCE_NOT_FOUND"$default
+        echolog $yellow"Cmdline parameter \"force\" enabled. Continue..."$default 
     else
         rmdir $DST_DIR
         echolog $red"$MOUNT_DATA_SOURCE_NOT_FOUND"$default
