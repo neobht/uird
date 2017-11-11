@@ -1450,6 +1450,7 @@ download_data_pxe()
 # $3 = mount point directory
 # $4 = check SGN
 # $5 = mount options
+# $5 = force check source (yes, no)."Yes" means - do not stop uird-init then the source was not found 
 
 mount_data_source()
 {
@@ -1489,7 +1490,7 @@ mount_data_source()
         [ -d "$DATA_FROM" ] && mount_device $DATA_FROM $DST_DIR  $MNT_OPTS # mount dir
         [ -f "$DATA_FROM" ] && mount_device $DATA_FROM $DST_DIR  $MNT_OPTS # mount again, it may be loop device
         echolog "$MOUNT_DATA_SOURCE_USING" $yellow$DATA_FROM$default
-    elif [ $(cmdline_parameter force) ] ; then
+    elif [ $(cmdline_parameter uird.force) -o "$5" == "yes" ] ; then
         echolog $red"$MOUNT_DATA_SOURCE_NOT_FOUND"$default
         echolog $yellow"Cmdline parameter \"force\" enabled. Continue..."$default 
     else
@@ -1556,15 +1557,20 @@ init_layer()
 
     echo_green_star
     echolog "$INIT_LAYER" $brown$(basename $2) " -> " $1$default
-    local NUM_SUBL FROM CMD_PARAM ARR_FROM DATAFROMTO DATAFROM DATATO DATA DATAMNTM MNTOPTS qpar par2
+    local NUM_SUBL FROM CMD_PARAM ARR_FROM DATAFROMTO DATAFROM DATATO DATA DATAMNTM MNTOPTS qpar par2 FORCE
+    FORCE=no
     NUM_SUBL=0
     CMD_PARAM=$3
     FROM=$(cmdline_value $CMD_PARAM)
     ARR_FROM=$(echo $FROM | tr -s ";," " ")
     for DATAFROMTO in $ARR_FROM; do
-		PARS=$(echo $DATAFROMTO |sed 's/::/  /g')
+		if $(echo "$DATAFROMTO" | grep -q ^\() ; then
+				DATAFROMTO=$(echo "$DATAFROMTO"  |sed -e s/\(// -e s/\)// )
+				FORCE=yes
+		fi	
+    	PARS=$(echo $DATAFROMTO |sed 's/::/  /g')
 		DATAFROM=$(echo $PARS |cut -f1 -d " ")
-        qpar=$(echo $PARS |wc -w)  ; MNTOPTS='' ; DATATO=''
+        qpar=$(echo $PARS |wc -w)  ; MNTOPTS='+' ; DATATO=''
         if [ $qpar -ge 2 ] ; then 
 			par2=$(echo $PARS |cut -f2 -d " ")
 			if echo $par2 |grep -q "^\/.*" ; then
@@ -1577,7 +1583,7 @@ init_layer()
         if [ "$DATAFROM" ]; then
             DATA=$2/$NUM_SUBL
             DATAMNTM=$1/$NUM_SUBL
-            mount_data_source $DATAFROM $DATA $DATAMNTM  "$( [ $4 ] && echo $(($NUM_SUBL+1)) || echo 'nosgn')"  $MNTOPTS
+            mount_data_source $DATAFROM $DATA $DATAMNTM  "$( [ $4 ] && echo $(($NUM_SUBL+1)) || echo 'nosgn')"  $MNTOPTS $FORCE
             if [ "$DATATO" ]; then
 				MOUNTBINDS="${MOUNTBINDS} ${DATA};$DATATO"
 				log "MOUNTBINDS: $MOUNTBINDS" 
