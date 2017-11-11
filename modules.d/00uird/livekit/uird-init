@@ -131,6 +131,10 @@ mv  /tmp/cmdline $MEMORY/cmdline
 [ "$(cmdline_value $UIRD_MOUNTS)" ] && init_layer $DATAMNT/mounts $LAYER_MOUNTS $UIRD_MOUNTS
 debug_shell
 
+#aria2 preDownload
+[ "$(cmdline_value $UIRD_BREAK)" = "aria2" ] && shell_cmd "break"
+[ "$(cmdline_value $UIRD_ARIA2RAM)" ] && aria2_preload $DATAMNT/aria2 
+
 #init BASE layer
 [ "$(cmdline_value $UIRD_BREAK)" = "init_base" ] && shell_cmd "break"
 [ "$(cmdline_value $UIRD_FROM)" ] && init_layer $DATAMNT/from $LAYER_BASE $UIRD_FROM "check_SGN"

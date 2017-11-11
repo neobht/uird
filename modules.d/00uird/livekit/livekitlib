@@ -32,6 +32,7 @@ purple='\033[0;35m'
 default='\033[0m'
 
 # BINARY
+BIN_BTFS=/sbin/btfs
 BIN_RSYNC=/sbin/rsync
 BIN_HTTPFS=/sbin/httpfs
 BIN_CURLFTPFS=/sbin/curlftpfs
@@ -71,7 +72,7 @@ INIT_LAYER=$($GETTEXT "Initializing:")
 MOUNT_DATA_SOURCE=$($GETTEXT "Searching and initializing source:")
 MOUNT_DATA_SOURCE_USING="    "$($GETTEXT "using source:")
 MOUNT_DATA_SOURCE_NOT_FOUND="    "$($GETTEXT "source not found or not initialized")
-MOUNT_DATA_SOURCE_ASK="    "$($GETTEXT "[S]hutdown, [R]eboot, [C]ontinue ?")
+MOUNT_DATA_SOURCE_ASK="    "$($GETTEXT "[S]hutdown, [R]eboot, [C]ontinue, [T]ry again ?")
 
 TESTING_FOR_POSIX=$($GETTEXT "Testing filesystem for POSIX compatibility")
 POSIX_NOT_COMPATIBLE="    "$($GETTEXT "POSIX not available, using POSIXOVL")
@@ -163,6 +164,7 @@ NOT_ENOUGH_MEMORY=$($GETTEXT "not enough memory.")
 [ -z $UIRD_SWAP ] && UIRD_SWAP=uird.swap
 [ -z $UIRD_MODE ] && UIRD_MODE=uird.mode
 [ -z $UIRD_SYSCP ] && UIRD_SYSCP=uird.syscp
+[ -z $UIRD_ARIA2RAM ] && UIRD_ARIA2RAM=uird.aria2ram 
 
 # =================================================================
 # debug and output functions
@@ -763,6 +765,9 @@ mount_device()
         [ $(cmdline_parameter fsck) ] && fsck_device "$DEV" ntfs
         ntfsmount "$DEV" "$2" -o $OPTIONS >>/var/log/uird.dbg.log  2>&1
         ERR=$?
+    elif [ -f $DEV ] ; then 
+		echo $DEV |grep -q "\.torrent$" && (  init_ifcfg ; mount_btfs $DEV $2 )
+		ERR=$?
     else
         if [ $(cmdline_parameter fsck) ];then
             FS_T=$(echo $FS | sed "s/-t //"| tr -d " ")
@@ -822,6 +827,22 @@ mount_device()
 
     if [ $ERR -ne 0 ]; then rmdir $2 2>/dev/null; fi
     return $ERR
+}
+
+# Mount http filesystem from the given server
+# $1 = magnet link
+# $2 = mountdir
+# 
+mount_btfs()
+{
+    debug_log "mount_btfs" "$*"
+    mkdir -p $2
+    $BIN_BTFS "$1"  $2 || return
+    if [ -f $2/$(basename $1) ] ;then
+        echo $2/$(basename $1)
+    else
+        echo $2
+    fi
 }
 
 
@@ -1062,7 +1083,6 @@ uuid_label_to_dev()
     echo $DEVPATH
 }
 
-
 # Find file in computer by mounting disks or other storage devices
 # and searching for $1 in the mounted directory
 # $1 = filename or device-path or devicepath/filename
@@ -1092,7 +1112,7 @@ find_file()
     if [ "$DEVPART" = "" ]; then
         # no device is specified. Search all devices for filename $FIND
         PATHPART="$FIND";
-        for DEVICE in $(list_mounted_directories) $(list_block_devices); do
+        for DEVICE in $(list_mounted_directories)  $(list_block_devices); do
             if ! grep -q ":$DEVICE@$PATHPART:" /tmp/_findfile 2>/dev/null; then
                 find_filepath "$DEVICE" "$PATHPART" "$2" "$3" "$4"
                 if [ $? -eq 0 ]; then return 0; fi
@@ -1437,6 +1457,7 @@ download_data_pxe()
 # $3 = mount point directory
 # $4 = check SGN
 # $5 = mount options
+# $6 = force check source (yes, no)."Yes" means - do not stop uird-init then the source was not found 
 
 mount_data_source()
 {
@@ -1462,6 +1483,9 @@ mount_data_source()
         echo $SOURCE | grep -iq ^"ssh://" && DATA_FROM=$(mount_sshfs $SOURCE $MNT_DIR $MNT_OPTS)
         echo $SOURCE | grep -iq ^"ftp://" && DATA_FROM=$(mount_curlftpfs $SOURCE $MNT_DIR $MNT_OPTS)
         echo $SOURCE | grep -iq ^"rsync://" && mount_rsync $SOURCE $MNT_DIR && DATA_FROM=$MNT_DIR
+    elif [ "$(echo $SOURCE | grep "magnet:")" != ""  ]; then
+        init_ifcfg
+		echo $SOURCE | grep -iq ^"magnet:" && DATA_FROM=$(mount_btfs "$SOURCE" $MNT_DIR $MNT_OPTS)
     else
         echo $SOURCE | grep -q "@"  && SOURCE=$(uuid_label_to_dev $SOURCE)
         log "find_data $SOURCE $MNT_DIR $SGN_CHECK $MNT_OPTS"
@@ -1473,6 +1497,9 @@ mount_data_source()
         [ -d "$DATA_FROM" ] && mount_device $DATA_FROM $DST_DIR  $MNT_OPTS # mount dir
         [ -f "$DATA_FROM" ] && mount_device $DATA_FROM $DST_DIR  $MNT_OPTS # mount again, it may be loop device
         echolog "$MOUNT_DATA_SOURCE_USING" $yellow$DATA_FROM$default
+    elif [ $(cmdline_parameter uird.force)_ == "uird.force_"  -o "$6" == "yes" ] ; then
+        echolog $red"$MOUNT_DATA_SOURCE_NOT_FOUND"$default
+        echolog $yellow"Source $SOURCE droped. Continue..."$default 
     else
         rmdir $DST_DIR
         echolog $red"$MOUNT_DATA_SOURCE_NOT_FOUND"$default
@@ -1486,6 +1513,13 @@ mount_data_source()
             "R" | "r" )
                 #reboot
                 reboot -f
+             ;;
+            "T" | "t" )
+                #Try again
+                echo -ne  "Changing SOURCE  [ Hit enter for - ${green}${1}${default} ]:  " 
+                read SRC
+                [ "$SRC" == "" ] && SRC="$1"
+                mount_data_source "$SRC" "$2" "$3" $4 $5
             ;;
             "C" | "c" )
                 #continue
@@ -1530,15 +1564,20 @@ init_layer()
 
     echo_green_star
     echolog "$INIT_LAYER" $brown$(basename $2) " -> " $1$default
-    local NUM_SUBL FROM CMD_PARAM ARR_FROM DATAFROMTO DATAFROM DATATO DATA DATAMNTM MNTOPTS qpar par2
+    local NUM_SUBL FROM CMD_PARAM ARR_FROM DATAFROMTO DATAFROM DATATO DATA DATAMNTM MNTOPTS qpar par2 FORCE
+    FORCE=no
     NUM_SUBL=0
     CMD_PARAM=$3
     FROM=$(cmdline_value $CMD_PARAM)
     ARR_FROM=$(echo $FROM | tr -s ";," " ")
     for DATAFROMTO in $ARR_FROM; do
-		PARS=$(echo $DATAFROMTO |sed 's/::/  /g')
+		if $(echo "$DATAFROMTO" | grep -q '^{.*}$' ) ; then
+				DATAFROMTO=$(echo "$DATAFROMTO"  |sed  -e s/^{//   -e s/}$// )
+				FORCE=yes
+		fi	
+    	PARS=$(echo $DATAFROMTO |sed 's/::/  /g')
 		DATAFROM=$(echo $PARS |cut -f1 -d " ")
-        qpar=$(echo $PARS |wc -w)  ; MNTOPTS='' ; DATATO=''
+        qpar=$(echo $PARS |wc -w)  ; MNTOPTS='+' ; DATATO=''
         if [ $qpar -ge 2 ] ; then 
 			par2=$(echo $PARS |cut -f2 -d " ")
 			if echo $par2 |grep -q "^\/.*" ; then
@@ -1551,7 +1590,7 @@ init_layer()
         if [ "$DATAFROM" ]; then
             DATA=$2/$NUM_SUBL
             DATAMNTM=$1/$NUM_SUBL
-            mount_data_source $DATAFROM $DATA $DATAMNTM  "$( [ $4 ] && echo $(($NUM_SUBL+1)) || echo 'nosgn')"  $MNTOPTS
+            mount_data_source $DATAFROM $DATA $DATAMNTM  "$( [ $4 ] && echo $(($NUM_SUBL+1)) || echo 'nosgn')"  $MNTOPTS $FORCE
             if [ "$DATATO" ]; then
 				MOUNTBINDS="${MOUNTBINDS} ${DATA};$DATATO"
 				log "MOUNTBINDS: $MOUNTBINDS" 
@@ -1916,11 +1955,8 @@ list_modules()
 
     LOAD=$(cmdline_value $UIRD_LOAD | sed -r 's/\?/./g' |  sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')
     NOLOAD=$(cmdline_value $UIRD_NOLOAD | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')
-    find_modules "$1" | sort | while read LINE; do
+    find_modules "$1" | sort | uniq | while read LINE; do
     MODNAME=$(echo $LINE | cut -b ${#1}- | cut -b 2-)
-    #      if [ "$(echo $LINE | grep /optional/)" ]; then
-    #         if [ ! "$LOAD" -o ! "$(echo $MODNAME | egrep -i "$LOAD")" ]; then continue; fi
-    #      fi
     if [ "$LOAD" -a "$(echo $MODNAME | egrep -i "$LOAD")" ]; then 
         if [ "$NOLOAD" -a "$(echo $MODNAME | egrep -i "$NOLOAD")" ]; then continue; fi
         echo $LINE
@@ -1947,7 +1983,10 @@ union_append_bundles()
 
     echo_green_star
     echolog "$UNION_APPEND_BUNDLES" $brown$1$default 
-    list_modules "$1" | while read BUNDLE; do
+    
+    add_bundle () {
+	BUNDLE=$1
+	shift
     BUN="$(basename "$BUNDLE")"
     mkdir -p "$2/$BUN"
 
@@ -1966,14 +2005,9 @@ union_append_bundles()
 
         if [ "$CP" -a "$(echo $BUNDLE | egrep -i "$CP")" ]; then
             echolog "  $blue-->" $purple"$BUNDLE"$green" [режим CP] "$default
-            #if [ "$FS" = "-t squashfs" ]; then
-            #    unsquashfs $BUNDLE $3
-            #else    
-            #echo "==============$OPTIONS======$FS+++++++++"
+
             mount -o $OPTIONS $FS "$BUNDLE" "$2/$BUN"
             cp -a "$2/$BUN"/. $3 2>/dev/null
-            #fumount "$2/$BUN"
-            #fi
             continue
         elif [ "$RW" -a "$(echo $BUNDLE | egrep -i "$RW")" ]; then
             MOD=rw+wh
@@ -1984,7 +2018,16 @@ union_append_bundles()
         mount -o $OPTIONS $FS "$BUNDLE" "$2/$BUN"
         mount -o remount,add:1:"$2/$BUN"="$MOD" aufs "$3"
     fi
+}
+
+for BUNDLE in $(list_modules "$1") ; do
+if [ $(cmdline_parameter parallel) ] ; then
+    ( add_bundle $BUNDLE $@ ) &
+ else 
+     add_bundle $BUNDLE $@
+fi
 done
+wait
 }
 
 # Copy content of rootcopy directory to union
@@ -2001,31 +2044,86 @@ copy_rootcopy_content()
     fi
 }
 
+# $1 copy target dir
+# $2... marker files (dirs), it may be /proc/PID
+Copy_timer () {
+local file TARGET_DIR MARKERS_LIST REWRITE traff iface
+TARGET_DIR=$1
+shift
+MARKERS_LIST="$@"
+REWRITE="\e[25D\e[1A\e[K" ; sek=0 
+while true ; do
+			BREAK=yes
+			echo -ne $green
+			traff="$(cat /proc/net/dev | tail -n1 | awk '{print $2}') "
+			iface="$(cat /proc/net/dev | tail -n1 | awk '{print $1}') "
+			echo -e "${REWRITE}* Time: ${sek};   ${TARGET_DIR}: $(du -hd 0 $TARGET_DIR |cut -f1 );   $iface $(((${traff}+1) / 1048576))M  "
+			for file in $MARKERS_LIST ; do
+				[ -e $file ]  && BREAK=no
+			done
+			[ "$BREAK" == "yes" ] && break
+			sleep 1 ; sek=$(( $sek + 1 ))
+			echo -ne $default
+done
+}
+
+aria2_preload () {
+local PiD ARIA_IN
+mkdir -p $1
+ARIA_IN=$(cmdline_value $UIRD_ARIA2RAM |sed 's/+/  /g' |sed 's/::/  /g')
+[ $(cmdline_value $UIRD_ARIA2RAM |grep -q ::) ] &&  ARIA_IN="$ARIA_IN -Z"
+init_ifcfg
+echolog "Aria2c preload media" $green${ARIA_IN} " -> " $brown$1$default
+aria2c  -q --no-netrc --seed-time=0 $ARIA_IN -d $1 >/dev/null 2>&1  &
+PiD=/proc/$! 
+echo "Copy_timer $PiD $1 "
+Copy_timer $1 $PiD  
+#hack to find_file
+mkdir $MOUNTDIR/100
+mount -o bind $1 $MOUNTDIR/100
+}
+
 # Copy modules to directory
 # $1 = data directory
 # $2 = target directory
 # $3 = target name
 # $4 = cmdline param
+
 copy_to()
 {
     debug_log "copy_to" "$*"
-    local C2PARAM MODNAME
-    C2PARAM="$(echo $4 | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')"
-    list_modules "$1" | while read MODULE; do
+     local C2PARAM MODNAME BUNDLE
+    c2 () {
+		log "c2 $@"
+		C2PARAM=$4
+		MODULE=$5
         MODNAME=$(echo $MODULE | cut -b ${#1}- | cut -b 2-)
-        [ "$C2PARAM" ] && ! [ "$(echo $MODNAME | egrep -i $C2PARAM )" ] && continue
+        [ "$C2PARAM" ] && ! [ "$(echo $MODNAME | egrep -i $C2PARAM )" ] && return
         TARGET=$(dirname "$MODULE" | cut -b ${#1}- | cut -b 2-)
         mkdir -p "$2/$TARGET"
-        echolog $yellow"  $3 $blue<- $purple$(basename $MODULE)"$green
         if [ -f "$BIN_RSYNC" ]; then
-            $BIN_RSYNC --progress -a "$MODULE" "$2/$TARGET"
+                  "$BIN_RSYNC"  -a  $MODULE  $2/${TARGET}
         else
-            cp "$MODULE" "$2/$TARGET"
-        fi
-
-        if [ $? -ne 0 ]; then fatal "$NOT_ENOUGH_MEMORY"; fi
-        #      echo $2
+                  cp -fr $MODULE  $2/${TARGET}
+		fi
+	}
+	C2PARAM="$(echo $4 | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')"
+	fullist=$(list_modules "$1")
+	for aaa in $fullist ; do 	
+		[ "$C2PARAM" ] && ! [ "$(echo $aaa | egrep -i $C2PARAM )" ] && continue
+		echolog $yellow"  $3 $blue<- $purple$(basename "$aaa")"$green ; 
+	done
+			
+   for SOURCE  in $(find  "$1"  -maxdepth 1 -mindepth 1) ; do
+		LAYER_LIST=$(echo $fullist |grep "$SOURCE")
+		(for BUNDLE in  $LAYER_LIST ; do
+  		c2  "$1" "$2" "$3" "$C2PARAM" $BUNDLE 
+	    done) &
+	    PIDSS="$PIDSS /proc/$!"
     done
+    Copy_timer $2 $PIDSS
+    wait 
+	# if [ $? -ne 0 ]; then fatal "$NOT_ENOUGH_MEMORY"; fi
 }
 
 # Copy modules to RAM directory
@@ -2039,6 +2137,7 @@ copy_to_ram()
         [ "$2" = "" ] && return
         echo_green_star
         echolog "$COPY_TO_RAM"
+        log "$(cmdline_value $UIRD_COPY2RAM)$(cmdline_value toram)"
         copy_to $1 $2 RAM "$(cmdline_value $UIRD_COPY2RAM)$(cmdline_value toram)"
     fi
 }
