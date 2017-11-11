@@ -787,7 +787,7 @@ mount_device()
        while [ $times -gt 0 ]; do
           read -s -pPassword: >/dev/console </dev/console 2>/dev/console ; echo $REPLY | cryptsetup open --type loopaes "$DEV" "$LOOPDEV" --key-file -
           mount -n -o ro "/dev/mapper/$LOOPDEV" "$2" >>/var/log/uird.dbg.log 2>&1
-          ERR=$?
+          ERR=$? ; REPLY=
           if [ $ERR -ne 0 ]; then
              echo incorrect! >/dev/console
              cryptsetup close "$LOOPDEV"
