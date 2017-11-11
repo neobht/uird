@@ -68,8 +68,8 @@ if cat $MEMORY/cmdline |grep -q help ; then
     echo ""
     header "$HELP_SYSTEM" 
     echo ""
-    param_list=$( eval echo "$UIRD_BASECFG $UIRD_CONFIG $UIRD_SGNFILES $UIRD_RO $UIRD_RW $UIRD_CP $UIRD_COPY2RAM \
-        $UIRD_COPY2CACHE $UIRD_RAMSIZE $UIRD_IP  $UIRD_NETFSOPT  $UIRD_LOAD $UIRD_NOLOAD  $UIRD_MODE $UIRD_SYSCP \
+    param_list=$( eval echo "$UIRD_BASECFG $UIRD_CONFIG $UIRD_SGNFILES $UIRD_RO $UIRD_RW $UIRD_CP $UIRD_COPY2RAM $UIRD_FORCE  $UIRD_SWAP\
+        $UIRD_COPY2CACHE $UIRD_RAMSIZE $UIRD_IP  $UIRD_NETFSOPT  $UIRD_LOAD $UIRD_NOLOAD  $UIRD_MODE $UIRD_SYSCP $UIRD_SCAN $UIRD_ARIA2RAM \
         $UIRD_FROM  $UIRD_CACHE $UIRD_HOMES $UIRD_HOME $UIRD_CHANGES $UIRD_MACHINES $UIRD_FIND_PARAMS $UIRD_MOUNTS $UIRD_BREAK" )
     help_dir=/usr/share/uird.help
     [ -d /usr/share/uird.help/${LANG} ] &&  help_dir=/usr/share/uird.help/${LANG} 
@@ -127,12 +127,12 @@ mkdir -p $MOUNTDIR $CHANGES
 mv  /tmp/cmdline $MEMORY/cmdline
 
 # init MOUNTS layer
-[ "$(cmdline_value $UIRD_BREAK)" = "mounts" ] && shell_cmd "break"
+[ "$(cmdline_value $UIRD_BREAK)" = "init_mounts" ] && shell_cmd "break"
 [ "$(cmdline_value $UIRD_MOUNTS)" ] && init_layer $DATAMNT/mounts $LAYER_MOUNTS $UIRD_MOUNTS
 debug_shell
 
 #aria2 preDownload
-[ "$(cmdline_value $UIRD_BREAK)" = "aria2" ] && shell_cmd "break"
+[ "$(cmdline_value $UIRD_BREAK)" = "init_aria2" ] && shell_cmd "break"
 [ "$(cmdline_value $UIRD_ARIA2RAM)" ] && aria2_preload $DATAMNT/aria2 
 
 #init BASE layer

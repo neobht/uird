@@ -49,6 +49,8 @@ https://github.com/neobht/uird/
     - uird.swap - подключение разделов и файлов swap
     - uird.scan - поиск модулей и прочего с возможностью автозагрузки
     - uird.syscp[+]= - копирование файлов из UIRD в систему
+    - uird.aria2= - предзагрузка источника в RAM утилитой aria2c (torrent,https и прочее не доступное 
+    для монтироавния uird.from, uird.mounts) 
     - quickshell, qs - консоль на начальном этапе работы uird-init
     - qse - консоль в конце работы uird-init
     - debug - подробный вывод и приостановка uird-init на нескольких этапах работы
@@ -81,21 +83,31 @@ squashfs с использованием aufs. Модули, которые не
 Чтобы загрузить MagOS c UIRD нужны следующие параметры:
 
     - uird.from=/MagOS;/MagOS-Data - найти два источника MagOS и MagOS-Data на всех доступных носителях;
+    
     - uird.sgnfiles=MagOS.sgn;MagOS-Data.sgn - при поиске источников MagOS и MagOS-Data проверять наличие 
       файлов-маркеров; MagOS.sgn в источнике MagOS и MagOS-Data.sgn в MagOS-Data
+      
     - uird.load=/base/,/modules/,rootcopy - подключать модули и каталоги если в путях к ним содержится 
       сочетание символов: »/base/», »/modules/» или «rootcopy» (описанию соответствуют: /MagOS/base/, 
       /MagOS/modules, /MagOS-Data/modules/, плюс /MagOS/rootcopy/ и /MagOS-Data/rootcopy/)
+      
     - uird.cp=*.xzm.cp,*/rootcopy - копировать в корневую ФС содержимое каталогов и модулей если в 
       путях/именах присутствуют сочетания символов: *.xzm.cp */rootcopy (описанию соответствуют: 
       /MagOS/rootcopy, /MagOS-Data/rootcopy)
+      
     - uird.rw=*.rwm;*.rwm.enc - подключать в режиме RW модули если в путях/именах присутствуют сочетания 
       символов: *.rwm;*.rwm.enc (таких модулей по умолчанию в MagOS нет, приведено как пример)
+      
     - uird.ro=*.xzm;*.rom;*.rom.enc; - подключать в режиме RO модули если в путях/именах присутствуют 
       сочетания символов: *.xzm;*.rom;*.rom.enc;
+      
     - uird.config=MagOS.ini - найти и использовать системный конфигурационный файл MagOS.ini (не путать 
       с конфигом uird - basecfg.ini)
+      
     - uird.ramsize=70% - установить размер tmpfs для корневого раздела в 70% от размера RAM
+
+(не все из этих параметров обязательны для загрузки MagOS, но такой набор наиболее близок к загрузке
+с MagOS initrd)
 
 Для включения режима сохранений в каталог /MagOS-Data/changes нужно добавить:
 
