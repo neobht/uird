@@ -1450,7 +1450,7 @@ download_data_pxe()
 # $3 = mount point directory
 # $4 = check SGN
 # $5 = mount options
-# $5 = force check source (yes, no)."Yes" means - do not stop uird-init then the source was not found 
+# $6 = force check source (yes, no)."Yes" means - do not stop uird-init then the source was not found 
 
 mount_data_source()
 {
@@ -1490,9 +1490,9 @@ mount_data_source()
         [ -d "$DATA_FROM" ] && mount_device $DATA_FROM $DST_DIR  $MNT_OPTS # mount dir
         [ -f "$DATA_FROM" ] && mount_device $DATA_FROM $DST_DIR  $MNT_OPTS # mount again, it may be loop device
         echolog "$MOUNT_DATA_SOURCE_USING" $yellow$DATA_FROM$default
-    elif [ $(cmdline_parameter uird.force) -o "$5" == "yes" ] ; then
+    elif [ $(cmdline_parameter uird.force)_ == "uird.force_"  -o "$6" == "yes" ] ; then
         echolog $red"$MOUNT_DATA_SOURCE_NOT_FOUND"$default
-        echolog $yellow"Cmdline parameter \"force\" enabled. Continue..."$default 
+        echolog $yellow"Source $SOURCE droped. Continue..."$default 
     else
         rmdir $DST_DIR
         echolog $red"$MOUNT_DATA_SOURCE_NOT_FOUND"$default
@@ -1564,8 +1564,8 @@ init_layer()
     FROM=$(cmdline_value $CMD_PARAM)
     ARR_FROM=$(echo $FROM | tr -s ";," " ")
     for DATAFROMTO in $ARR_FROM; do
-		if $(echo "$DATAFROMTO" | grep -q ^\() ; then
-				DATAFROMTO=$(echo "$DATAFROMTO"  |sed -e s/\(// -e s/\)// )
+		if $(echo "$DATAFROMTO" | grep -q '^{.*}$' ) ; then
+				DATAFROMTO=$(echo "$DATAFROMTO"  |sed  -e s/^{//   -e s/}$// )
 				FORCE=yes
 		fi	
     	PARS=$(echo $DATAFROMTO |sed 's/::/  /g')
