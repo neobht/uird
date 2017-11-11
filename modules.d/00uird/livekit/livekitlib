@@ -42,7 +42,6 @@ BIN_FSCK=/sbin/fsck
 BIN_BTRFSCK=/sbin/btrfsck
 BIN_BLKID=/sbin/blkid.real
 BIN_LOSETUP=/sbin/losetup.real
-BIN_LOSETUP_CRYPTO=/sbin/losetup.crypto
 
 [ -f /etc/initvars ] && . /etc/initvars
 
@@ -778,21 +777,29 @@ mount_device()
     fi
 
     if [ $ERR -ne 0 ] && [ -f "$DEV" ] && echo "$DEV" | grep -q .enc$ ; then
-    	modprobe cryptoloop
-        LOOPDEV=$(losetup -f)
-        [ -z "$LOOPDEV" ] && LOOPDEV=$(mknod_next_loop_dev)
-        OPTIONS=$(echo "$OPTIONS" | sed -r "s/,loop//g")
-        echolog "$MOUNT_DEVICE_ENC" $green"$DEV"$default
-        times=3
-        while [ $times -gt 0 ]; do
-            $BIN_LOSETUP_CRYPTO -e AES256 "$LOOPDEV" "$DEV" >/dev/console </dev/console 2>/dev/console
-            [ $(cmdline_parameter fsck) ] && fsck_device "$LOOPDEV"
-            mount -n -o $OPTIONS "$LOOPDEV" "$2" >>/var/log/uird.dbg.log 2>&1
-            ERR=$?
-            [ $ERR -eq 0 ] && break
-            $BIN_LOSETUP_CRYPTO -d "$LOOPDEV"
-            times=$(expr $times - 1)
-        done
+       echolog "$MOUNT_DEVICE_ENC" $green"$DEV"$default
+       OPTIONS=$(echo "$OPTIONS" | sed -r "s/,loop//g")
+       for a in $(seq 0 254) ;do
+          [ -f /dev/mapper/uirdencdev$a -o -b /dev/mapper/uirdencdev$a ] && continue
+          LOOPDEV=uirdencdev$a ;break
+       done
+       times=3
+       while [ $times -gt 0 ]; do
+          read -s -pPassword: >/dev/console </dev/console 2>/dev/console ; echo $REPLY | cryptsetup open --type loopaes "$DEV" "$LOOPDEV" --key-file -
+          mount -n -o ro "/dev/mapper/$LOOPDEV" "$2" >>/var/log/uird.dbg.log 2>&1
+          ERR=$? ; REPLY=
+          if [ $ERR -ne 0 ]; then
+             echo incorrect! >/dev/console
+             cryptsetup close "$LOOPDEV"
+             times=$(expr $times - 1)
+          else
+             echo accepted! >/dev/console
+             umount "$2"
+             [ $(cmdline_parameter fsck) ] && fsck_device "/dev/mapper/$LOOPDEV"
+             mount -n -o $OPTIONS "/dev/mapper/$LOOPDEV" "$2" >>/var/log/uird.dbg.log 2>&1
+             break
+          fi
+       done
     fi
 
     # not enough loop devices? try to create one.
