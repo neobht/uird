@@ -26,7 +26,7 @@ for mod in $kernelmods ; do
 
  
  #./dracut/dracut.sh -l -N --strip -f -m "base uird uird-network ntfs kernel-modules kernel-network-modules"  
-./dracut/dracut.sh -l -N --strip -f -m "base uird uird-network ntfs kernel-modules"  \
+./dracut/dracut.sh -l -N --strip -f -m "base uird uird-network ntfs kernel-modules crypt"  \
 	-d "$KM" \
         --filesystems "$FS"  \
         -i initrd / \
