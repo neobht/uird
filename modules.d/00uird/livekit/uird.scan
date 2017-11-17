@@ -13,6 +13,7 @@
 #+++++++++++++++++
 
 FIND_PARAMS=$(echo $(cmdline_value $UIRD_FIND_PARAMS) | tr ";,_" " ")
+[ -d /sysroot ] && FIND_PARAMS=""
 
 > /tmp/uird_sources
 > /tmp/uird_homes
@@ -100,7 +101,7 @@ find_legacy () {
 
 legacy_cfg () {
 	local dev
-	#[ -d /sysroot ] || exit 1
+	[ -d /sysroot ] || exit 1
 	dev=$2
 	[ -z $2 ] && dev=1
 	LEGACY=$(legacy $dev)
