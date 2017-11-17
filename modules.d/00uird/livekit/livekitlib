@@ -765,9 +765,9 @@ mount_device()
         [ $(cmdline_parameter fsck) ] && fsck_device "$DEV" ntfs
         ntfsmount "$DEV" "$2" -o $OPTIONS >>/var/log/uird.dbg.log  2>&1
         ERR=$?
-    elif [ -f $DEV ] ; then 
-		echo $DEV |grep -q "\.torrent$" && (  init_ifcfg ; mount_btfs $DEV $2 )
-		ERR=$?
+    #elif [ -f $DEV ] ; then 
+	#	echo $DEV |grep -q "\.torrent$" && (  init_ifcfg ; mount_btfs $DEV $2 )
+	#	ERR=$?
     else
         if [ $(cmdline_parameter fsck) ];then
             FS_T=$(echo $FS | sed "s/-t //"| tr -d " ")
