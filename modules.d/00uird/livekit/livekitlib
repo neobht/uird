@@ -1704,9 +1704,9 @@ init_swap()
 		ASWAP=$(list_swap_devices |head -n 1)
 		[ -b "$ASWAP" ] && swapon $ASWAP
 		if [ $(cat /proc/swaps |wc -l) -gt 1 ] ;then 
-			NEEDZRAM=yes
-		else 
 			NEEDZSWAP=yes
+		else 
+			NEEDZRAM=yes
 		fi
 	else 
 		FSWAP=""
