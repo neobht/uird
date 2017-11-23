@@ -439,26 +439,44 @@ init_devs()
     debug_log "init_devs" "$*"
     #echo /sbin/mdev > /proc/sys/kernel/hotplug
     mdev -s
-    modprobe zram 2>/dev/null
+    #modprobe zram 2>/dev/null
     modprobe loop 2>/dev/null
     modprobe squashfs 2>/dev/null
     modprobe fuse 2>/dev/null
 }
 
+
 # Activate zram (auto-compression of RAM)
 # Compressed RAM consumes 1/2 or even 1/4 of original size
 # Setup static size of 500MB
 #
-init_zram()
-{
-    debug_log "init_zram" "$*"
-    echo_green_star
-    echolog "Setting dynamic RAM compression using ZRAM"
-    echo 536870912 > /sys/block/zram0/disksize # 512MB
-    mkswap /dev/zram0 >/dev/null
-    swapon /dev/zram0 -p 32767
-    echo 100 > /proc/sys/vm/swappiness
+init_zram() {
+#rmmod zram # need to be unloaded 
+num_cpus=$(cat /proc/cpuinfo |grep processor |wc -l)
+[ "$num_cpus" != 0 ] || num_cpus=1
+
+last_cpu=$((num_cpus - 1))
+FACTOR=20 
+
+memtotal=$(grep MemTotal /proc/meminfo | awk ' { print $2 } ')
+mem_by_cpu=$(($memtotal/$num_cpus*$FACTOR/100*1024))
+
+modprobe -q zram num_devices=$num_cpus
+
+for i in $(seq 0 $last_cpu); do
+    echo lz4 > /sys/block/zram$i/comp_algorithm
+    echo $mem_by_cpu > /sys/block/zram$i/disksize
+    mkswap /dev/zram$i
+    swapon -p 100 /dev/zram$i
+done
 }
+
+
+init_zswap() {
+echo 1 > /sys/module/zswap/parameters/enabled
+echo lz4 > /sys/module/zswap/parameters/compressor
+}
+
 
 # load the AUFS kernel module if needed
 #
@@ -1677,13 +1695,19 @@ setup_config()
 # Init swap and resize tmpfs 
 init_swap() 
 {
-	local newsize total FSWAP ASWAP DSWAP SOURCE SWAP_FROM 
+	local newsize total FSWAP ASWAP DSWAP SOURCE SWAP_FROM NEEDZRAM NEEDZSWAP 
+    NEEDZSWAP=no; NEEDZRAM=no
     debug_log "setting up swap"
     echo_green_star
     echolog "$SETUP_SWAP" 
     if [ "$1" == "auto" ] ; then
 		ASWAP=$(list_swap_devices |head -n 1)
 		[ -b "$ASWAP" ] && swapon $ASWAP
+		if [ $(cat /proc/swaps |wc -l) -gt 1 ] ;then 
+			NEEDZRAM=yes
+		else 
+			NEEDZSWAP=yes
+		fi
 	else 
 		FSWAP=""
 		for DSWAP in $(echo $1 | tr ";,_" " ") ;do
@@ -1695,10 +1719,16 @@ init_swap()
 			fi
 		done
     fi   
-    ############################################################################# need tests
+
     if [ "${FSWAP}_" != "_" ] ; then
-		MNT_DIR=$2
+		MNT_DIR=$2 
 		for SOURCE in  $(echo $FSWAP) ; do
+			if [ "$SOURCE" == "zram" ] ; then 
+				NEEDZRAM=yes ; continue
+			elif [ "$SOURCE" == "zswap" ] ; then
+			    NEEDZSWAP=yes ; continue
+			fi
+			
 			if [ "$(echo $SOURCE | grep "://")" != ""  ]; then
 				init_ifcfg
 				# echo $SOURCE | grep -iq ^"http://" && SWAP_FROM=$(mount_httpfs $SOURCE $MNT_DIR)
@@ -1725,17 +1755,20 @@ init_swap()
 			fi
 		done
 	fi
-    ##############################################################################
-	
+
+	[ $NEEDZRAM == "yes" ] && init_zram
+	[ $NEEDZSWAP == "yes" ] && init_zswap
+
 	if  [ ! "$(cmdline_value $RAMSIZE)" ] ;then
 		#busybox's util "free" doesn't know the option -t   (total - mem+swap)
 		total=$(expr $(echo $(free -m  |grep "^[M,S].*: " | awk '{print $2}' ) |sed 's/ / + /'))
-		newsize=$(expr $total / 10 \* 7) # ~70% (ram+swap)
+		newsize=$(expr $total / 10 \* 6) # ~60% (ram+swap)
 		echo_green_star
 		echolog "$RESIZE_TMPFS ${newsize}M"
 		mount -o remount,size=${newsize}M $MEMORY
 	fi
 }
+
 
 # Setup changes
 # $1 = changes mount directory
