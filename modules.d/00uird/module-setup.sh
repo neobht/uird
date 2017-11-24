@@ -16,7 +16,7 @@ installkernel() {
 }
 
 
-bins="locale dialog gettext loadkeys resume rsync fsck fsck.ext2 fsck.ext3 fsck.ext4 fsck.exfat fsck.vfat fsck.xfs fsck.btrfs btrfsck ntfsfix btfs aria2c"
+bins="locale dialog gettext loadkeys resume rsync fsck fsck.ext2 fsck.ext3 fsck.ext4 fsck.exfat fsck.vfat fsck.xfs fsck.btrfs btrfsck ntfsfix  aria2c mkfs.ext4"
 
 
 install() {
