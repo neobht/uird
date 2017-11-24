@@ -445,36 +445,26 @@ init_devs()
     modprobe fuse 2>/dev/null
 }
 
-
 # Activate zram (auto-compression of RAM)
 # Compressed RAM consumes 1/2 or even 1/4 of original size
 # Setup static size of 500MB
 #
-init_zram() {
-#rmmod zram # need to be unloaded 
+init_zram_swap() {
 num_cpus=$(cat /proc/cpuinfo |grep processor |wc -l)
-[ "$num_cpus" != 0 ] || num_cpus=1
-
-last_cpu=$((num_cpus - 1))
 FACTOR=20 
-
 memtotal=$(grep MemTotal /proc/meminfo | awk ' { print $2 } ')
-mem_by_cpu=$(($memtotal/$num_cpus*$FACTOR/100*1024))
-
-modprobe -q zram num_devices=$num_cpus
-
-for i in $(seq 0 $last_cpu); do
-    echo lz4 > /sys/block/zram$i/comp_algorithm
-    echo $mem_by_cpu > /sys/block/zram$i/disksize
-    mkswap /dev/zram$i
-    swapon -p 100 /dev/zram$i
-done
+memzram=$(($memtotal*${FACTOR}/100*1024))
+modprobe -q zram 2>/dev/null
+echo lz4 > /sys/block/zram0/comp_algorithm
+echo $memzram > /sys/block/zram0/disksize
+mkswap /dev/zram0
+swapon -p 100 /dev/zram0
 }
 
 
 init_zswap() {
-echo 1 > /sys/module/zswap/parameters/enabled
 echo lz4 > /sys/module/zswap/parameters/compressor
+echo 1 > /sys/module/zswap/parameters/enabled
 }
 
 
@@ -1756,9 +1746,11 @@ init_swap()
 		done
 	fi
 
-	[ $NEEDZRAM == "yes" ] && init_zram
-	[ $NEEDZSWAP == "yes" ] && init_zswap
-
+	[ $NEEDZRAM == "yes" ] && init_zram_swap && echo > 50 /proc/sys/vm/swappiness
+	[ $NEEDZSWAP == "yes" ] && init_zswap && echo > 50 /proc/sys/vm/swappiness
+	
+	# resize to RAM+SWAP*70%, not available for zram 
+	[ $(cmdline_parameter uird.zram) ] && return 
 	if  [ ! "$(cmdline_value $RAMSIZE)" ] ;then
 		#busybox's util "free" doesn't know the option -t   (total - mem+swap)
 		total=$(expr $(echo $(free -m  |grep "^[M,S].*: " | awk '{print $2}' ) |sed 's/ / + /'))

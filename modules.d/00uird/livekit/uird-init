@@ -122,19 +122,19 @@ debug_shell
 RAMSIZE=$(cmdline_value $UIRD_RAMSIZE)
 if [ "$RAMSIZE" = "" ]; then RAMSIZE="70%"; fi
 
-if [ $(cmdline_parameter zramfs ) ] ; then
-modprobe -q zram num_devices=2
-mem_zram=$(($(grep MemTotal /proc/meminfo | awk ' { print $2 } ')*70/100*1024))
-echo lz4 > /sys/block/zram1/comp_algorithm
-echo $(cat /proc/cpuinfo |grep processor |wc -l)  >  /sys/block/zram1/max_comp_streams 
-echo  > $mem_zram /sys/block/zram1/disksize
-echo  > $mem_zram /sys/block/zram1/mem_limit
-mkfs.ext4 /dev/zram1
-mount -o discard,rw  /dev/zram1 $MEMORY
+if [ $(cmdline_parameter uird.zram) ] ; then
+	modprobe -q lz4
+	modprobe -q zram num_devices=2
+	mem_zram=$(($(grep MemTotal /proc/meminfo | awk ' { print $2 } ')*${RAMSIZE%%%}/100*1024))
+	echo lz4 > /sys/block/zram1/comp_algorithm
+	echo $(grep -c processor /proc/cpuinfo)  >  /sys/block/zram1/max_comp_streams 
+	echo  $mem_zram > /sys/block/zram1/disksize
+	echo  $mem_zram > /sys/block/zram1/mem_limit
+	mkfs.ext4 -O ^has_journal /dev/zram1 >/dev/null
+	mount -o discard,rw  /dev/zram1 $MEMORY
 else
-mount -t tmpfs -o "size=$RAMSIZE" tmpfs $MEMORY
+	mount -t tmpfs -o "size=$RAMSIZE" tmpfs $MEMORY
 fi
-
 
 mkdir -p $MOUNTDIR $CHANGES
 mv  /tmp/cmdline $MEMORY/cmdline
