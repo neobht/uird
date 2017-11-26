@@ -439,7 +439,6 @@ init_devs()
     debug_log "init_devs" "$*"
     #echo /sbin/mdev > /proc/sys/kernel/hotplug
     mdev -s
-    #modprobe zram 2>/dev/null
     modprobe loop 2>/dev/null
     modprobe squashfs 2>/dev/null
     modprobe fuse 2>/dev/null
@@ -451,9 +450,9 @@ init_devs()
 #
 init_zram_swap() {
 num_cpus=$(cat /proc/cpuinfo |grep processor |wc -l)
-FACTOR=20 
+ZramSize=35 # % RAM
 memtotal=$(grep MemTotal /proc/meminfo | awk ' { print $2 } ')
-memzram=$(($memtotal*${FACTOR}/100*1024))
+memzram=$(($memtotal*${ZramSize}/100*1024))
 modprobe -q zram 2>/dev/null
 echo lz4 > /sys/block/zram0/comp_algorithm
 echo $memzram > /sys/block/zram0/disksize
@@ -461,12 +460,10 @@ mkswap /dev/zram0
 swapon -p 100 /dev/zram0
 }
 
-
 init_zswap() {
 echo lz4 > /sys/module/zswap/parameters/compressor
 echo 1 > /sys/module/zswap/parameters/enabled
 }
-
 
 # load the AUFS kernel module if needed
 #
@@ -1687,7 +1684,7 @@ setup_config()
 init_swap() 
 {
 	local newsize total FSWAP ASWAP DSWAP SOURCE SWAP_FROM NEEDZRAM NEEDZSWAP 
-    NEEDZSWAP=no; NEEDZRAM=no
+    NEEDZSWAP=no; NEEDZRAM=no ; SWPNSSMIN=10
     debug_log "setting up swap"
     echo_green_star
     echolog "$SETUP_SWAP" 
@@ -1747,8 +1744,8 @@ init_swap()
 		done
 	fi
 
-	[ $NEEDZRAM == "yes" ] && init_zram_swap && echo > 50 /proc/sys/vm/swappiness && echolog  "init zram swap"
-	[ $NEEDZSWAP == "yes" ] && init_zswap && echo > 50 /proc/sys/vm/swappiness && echolog  "init Zswap"
+	[ $NEEDZRAM == "yes" ] && init_zram_swap  && echolog  "init zram swap" && SWPNSSMIN=40
+	[ $NEEDZSWAP == "yes" ] && init_zswap && echolog  "init Zswap" && SWPNSSMIN=40
 	
 	# resize to RAM+SWAP*70%, not available for zram 
 	[ $(cmdline_parameter uird.zram) ] && return 
@@ -1760,6 +1757,10 @@ init_swap()
 		echolog "$RESIZE_TMPFS ${newsize}M"
 		mount -o remount,size=${newsize}M $MEMORY
 	fi
+	
+	SWPNSS=$((100-( $(free -g |grep -i mem |awk '{ print $2 }') +2)*10))
+	[ $SWPNSS -lt $SWPNSSMIN ] && SWPNSS=$SWPNSSMIN
+	echo $SWPNSS > /proc/sys/vm/swappiness
 }
 
 
