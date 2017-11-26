@@ -1506,6 +1506,7 @@ mount_data_source()
         [ -f "$DATA_FROM" ] && mount_device $DATA_FROM $DST_DIR  $MNT_OPTS # mount again, it may be loop device
         echolog "$MOUNT_DATA_SOURCE_USING" $yellow$DATA_FROM$default
     elif [ $(cmdline_parameter uird.force)_ == "uird.force_"  -o "$6" == "yes" ] ; then
+        rmdir $DST_DIR
         echolog $red"$MOUNT_DATA_SOURCE_NOT_FOUND"$default
         echolog $yellow"Source $SOURCE droped. Continue..."$default 
     else
@@ -1746,8 +1747,8 @@ init_swap()
 		done
 	fi
 
-	[ $NEEDZRAM == "yes" ] && init_zram_swap && echo > 50 /proc/sys/vm/swappiness
-	[ $NEEDZSWAP == "yes" ] && init_zswap && echo > 50 /proc/sys/vm/swappiness
+	[ $NEEDZRAM == "yes" ] && init_zram_swap && echo > 50 /proc/sys/vm/swappiness && echolog  "init zram swap"
+	[ $NEEDZSWAP == "yes" ] && init_zswap && echo > 50 /proc/sys/vm/swappiness && echolog  "init Zswap"
 	
 	# resize to RAM+SWAP*70%, not available for zram 
 	[ $(cmdline_parameter uird.zram) ] && return 
