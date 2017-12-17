@@ -1744,8 +1744,8 @@ init_swap()
 		done
 	fi
 
-	[ $NEEDZRAM == "yes" ] && init_zram_swap  && echolog  "init zram swap" && SWPNSSMIN=40
-	[ $NEEDZSWAP == "yes" ] && init_zswap && echolog  "init Zswap" && SWPNSSMIN=40
+	[ $NEEDZRAM == "yes" ] && init_zram_swap  && echo_green_star && echolog  "init zram swap" && SWPNSSMIN=40
+	[ $NEEDZSWAP == "yes" ] && init_zswap && echo_green_star && echolog  "init Zswap" && SWPNSSMIN=40
 	
 	# resize to RAM+SWAP*70%, not available for zram 
 	[ $(cmdline_parameter uird.zram) ] && return 

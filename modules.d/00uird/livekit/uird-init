@@ -121,7 +121,7 @@ debug_shell
 
 RAMSIZE=$(cmdline_value $UIRD_RAMSIZE)
 if [ "$RAMSIZE" = "" ]; then RAMSIZE="70%"; fi
-
+# init zram 
 if [ $(cmdline_parameter uird.zram) ] ; then
 	modprobe -q lz4
 	modprobe -q zram num_devices=2
@@ -130,7 +130,7 @@ if [ $(cmdline_parameter uird.zram) ] ; then
 	echo $(grep -c processor /proc/cpuinfo)  >  /sys/block/zram1/max_comp_streams 
 	echo  $mem_zram > /sys/block/zram1/disksize
 	echo  $mem_zram > /sys/block/zram1/mem_limit
-	mkfs.ext4 -O ^has_journal /dev/zram1 >/dev/null
+	mkfs.ext4 -O ^has_journal /dev/zram1 >/dev/null 2>&1
 	mount -o discard,rw  /dev/zram1 $MEMORY
 else
 	mount -t tmpfs -o "size=$RAMSIZE" tmpfs $MEMORY
