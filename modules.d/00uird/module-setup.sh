@@ -62,9 +62,9 @@ install() {
         ln_r /usr/bin/busybox "$_path"
     done
 
-    inst $(which kmod) /sbin/kmod
+    inst $(type -p kmod) /sbin/kmod
     for _i in lsmod modprobe insmod rmmod modinfo ;do
-        ln_r /sbin/kmod /sbin/$_i
+        ln -sf kmod "${initdir}/sbin/$_i"
     done
 
 #    echo "version: $(date +%Y%m%d), for kernel: $(uname -ri)" >$initdir/uird_version
