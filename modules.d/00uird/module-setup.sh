@@ -62,6 +62,11 @@ install() {
         ln_r /usr/bin/busybox "$_path"
     done
 
+    inst $(which kmod) /sbin/kmod
+    for _i in lsmod modprobe insmod rmmod modinfo ;do
+        ln_r /sbin/kmod /sbin/$_i
+    done
+
 #    echo "version: $(date +%Y%m%d), for kernel: $(uname -ri)" >$initdir/uird_version
     echo "version: $(date +%Y%m%d), for kernel: $kernel" >$initdir/uird_version
     inst_hook cmdline 95 "$moddir/parse-root-uird.sh"
