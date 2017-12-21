@@ -63,7 +63,7 @@ install() {
     done
 
     inst $(type -p kmod) /sbin/kmod
-    for _i in lsmod modprobe insmod rmmod modinfo ;do
+    for _i in lsmod modprobe insmod rmmod modinfo depmod ;do
         ln -sf kmod "${initdir}/sbin/$_i"
     done
 
