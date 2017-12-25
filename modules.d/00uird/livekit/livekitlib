@@ -164,7 +164,9 @@ NOT_ENOUGH_MEMORY=$($GETTEXT "not enough memory.")
 [ -z $UIRD_SWAP ] && UIRD_SWAP=uird.swap
 [ -z $UIRD_MODE ] && UIRD_MODE=uird.mode
 [ -z $UIRD_SYSCP ] && UIRD_SYSCP=uird.syscp
-[ -z $UIRD_ARIA2RAM ] && UIRD_ARIA2RAM=uird.aria2ram 
+[ -z $UIRD_ARIA2RAM ] && UIRD_ARIA2RAM=uird.aria2ram
+[ -z $UIRD_FORCE ] && UIRD_FORCE=uird.force
+[ -z $UIRD_ZRAM ] && UIRD_ZRAM=uird.zram
 
 # =================================================================
 # debug and output functions
@@ -1502,7 +1504,7 @@ mount_data_source()
         [ -d "$DATA_FROM" ] && mount_device $DATA_FROM $DST_DIR  $MNT_OPTS # mount dir
         [ -f "$DATA_FROM" ] && mount_device $DATA_FROM $DST_DIR  $MNT_OPTS # mount again, it may be loop device
         echolog "$MOUNT_DATA_SOURCE_USING" $yellow$DATA_FROM$default
-    elif [ $(cmdline_parameter uird.force)_ == "uird.force_"  -o "$6" == "yes" ] ; then
+    elif [ $(cmdline_parameter $UIRD_FORCE)_ == "$UIRD_FORCE_"  -o "$6" == "yes" ] ; then
         rmdir $DST_DIR
         echolog $red"$MOUNT_DATA_SOURCE_NOT_FOUND"$default
         echolog $yellow"Source $SOURCE droped. Continue..."$default 
@@ -1748,7 +1750,7 @@ init_swap()
 	[ $NEEDZSWAP == "yes" ] && init_zswap && echo_green_star && echolog  "init Zswap" && SWPNSSMIN=40
 	
 	# resize to RAM+SWAP*70%, not available for zram 
-	[ $(cmdline_parameter uird.zram) ] && return 
+	[ $(cmdline_parameter $UIRD_ZRAM) ] && return 
 	if  [ ! "$(cmdline_value $RAMSIZE)" ] ;then
 		#busybox's util "free" doesn't know the option -t   (total - mem+swap)
 		total=$(expr $(echo $(free -m  |grep "^[M,S].*: " | awk '{print $2}' ) |sed 's/ / + /'))
