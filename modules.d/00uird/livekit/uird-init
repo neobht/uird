@@ -122,7 +122,7 @@ debug_shell
 RAMSIZE=$(cmdline_value $UIRD_RAMSIZE)
 if [ "$RAMSIZE" = "" ]; then RAMSIZE="70%"; fi
 # init zram 
-if [ $(cmdline_parameter uird.zram) ] ; then
+if [ $(cmdline_parameter $UIRD_ZRAM) ] ; then
 	modprobe -q lz4
 	modprobe -q zram num_devices=2
 	mem_zram=$(($(grep MemTotal /proc/meminfo | awk ' { print $2 } ')*${RAMSIZE%%%}/100*1024))
