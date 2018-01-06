@@ -44,6 +44,8 @@ BIN_BTRFSCK=/sbin/btrfsck
 BIN_BLKID=/sbin/blkid.real
 BIN_LOSETUP=/sbin/losetup.real
 
+#[ -f $BIN-BLKID ] || BIN_BLKID=$(which blkid) 
+
 [ -f /etc/initvars ] && . /etc/initvars
 
 [ "$SYSMNT" ] && MEMORY=$SYSMNT || MEMORY=/memory
@@ -374,7 +376,7 @@ cmdline_value()
     # ADD_VALUE=$(echo -n " " | cat - $ADDFILE 2>/dev/null  | egrep -m1 -o "(^|[[:space:]])$1\+=[^[:space:]]+" | cut -d "=" -f 2- | head -n1)
     ADD_VALUE=$(echo -n " " | cat - $ADDFILE 2>/dev/null  | egrep -o "(^|[[:space:]])$1\+=[^[:space:]]+" | cut -d "=" -f 2- | tr [[:cntrl:]] , | sed s/,,*/,/g | sed s/^,// | sed s/,$//)
     [ -z $ADD_VALUE  ] || ADD_VALUE=",$ADD_VALUE"
-    if ! [ -z ${VALUE}${ADD_VALUE} ] ; then 
+    if ! [ -z "${VALUE}${ADD_VALUE}" ] ; then 
       echo "$(echo $1 |sed 's/\./_/')"="${VALUE}${ADD_VALUE}" >> /etc/initvars 
       echo "${VALUE}${ADD_VALUE}"
     fi
@@ -1457,6 +1459,22 @@ download_data_pxe()
    echo "$1/$LIVEKITNAME"
 }
 
+# init qemu-nbd block devices
+# $1 - virtual machine disk image file 
+init_nbd () {
+	local  devN maxDev
+	echolog "Init block device for" $yellow"$1"$default
+	devN=0
+	modprobe nbd nbds_max=4 max_part=4 ; # sleep 1
+	maxDev=$(ls -1 /dev/nbd? |wc -l) 
+	until 	qemu-nbd --connect=/dev/nbd"$devN"  "$1" ; do
+		[ $devN -ge $maxDev ] && break
+		devN=$(( $devN + 1 ))
+		debug_log "Trying to init /dev/nbd"$devN""
+	done 
+	[ $devN -ge $maxDev ] && return 1
+	partprobe /dev/nbd"$devN"
+}
 
 # mount data source to destination directory using mount point directory
 # $1 = source
@@ -1465,7 +1483,6 @@ download_data_pxe()
 # $4 = check SGN
 # $5 = mount options
 # $6 = force check source (yes, no)."Yes" means - do not stop uird-init then the source was not found 
-
 mount_data_source()
 {
 	local SOURCE DST_DIR MNT_DIR SGN_CHECK  MNT_OPTS
@@ -1502,8 +1519,16 @@ mount_data_source()
     if  [ -r "$DATA_FROM" ] ;then
 		log "mount_device $DATA_FROM $DST_DIR  $MNT_OPTS"
         [ -d "$DATA_FROM" ] && mount_device $DATA_FROM $DST_DIR  $MNT_OPTS # mount dir
-        [ -f "$DATA_FROM" ] && mount_device $DATA_FROM $DST_DIR  $MNT_OPTS # mount again, it may be loop device
-        echolog "$MOUNT_DATA_SOURCE_USING" $yellow$DATA_FROM$default
+        if  [ -f "$DATA_FROM" ] ; then 
+			if ! qemu-img info "$DATA_FROM" |grep "file.*raw$" ; then
+				init_nbd "$DATA_FROM" 
+				#rmdir $DST_DIR && NUM_SUBL=$(( $NUM_SUBL - 1 ))
+				> $DST_DIR/qemu_ndb_layer
+			else 
+				mount_device $DATA_FROM $DST_DIR  $MNT_OPTS # mount again, it may be loop device
+				echolog "$MOUNT_DATA_SOURCE_USING" $yellow$DATA_FROM$default
+			fi
+        fi 
     elif [ $(cmdline_parameter $UIRD_FORCE)_ == "$UIRD_FORCE_"  -o "$6" == "yes" ] ; then
         rmdir $DST_DIR
         echolog $red"$MOUNT_DATA_SOURCE_NOT_FOUND"$default
