@@ -1,3 +1,6 @@
 [submodule "dracut"]
 	path = dracut
 	url = https://github.com/haraldh/dracut
+[submodule "busybox"]
+	path = busybox
+	url = https://github.com/mirror/busybox

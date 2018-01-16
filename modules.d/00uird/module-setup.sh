@@ -47,7 +47,8 @@ install() {
 	inst $(type -p "$_i" ) /sbin/$_i
     done
     #busybox
-    _busybox=$(type -p busybox.static || type -p busybox )
+    #_busybox=$(type -p busybox.static || type -p busybox )
+    _busybox=./busybox/busybox
     inst $_busybox /usr/bin/busybox
     _progs=""
     for _i in $($_busybox --list)
@@ -62,10 +63,10 @@ install() {
         ln_r /usr/bin/busybox "$_path"
     done
 
-    inst $(type -p kmod) /sbin/kmod
-    for _i in lsmod modprobe insmod rmmod modinfo depmod ;do
-        ln -sf kmod "${initdir}/sbin/$_i"
-    done
+    #inst $(type -p kmod) /sbin/kmod
+    #for _i in lsmod modprobe insmod rmmod modinfo depmod ;do
+    #   ln -sf kmod "${initdir}/sbin/$_i"
+    #done
 
 #    echo "version: $(date +%Y%m%d), for kernel: $(uname -ri)" >$initdir/uird_version
     echo "version: $(date +%Y%m%d), for kernel: $kernel" >$initdir/uird_version

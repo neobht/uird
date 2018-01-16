@@ -289,7 +289,7 @@ resume_from_suspend()
 {
     if [ -z $(cmdline_parameter noresume) ] ; then
         RESUME_DEV=$($BIN_BLKID | grep -m1 swsuspend | awk -F: '{print $1}')
-        [ -z "$RESUME_DEV" ] || resume -r $RESUME_DEV
+        [ -z "$RESUME_DEV" ] || resume  $RESUME_DEV
     fi
 }
 
