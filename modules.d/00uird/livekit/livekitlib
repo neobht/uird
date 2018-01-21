@@ -600,7 +600,7 @@ list_partition_devices()
 {
     debug_log "list_partition_devices" "$*"
     if [ "$(cmdline_parameter nohd)" != "" ]; then return 1; fi
-    MOUNTED=$(cat /proc/mounts | grep 'sd.[[:digit:]]' | cut -d " " -f 1 |sort -u)
+    MOUNTED=$(cat /proc/mounts | egrep '/dev/(sd|nbd).*[[:digit:]]' | cut -d " " -f 1 |sort -u)
     #not mounted
     for DEV in $MOUNTED $(egrep -v 'ram|loop|major|sr|^$| [0-9] [a-z]' /proc/partitions | grep [0-9] | sed -r "s:^[0-9 ]+:/dev/:") ; do
     echo $DEV 
@@ -1520,7 +1520,8 @@ mount_data_source()
 		log "mount_device $DATA_FROM $DST_DIR  $MNT_OPTS"
         [ -d "$DATA_FROM" ] && mount_device $DATA_FROM $DST_DIR  $MNT_OPTS # mount dir
         if  [ -f "$DATA_FROM" ] ; then 
-			if ! qemu-img info "$DATA_FROM" |grep "file.*raw$" ; then
+			# (|grep "^file" | grep -vq "file.*raw$")  - this if..fi block  must works without qemu-img too
+			if  qemu-img info "$DATA_FROM" 2>/dev/null |grep "^file" | grep -vq "file.*raw$" ; then
 				init_nbd "$DATA_FROM" 
 				#rmdir $DST_DIR && NUM_SUBL=$(( $NUM_SUBL - 1 ))
 				> $DST_DIR/qemu_ndb_layer
