@@ -289,7 +289,7 @@ resume_from_suspend()
 {
     if [ -z $(cmdline_parameter noresume) ] ; then
         RESUME_DEV=$($BIN_BLKID | grep -m1 swsuspend | awk -F: '{print $1}')
-        [ -z "$RESUME_DEV" ] || resume -r $RESUME_DEV
+        [ -z "$RESUME_DEV" ] || resume  $RESUME_DEV
     fi
 }
 
@@ -582,16 +582,15 @@ list_cdrom_devices()
     done
 }
 
+
 # List all mounted directories
 #
 list_mounted_directories()
 {
     debug_log "list_mounted_directories" "$*"
-    if [ "$MOUNTDIR" ]; then
-        ls -1 $MOUNTDIR | while read DIR; do
-        if ismountpoint $MOUNTDIR/$DIR; then echo $DIR; fi
-    done
-fi
+	find $SYSMNT -maxdepth 3 -mindepth 2 -type d | while read DIR ; do 
+        ismountpoint $DIR &&  echo $DIR
+    done |tac
 }
 
 # List all devices with filesystems
@@ -601,15 +600,16 @@ list_partition_devices()
 {
     debug_log "list_partition_devices" "$*"
     if [ "$(cmdline_parameter nohd)" != "" ]; then return 1; fi
-    MOUNTED=$(cat /proc/mounts | grep 'sd.[[:digit:]]' | cut -d " " -f 1 |sort -u)
-    #mounted first
-    for DEV in $MOUNTED ; do echo $DEV ; done
+    MOUNTED=$(cat /proc/mounts | egrep '/dev/(sd|nbd).*[[:digit:]]' | cut -d " " -f 1 |sort -u)
+    #not mounted
     for DEV in $MOUNTED $(egrep -v 'ram|loop|major|sr|^$| [0-9] [a-z]' /proc/partitions | grep [0-9] | sed -r "s:^[0-9 ]+:/dev/:") ; do
     echo $DEV 
     done | sort | uniq -u
     if [ -e /dev/mapper/control ]; then # list LVM partitions if available
         ls -1 /dev/mapper/ | grep -v "^control\$" | sed -r "s:^:/dev/mapper/:"
     fi
+    #mounted 
+    for DEV in $MOUNTED ; do echo $DEV ; done
 }
 # THIS FUNCTION IS NEVER USED
 # List all disk devices
@@ -987,7 +987,7 @@ device_mountdir()
 {
     debug_log "device_mountdir" "$*"
     if ! [ -b "$1" ] ;then
-        echo "/$MOUNTDIR/$(basename "$1")" | tr -s /
+        echo "$1" | tr -s /
     else
         if grep -q "^$1 " /proc/mounts ;then
             grep "^$1 " /proc/mounts | awk '{print $2}' | head -1 |  tr -s /
@@ -1520,7 +1520,8 @@ mount_data_source()
 		log "mount_device $DATA_FROM $DST_DIR  $MNT_OPTS"
         [ -d "$DATA_FROM" ] && mount_device $DATA_FROM $DST_DIR  $MNT_OPTS # mount dir
         if  [ -f "$DATA_FROM" ] ; then 
-			if ! qemu-img info "$DATA_FROM" |grep "file.*raw$" ; then
+			# (|grep "^file" | grep -vq "file.*raw$")  - this if..fi block  must works without qemu-img too
+			if  qemu-img info "$DATA_FROM" 2>/dev/null |grep "^file" | grep -vq "file.*raw$" ; then
 				init_nbd "$DATA_FROM" 
 				#rmdir $DST_DIR && NUM_SUBL=$(( $NUM_SUBL - 1 ))
 				> $DST_DIR/qemu_ndb_layer
@@ -2123,18 +2124,18 @@ done
 
 aria2_preload () {
 local PiD ARIA_IN
-mkdir -p $1
+mkdir -p $1/data
 ARIA_IN=$(cmdline_value $UIRD_ARIA2RAM |sed 's/+/  /g' |sed 's/::/  /g')
 [ $(cmdline_value $UIRD_ARIA2RAM |grep -q ::) ] &&  ARIA_IN="$ARIA_IN -Z"
 init_ifcfg
 echolog "Aria2c preload media" $green${ARIA_IN} " -> " $brown$1$default
-aria2c  -q --no-netrc --seed-time=0 $ARIA_IN -d $1 >/dev/null 2>&1  &
+aria2c  -q --no-netrc --seed-time=0 $ARIA_IN -d $1/data >/dev/null 2>&1  &
 PiD=/proc/$! 
 echo "Copy_timer $PiD $1 "
 Copy_timer $1 $PiD  
 #hack to find_file
-mkdir $MOUNTDIR/100
-mount -o bind $1 $MOUNTDIR/100
+mkdir $1/mount_bind
+mount -o bind $1/data $1/mount_bind 
 }
 
 # Copy modules to directory
