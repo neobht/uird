@@ -146,6 +146,7 @@ NOT_ENOUGH_MEMORY=$($GETTEXT "not enough memory.")
 [ -z $UIRD_RO ] && UIRD_RO=uird.ro
 [ -z $UIRD_RW ] && UIRD_RW=uird.rw
 [ -z $UIRD_CP ] && UIRD_CP=uird.cp
+[ -z $UIRD_RUN ] && UIRD_RUN=uird.run
 [ -z $UIRD_COPY2RAM ] && UIRD_COPY2RAM=uird.copy2ram
 [ -z $UIRD_COPY2CAHE ] && UIRD_COPY2CACHE=uird.copy2cache
 [ -z $UIRD_RAMSIZE ] && UIRD_RAMSIZE=uird.ramsize
@@ -1990,7 +1991,7 @@ find_modules()
 {
     debug_log "find_modules" "$*"
     local ARR_FILTER FIND_PARAMS filter
-    ARR_FILTER=$(echo $(cmdline_value $UIRD_RO)","$(cmdline_value $UIRD_RW)","$(cmdline_value $UIRD_CP) | tr -s ";," " ")
+    ARR_FILTER=$(echo $(cmdline_value $UIRD_RO)","$(cmdline_value $UIRD_RW)","$(cmdline_value $UIRD_RUN)","$(cmdline_value $UIRD_CP) | tr -s ";," " ")
     FIND_PARAMS=$(echo $(cmdline_value $UIRD_FIND_PARAMS) | tr ";,_" " ")
 #    echolog "======================"$FIND_PARAMS"================="
     for filter in $ARR_FILTER; do
@@ -2035,6 +2036,7 @@ union_append_bundles()
     RW=$(cmdline_value $UIRD_RW | sed -r 's/\?/./g' |  sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')
     RO=$(cmdline_value $UIRD_RO | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')
     CP=$(cmdline_value $UIRD_CP | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')
+    RUN=$(cmdline_value $UIRD_RUN | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')
 
     echo_green_star
     echolog "$UNION_APPEND_BUNDLES" $brown$1$default 
@@ -2060,10 +2062,13 @@ union_append_bundles()
 
         if [ "$CP" -a "$(echo $BUNDLE | egrep -i "$CP")" ]; then
             echolog "  $blue-->" $purple"$BUNDLE"$green" [режим CP] "$default
-
             mount -o $OPTIONS $FS "$BUNDLE" "$2/$BUN"
             cp -a "$2/$BUN"/. $3 2>/dev/null
-            continue
+            return
+        elif [ "$RUN" -a "$(echo $BUNDLE | egrep -i "$RUN")" ]; then
+			echolog "  $blue-->" $purple"$BUNDLE"$yellow" [режим RUN] "$default
+			[ -x $BUNDLE ]  && $BUNDLE
+			return
         elif [ "$RW" -a "$(echo $BUNDLE | egrep -i "$RW")" ]; then
             MOD=rw+wh
         else
