@@ -170,6 +170,7 @@ NOT_ENOUGH_MEMORY=$($GETTEXT "not enough memory.")
 [ -z $UIRD_ARIA2RAM ] && UIRD_ARIA2RAM=uird.aria2ram
 [ -z $UIRD_FORCE ] && UIRD_FORCE=uird.force
 [ -z $UIRD_ZRAM ] && UIRD_ZRAM=uird.zram
+[ -z $UIRD_FREEMEDIA ] && UIRD_FREEMEDIA=uird.freemedia
 
 # =================================================================
 # debug and output functions
@@ -2326,7 +2327,41 @@ fstab_update()
     mv -f $FSTABTMP $FSTAB
 }
 
-
+freemedia () {
+	local devs device notfree dev
+	#DATAMNT=/memory/data
+	#MOUNTDIR=/memory/layer-base
+	devs=$(cat /proc/mounts |egrep "${DATAMNT}/from|$MOUNTDIR" |cut -d " " -f 1 |sort |uniq -d )
+	for dev in $devs ; do
+		umount $(cat /proc/mounts |grep ${dev}.*$MOUNTDIR |cut -d " " -f 2) 2>/dev/null
+		umount $dev 2>/dev/null && echo "$dev is free now"
+	done
+	for device in $(echo $devs |while read a ; do echo $a |cut -c 1-8 ; done | sort |uniq ) ; do
+		cat /proc/mounts |grep -q $device  && notfree="$notfree $device"
+	done
+	if [ $notfree ] ; then
+	echo -e "Media:"  $red"$notfree"$default "is not free!!!"
+	echo -ne $yellow"(S)hutdown, (R)eboot, (C)ontinue"$default 
+	read ASK
+        case "$ASK" in
+            "S" | "s" )
+                #shutdown
+                poweroff -f
+            ;;
+            "R" | "r" )
+                #reboot
+                reboot -f
+             ;;
+            "C" | "c" )
+                #continue
+            ;;
+            * )
+                #else - SHELL
+                shell_cmd "shell"
+            ;;
+        esac
+	fi
+}
 
 # Change root and execute init
 # $1 = where to change root

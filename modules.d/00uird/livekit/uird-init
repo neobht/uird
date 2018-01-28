@@ -252,6 +252,8 @@ echolog $RC_PREINIT
 debug_shell
 mv /var/log/* $UNION/var/log/ 2>/dev/null
 
+[ $(cmdline_parameter $UIRD_FREEMEDIA) ] && freemedia
+
 #need for usable_root of dracut
 mkdir -p $UNION/proc $UNION/sys $UNION/dev $UNION/$MEMORY 
 #mkdir -p $UNION/initramfs
