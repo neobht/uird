@@ -1,0 +1,61 @@
+#!/bin/bash
+#DATAMNT=/memory/data
+#MOUNTDIR=/memory/layer-base
+. /livekitlib 2>/dev/null || . $(dirname  $(which uird.scan))/livekitlib 2>/dev/null
+
+devs=$(cat /proc/mounts |egrep "${DATAMNT}/from|$MOUNTDIR" |cut -d " " -f 1 |sort |uniq -d )
+mkdir  /remount_bins
+mkdir  /udev_rules
+for dev in $devs ; do
+		UUID=$(blkid |grep $dev |cut -d " " -f 3 |cut -d "\"" -f2)
+		RBIND=$(grep $dev  /proc/self/mountinfo  |awk '{print $4 "," $5}'  |grep -v ^/,)
+		for dir in $RBIND ; do umount $(echo $dir |cut -d "," -f2)  2>/dev/null  ; done   
+		MPOINT=$(grep $dev  /proc/self/mountinfo  |grep ".* / .*$dev" |cut -d " " -f 5)
+		umount $dev 2>/dev/null 
+		if [ $? -eq 0 ] ; then
+			echo "#!/bin/bash" > /remount_bins/$UUID
+			echo "mkdir -p $MPOINT" >>  /remount_bins/$UUID
+			echo "mount  --uuid $UUID  $MPOINT" >>  /remount_bins/$UUID
+			for mountstr in $RBIND ; do 
+				mpoint=$(echo $mountstr |cut -d "," -f2)
+				echo "mkdir -p $mpoint" >>  /remount_bins/$UUID
+				echo "mount --rbind $MPOINT$(echo $mountstr |cut -d "," -f1) " $mpoint >>  /remount_bins/$UUID
+			done 
+			echo ''  >>  /remount_bins/$UUID
+			chmod +x /remount_bins/$UUID
+			echo "ID_FS_UUID=\"${UUID}\",  ACTION=\"add\", RUN+=\"${1}/remount_bins/$UUID\"" > /udev_rules/99-${UUID}.rules
+		fi
+done
+for device in $(echo $devs |while read a ; do echo $a |cut -c 1-8 ; done | sort |uniq ) ; do
+		cat /proc/mounts |grep -q $device  && notfree="$notfree $device"
+done
+
+if [ "$notfree" ] ; then
+	echo -e "Media:"  $red"$notfree"$default "is not free!!!"
+	echo -ne $yellow"(S)hutdown, (R)eboot, (C)ontinue, Shell (default)"$default 
+	read ASK
+        case "$ASK" in
+            "S" | "s" )
+                #shutdown
+                poweroff -f
+            ;;
+            "R" | "r" )
+                #reboot
+                reboot -f
+             ;;
+            "C" | "c" )
+                #continue
+            ;;
+            * )
+                #else - SHELL
+                shell_cmd "shell"
+            ;;
+        esac
+else
+    cp -r /remount_bins ${1}/
+	cp /udev_rules/* ${2}/etc/udev/rules.d/
+	echo -ne $blue"  * "$default
+    echo "adding remount udev rules"
+fi
+
+

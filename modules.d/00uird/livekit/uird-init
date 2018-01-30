@@ -240,9 +240,13 @@ mkdir -p $UNION/mnt/live/memory
 [ -d "$MEMORY/changes" -a ! -d $UNION/mnt/live/memory/changes ] && ln -sf $MEMORY/changes $UNION/mnt/live/memory/changes
 debug_shell
 
+
+
 # copy some files to system
 syscp "$(cmdline_value $UIRD_SYSCP)" $UNION 
 [ -f /etc/initvars ] && cat /etc/initvars |sort |uniq  > $UNION/etc/initvars
+
+[ $(cmdline_parameter $UIRD_FREEMEDIA) ] && /uird.freemedia $MEMORY $UNION
 
 [ "$(cmdline_value $UIRD_BREAK)" = "rc.preinit" ] && shell_cmd "break"
 cd $UNION
@@ -251,8 +255,6 @@ echolog $RC_PREINIT
 [ -x "etc/rc.d/rc.preinit" ] && /bin/bash etc/rc.d/rc.preinit
 debug_shell
 mv /var/log/* $UNION/var/log/ 2>/dev/null
-
-[ $(cmdline_parameter $UIRD_FREEMEDIA) ] && freemedia
 
 #need for usable_root of dracut
 mkdir -p $UNION/proc $UNION/sys $UNION/dev $UNION/$MEMORY 
