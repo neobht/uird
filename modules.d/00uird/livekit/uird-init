@@ -240,8 +240,6 @@ mkdir -p $UNION/mnt/live/memory
 [ -d "$MEMORY/changes" -a ! -d $UNION/mnt/live/memory/changes ] && ln -sf $MEMORY/changes $UNION/mnt/live/memory/changes
 debug_shell
 
-
-
 # copy some files to system
 syscp "$(cmdline_value $UIRD_SYSCP)" $UNION 
 [ -f /etc/initvars ] && cat /etc/initvars |sort |uniq  > $UNION/etc/initvars
