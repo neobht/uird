@@ -1,14 +1,12 @@
-#!/bin/bash
-#DATAMNT=/memory/data
-#MOUNTDIR=/memory/layer-base
-. /livekitlib 2>/dev/null || . $(dirname  $(which uird.scan))/livekitlib 2>/dev/null
+#!/bin/sh
+freemedia () {
 LOSETUP=""
 devs=$(grep /dev/sd /proc/mounts |egrep "${DATAMNT}/from|$MOUNTDIR" |cut -d " " -f 1 |sort |uniq -d )
-mkdir  /remount_bins
-mkdir -p  /etc/udev/rules.d
+BINDIR="${MEMORY}/run/bin" ; mkdir -p $BINDIR
+RULESDIR="${MEMORY}/run/udev/rules.d" ; mkdir -p $RULESDIR 
 for dev in $devs ; do
-		UUID=$(blkid |grep $dev |cut -d " " -f 3 |cut -d "\"" -f2)
-		SERIAL_ID=$(udevadm info -n $dev |grep ID_SERIAL= |cut -d "=" -f 2)
+		UUID=$($BIN_BLKID -s UUID |grep $dev |cut -d " " -f 2 |cut -d "\"" -f2)
+		SERIAL_ID=$(udevadm info -a -n $dev | grep "ATTRS{serial}" |head -n1)
 		MNTOPTS=$(grep $dev /proc/mounts |head -n1 |cut -d " " -f 4)
 		RBIND=$(grep $dev  /proc/self/mountinfo  |awk '{print $4 "," $5}'  |grep -v ^/,)
 		for mountstr in $RBIND ; do 
@@ -19,20 +17,19 @@ for dev in $devs ; do
 		MPOINT=$(grep $dev  /proc/self/mountinfo  |grep ".* / .*$dev" |cut -d " " -f 5)
 		umount $dev 2>/dev/null 
 		if [ $? -eq 0 ] ; then
-			echo "#!/bin/bash" > /remount_bins/$UUID 
-			echo "PATH=/usr/lib/magos/scripts:/bin:/sbin:/usr/bin" >>  /remount_bins/$UUID
-			echo "mkdir -p $MPOINT" >>  /remount_bins/$UUID
-			echo "mount  -o $MNTOPTS  --uuid $UUID  $MPOINT" >>  /remount_bins/$UUID
+			echo "#!/bin/bash" > $BINDIR/$UUID 
+			echo "sleep 3" >> $BINDIR/$UUID
+			echo "mkdir -p $MPOINT" >>  $BINDIR/$UUID
+			echo "mount  -o $MNTOPTS  --uuid $UUID  $MPOINT" >>  $BINDIR/$UUID
 			for mountstr in $RBIND ; do 
 				mpoint=$(echo $mountstr |cut -d "," -f2)
-				echo "mkdir -p $mpoint" >>  /remount_bins/$UUID
-				echo "mount --rbind $MPOINT$(echo $mountstr |cut -d "," -f1) " $mpoint >>  /remount_bins/$UUID
-				[ "$LOSETUP" == "$mpoint" ] && echo 'losetup $(losetup -f)  '"$mpoint/.lock"  >>  /remount_bins/$UUID
+				echo "mkdir -p $mpoint" >>  $BINDIR/$UUID
+				echo "mount --rbind $MPOINT$(echo $mountstr |cut -d "," -f1) " $mpoint >>  $BINDIR/$UUID
+				[ "$LOSETUP" == "$mpoint" ] && echo 'losetup $(losetup -f)  '"$mpoint/.lock"  >>  $BINDIR/$UUID
 			done 
-			echo mdialog --msgbox \"'$1'\" >> /remount_bins/$UUID 
-			echo ''  >>  /remount_bins/$UUID
-			chmod +x /remount_bins/$UUID
-			echo "KERNEL==\"sd*\",  ENV{ID_SERIAL}==\"${SERIAL_ID}\",  ACTION==\"add\", RUN+=\"${1}/remount_bins/$UUID %k \"" > /etc/udev/rules.d/00-${UUID}.rules
+			echo ''  >>  $BINDIR/$UUID
+			chmod +x $BINDIR/$UUID
+			echo "KERNEL==\"sd?\",  $SERIAL_ID,  ACTION==\"add\", RUN+=\"/run/bin/$UUID \"" > ${RULESDIR}/00-${UUID}.rules
 		fi
 done
 for device in $(echo $devs |while read a ; do echo $a |cut -c 1-8 ; done | sort |uniq ) ; do
@@ -60,11 +57,8 @@ if [ "$notfree" ] ; then
                 shell_cmd "shell"
             ;;
         esac
-else
-    cp -r /remount_bins ${1}/
-	cp /etc/udev/rules.d/00*  ${2}/etc/udev/rules.d/
+fi
 	echo -ne $blue"  * "$default
     echo "adding  udev rules for remount sources"
-fi
-
+}
 

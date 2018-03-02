@@ -2327,7 +2327,7 @@ fstab_update()
     mv -f $FSTABTMP $FSTAB
 }
 
-freemedia () {
+freemedia_old () {
 	local devs device notfree dev
 	#DATAMNT=/memory/data
 	#MOUNTDIR=/memory/layer-base
