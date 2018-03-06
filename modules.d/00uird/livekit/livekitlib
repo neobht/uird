@@ -1532,7 +1532,7 @@ mount_data_source()
 				echolog "$MOUNT_DATA_SOURCE_USING" $yellow$DATA_FROM$default
 			fi
         fi 
-    elif [ $(cmdline_parameter $UIRD_FORCE)_ == "$UIRD_FORCE_"  -o "$6" == "yes" ] ; then
+    elif [ $(cmdline_parameter $UIRD_FORCE)_ == "${UIRD_FORCE}_"  -o "$6" == "yes" ] ; then
         rmdir $DST_DIR
         echolog $red"$MOUNT_DATA_SOURCE_NOT_FOUND"$default
         echolog $yellow"Source $SOURCE droped. Continue..."$default 
