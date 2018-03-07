@@ -2116,9 +2116,14 @@ REWRITE="\e[25D\e[1A\e[K" ; sek=0
 while true ; do
 			BREAK=yes
 			echo -ne $green
-			traff="$(cat /proc/net/dev | tail -n1 | awk '{print $2}') "
-			iface="$(cat /proc/net/dev | tail -n1 | awk '{print $1}') "
-			echo -e "${REWRITE}* Time: ${sek};   ${TARGET_DIR}: $(du -hd 0 $TARGET_DIR |cut -f1 );   $iface $(((${traff}+1) / 1048576))M  "
+			traff="$(cat /proc/net/dev | grep -v lo: | tail -n1 | awk '{print $2}') "
+			iface="$(cat /proc/net/dev | grep -v lo: | tail -n1 | awk '{print $1}') "
+			if [ $traff == 0 ]  ; then 
+				iface="" ; traff=""
+			else
+				traff=$(((${traff}+1) / 1048576))
+			fi
+			echo -e "${REWRITE}* Time: ${sek};   ${TARGET_DIR}: $(du -hd 0 $TARGET_DIR |cut -f1 );   $iface  $traff "
 			for file in $MARKERS_LIST ; do
 				[ -e $file ]  && BREAK=no
 			done

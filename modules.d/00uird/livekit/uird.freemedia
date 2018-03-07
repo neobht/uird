@@ -1,7 +1,8 @@
 #!/bin/sh
 freemedia () {
+echolog "starting freemedia...."
 LOSETUP=""
-devs=$(grep /dev/sd /proc/mounts |egrep "${DATAMNT}/from|$MOUNTDIR" |cut -d " " -f 1 |sort |uniq -d )
+devs=$(egrep "${DATAMNT}/from|$MOUNTDIR" /proc/mounts |cut -d " " -f 1 |sort |uniq -d )
 BINDIR="${MEMORY}/run/bin" ; mkdir -p $BINDIR
 RULESDIR="${MEMORY}/run/udev/rules.d" ; mkdir -p $RULESDIR 
 for dev in $devs ; do
@@ -17,6 +18,8 @@ for dev in $devs ; do
 		MPOINT=$(grep $dev  /proc/self/mountinfo  |grep ".* / .*$dev" |cut -d " " -f 5)
 		umount $dev 2>/dev/null 
 		if [ $? -eq 0 ] ; then
+			eject $dev 2>/dev/null #may be cdrom
+			log "generate remount scripts to $dev"
 			echo "#!/bin/bash" > $BINDIR/$UUID 
 			echo "sleep 3" >> $BINDIR/$UUID
 			echo "mkdir -p $MPOINT" >>  $BINDIR/$UUID
@@ -29,7 +32,7 @@ for dev in $devs ; do
 			done 
 			echo ''  >>  $BINDIR/$UUID
 			chmod +x $BINDIR/$UUID
-			echo "KERNEL==\"sd?\",  $SERIAL_ID,  ACTION==\"add\", RUN+=\"/run/bin/$UUID \"" > ${RULESDIR}/00-${UUID}.rules
+			echo "KERNEL==\"s??\",  $SERIAL_ID,  ACTION==\"add\", RUN+=\"/run/bin/$UUID \"" > ${RULESDIR}/00-${UUID}.rules
 		fi
 done
 for device in $(echo $devs |while read a ; do echo $a |cut -c 1-8 ; done | sort |uniq ) ; do
