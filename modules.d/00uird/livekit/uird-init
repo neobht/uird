@@ -101,7 +101,7 @@ debug_shell
 
 #get livekitname 
 [ -z $LIVEKITNAME ] && LIVEKITNAME=$(basename $BASECFG)
-sed -i "s:LIVEKITNAME.*: LIVEKITNAME=$LIVEKITNAME:"  /etc/initvars
+sed -i "s:LIVEKITNAME.*:LIVEKITNAME=$LIVEKITNAME:"  /etc/initvars
 
 #Waits partitions initialization. It need for  cardreaders with some empty slots
 while  [ $(cat /proc/partitions |tail -n1 |awk '{print $1}') -eq 1 ] ; do 

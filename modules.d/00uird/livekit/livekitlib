@@ -1704,6 +1704,7 @@ setup_config()
 #    [ -f "$DATAMNT/0/$INIFILE" ] && PATHINI="$DATAMNT/0/$INIFILE"
     [ -z "$PATHINI" ] && echolog $red"$SETUP_CONFIG_NOTFOUND"$default || echolog "$SETUP_CONFIG_USING" $yellow"$PATHINI"$default
     [ -z "$PATHINI" ] && PATHINI=/dev/null
+    echo "PATHINI=$PATHINI" >> /etc/initvars
     egrep -v '^#|^$' "$PATHINI" | sed s-\\\\r-- | gzip > $MEMORY/$LIVEKITNAME.ini.gz
     grep '^CMDLINE=' "$PATHINI" | sed s/^CMDLINE=// | tr -d [:cntrl:]\'\" >>$MEMORY/cmdline
     chmod 400 $MEMORY/$LIVEKITNAME.ini.gz $MEMORY/cmdline 2>/dev/null
