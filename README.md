@@ -2,6 +2,9 @@
 
 Унифицированная система инициализации для модульных Linux систем. 
 
+[![Join the chat at https://gitter.im/uird/discussion](https://badges.gitter.im/uird/Lobby.svg)](https://gitter.im/uird/discussion)
+
+
 ### Базовое описание основных принципов
 
 UIRD - это разновидность initrd, его задача собрать из слоев aufs корневыю файловую систему и передать загрузку /sbin/init (systemd) с этой корневой fs.
