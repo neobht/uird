@@ -1,6 +1,6 @@
 ### Базовое описание основных принципов
 
-[![Join the chat at https://gitter.im/uird/Lobby](https://badges.gitter.im/uird/Lobby.svg)](https://gitter.im/uird/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Join the chat at https://gitter.im/uird/discussion](https://badges.gitter.im/uird/Lobby.svg)](https://gitter.im/uird/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 Поддерживаемые расширения в MagOS Linux по умолчанию:
 
