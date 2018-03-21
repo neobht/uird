@@ -105,22 +105,6 @@ _Более подробную информацию ищите во встрое
                            uird.cp --> uird.rw --> uird.ro
 9. Выполняются скрипты rc.preinit
 
-## Пример конфигурационного файла MagOS (используется при сборке UIRD для MagOS-linux)
-
-      uird.config=MagOS.ini
-      uird.ramsize=70%
-      uird.ro=*.xzm;*.rom;*.rom.enc;*.pfs
-      uird.rw=*.rwm;*.rwm.enc
-      uird.cp=*.xzm.cp,*/rootcopy
-      uird.load=/base/,/modules/,rootcopy
-      uird.noload=/MagOS-Data/changes,/MagOS-Data/homes
-      uird.from=/MagOS;/MagOS-Data
-      uird.find_params=-maxdepth_3
-      uird.mode=clean 
-      uird.changes=/MagOS-Data/changes
-      uird.syscp=/livekitlib::/usr/lib/magos/scripts;/uird.scan::/usr/lib/magos/scripts;/liblinuxlive::/mnt/live/liblinuxlive
-  
-
 ## Структура системной директории 
 
       /memory/
@@ -164,7 +148,22 @@ _Более подробную информацию ищите во встрое
       └── MagOS.ini.gz              - системный файл для хранения конфигурационного файла
 
 
-Поддерживаемые расширения в MagOS Linux по умолчанию:
+## Пример конфигурационного файла MagOS (используется при сборке UIRD для MagOS-linux)
+
+      uird.config=MagOS.ini
+      uird.ramsize=70%
+      uird.ro=*.xzm;*.rom;*.rom.enc;*.pfs
+      uird.rw=*.rwm;*.rwm.enc
+      uird.cp=*.xzm.cp,*/rootcopy
+      uird.load=/base/,/modules/,rootcopy
+      uird.noload=/MagOS-Data/changes,/MagOS-Data/homes
+      uird.from=/MagOS;/MagOS-Data
+      uird.find_params=-maxdepth_3
+      uird.mode=clean 
+      uird.changes=/MagOS-Data/changes
+      uird.syscp=/livekitlib::/usr/lib/magos/scripts;/uird.scan::/usr/lib/magos/scripts;/liblinuxlive::/mnt/live/liblinuxlive
+  
+Расширения в поддерживаемые в MagOS Linux с этим конфигом:
 
     *.ROM - RO слой
     *.RWM - RW слой
