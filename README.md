@@ -105,7 +105,7 @@ _Более подробную информацию ищите во встрое
                            uird.cp --> uird.rw --> uird.ro
 9. Выполняются скрипты rc.preinit
 
-## Структура конфигурационного файла MagOS.ini (используется при сборке UIRD для MagOS-linux)
+## Пример конфигурационного файла MagOS (используется при сборке UIRD для MagOS-linux)
 
       uird.config=MagOS.ini
       uird.ramsize=70%
