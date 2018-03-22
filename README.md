@@ -177,7 +177,7 @@ _Более подробную информацию ищите во встрое
 
 В основе реализации лежит набор скриптов инициализации dracut (модули base, kernel-modules ) и скрипты uird (livekitlib+uird-init).
 
-    cmdline-hook: parse-root-uird.sh (проверяет параметр root=uird)
+    cmdline-hook: parse-root-uird.sh (заглушка)
     mount-hook: mount-uird.sh (выполняет скрипт uird-init)
 
 * [livekitlib](https://github.com/neobht/uird/blob/master/modules.d/00uird/livekit/livekitlib) - содержит библиотеку функций системы инициализации.
