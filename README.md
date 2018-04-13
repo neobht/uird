@@ -72,6 +72,7 @@ UIRD - это разновидность initrd, его задача собра�
 
     * uird.from="/MagOS;$( eval [ $(date +%u) -gt 5 ] && echo /MagOS-Data)" - подключать MagOS-Data только по выходным
     * uird.changes="$(mkdir -p /MagOS-Data/changes && echo /MagOS-Data/changes)" 
+    * $(udhcpc)  - поднять сеть (eth0 dhcp)
 
 
 Для более подробного описания параметров смотрите встроенную [подсказку] (https://github.com/neobht/uird/tree/master/initrd/usr/share/uird.help)
