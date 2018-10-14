@@ -32,7 +32,9 @@ MOUNTDIR=$LAYER_BASE
 
 echo "0" >/proc/sys/kernel/printk
 
-loadfont < /usr/lib/consolefonts/ter-u16n.psf >/dev/null
+#loadfont < /usr/lib/consolefonts/ter-u16n.psf >/dev/null
+loadfont < /usr/lib/consolefonts/UniCyr_8x14.psf >/dev/null
+
 loadkeys /usr/lib/kbd/ru.map >/dev/null
 
 header $HEADER_START 
@@ -262,6 +264,14 @@ mkdir -p $UNION/proc $UNION/sys $UNION/dev $UNION/$MEMORY
 #need TODO
 mount --move $MEMORY $UNION/$MEMORY
 #mount --move / $UNION/initramfs
+
+# fix to init link
+if ! [ -x /sysroot/sbin/init ] ; then
+linkpath=$(readlink /sysroot/sbin/init)
+rm /sysroot/sbin/init
+ln -s ..${linkpath} /sysroot/sbin/init && echolog "fix /sbin/init link  to relative path"
+fi 
+
 
 header "$HEADER_END $LIVEKITNAME"
 debug_shell

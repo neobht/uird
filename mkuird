@@ -3,8 +3,8 @@ echo $a
 if [  $1 ] ; then 
 	CFG=$1
 else
-	#default uird for multy 
-	CFG=multi
+	#default uird for legacy
+	CFG=legacy
 fi
 
 if ! [ -f ./configs/uird_configs/$CFG ] ; then 
