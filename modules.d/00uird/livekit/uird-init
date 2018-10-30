@@ -122,13 +122,28 @@ debug_shell
 resume_from_suspend
 debug_shell
 
+#init swap
+[ "$(cmdline_value $UIRD_BREAK)" = "init_swap" ] && shell_cmd "break"
+[ "$(cmdline_value $UIRD_SWAP)" ] && init_swap "$(cmdline_value $UIRD_SWAP)" $DATAMNT/swapfiles
+
 RAMSIZE=$(cmdline_value $UIRD_RAMSIZE)
-if [ "$RAMSIZE" = "" ]; then RAMSIZE="70%"; fi
+ram=$(free -m  |grep -i "^mem.*: " | awk '{print $2}' )
+swap=$(free -m  |grep -i "^swap.*:" | awk '{print $2}' )
+[ "_$swap" == "_"  ] && swap="0" 
+
+if [ "$RAMSIZE" == "auto" ]; then
+	RAMSIZE="$(expr \( $ram + $swap \) \* 70 \/ $ram)%"
+elif [ "_$RAMSIZE" == "_" ] ; then
+	RAMSIZE=70%
+fi
+
+echo_green_star ; echolog "RAM - $ram, SWAP - $swap, Ram disk size  - $RAMSIZE of RAM"
+
 # init zram 
 if [ $(cmdline_parameter $UIRD_ZRAM) ] ; then
 	modprobe -q lz4
 	modprobe -q zram num_devices=2
-	mem_zram=$(($(grep MemTotal /proc/meminfo | awk ' { print $2 } ')*${RAMSIZE%%%}/100*1024))
+	mem_zram=$(expr $(grep MemTotal /proc/meminfo | awk ' { print $2 } ') \* ${RAMSIZE%%%} / 100 \* 1024)
 	echo lz4 > /sys/block/zram1/comp_algorithm
 	echo $(grep -c processor /proc/cpuinfo)  >  /sys/block/zram1/max_comp_streams 
 	echo  $mem_zram > /sys/block/zram1/disksize
@@ -172,10 +187,6 @@ debug_shell
 [ "$(cmdline_value $UIRD_BREAK)" = "config" ] && shell_cmd "break"
 setup_config
 debug_shell
-
-#init swap, resize tmpfs
-[ "$(cmdline_value $UIRD_BREAK)" = "init_swap" ] && shell_cmd "break"
-[ "$(cmdline_value $UIRD_SWAP)" ] && init_swap "$(cmdline_value $UIRD_SWAP)" $DATAMNT/swapfiles
 
 #setting up source for changes
 [ "$(cmdline_value $UIRD_BREAK)" = "changes" ] && shell_cmd "break"

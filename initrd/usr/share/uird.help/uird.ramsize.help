@@ -10,4 +10,6 @@ This string means: set the size of tmpfs to 80% оf RAM size
 uird.ramsize=200%
 This string means: set the size of tmpfs to 200% оf RAM size, tmpfs can be more then RAM only if
 swap partition or file is in use.
+uird.ramsize=auto 
+This string means: ramdisk size = 70% of (ram + swap)
 **************************************************************************************************

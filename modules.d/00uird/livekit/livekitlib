@@ -1750,7 +1750,6 @@ init_swap()
 			
 			if [ "$(echo $SOURCE | grep "://")" != ""  ]; then
 				init_ifcfg
-				# echo $SOURCE | grep -iq ^"http://" && SWAP_FROM=$(mount_httpfs $SOURCE $MNT_DIR)
 				echo $SOURCE | grep -iq ^"nfs://" &&  SWAP_FROM=$(mount_nfs $SOURCE $MNT_DIR)
 				echo $SOURCE | grep -iq ^"cifs://" && SWAP_FROM=$(mount_cifs $SOURCE $MNT_DIR)
 				echo $SOURCE | grep -iq ^"ssh://" &&  SWAP_FROM=$(mount_sshfs $SOURCE $MNT_DIR)
@@ -1777,17 +1776,6 @@ init_swap()
 
 	[ $NEEDZRAM == "yes" ] && init_zram_swap  && echo_green_star && echolog  "init zram swap" && SWPNSSMIN=40
 	[ $NEEDZSWAP == "yes" ] && init_zswap && echo_green_star && echolog  "init Zswap" && SWPNSSMIN=40
-	
-	# resize to RAM+SWAP*70%, not available for zram 
-	[ $(cmdline_parameter $UIRD_ZRAM) ] && return 
-	if  [ ! "$(cmdline_value $RAMSIZE)" ] ;then
-		#busybox's util "free" doesn't know the option -t   (total - mem+swap)
-		total=$(expr $(echo $(free -m  |grep "^[M,S].*: " | awk '{print $2}' ) |sed 's/ / + /'))
-		newsize=$(expr $total / 10 \* 6) # ~60% (ram+swap)
-		echo_green_star
-		echolog "$RESIZE_TMPFS ${newsize}M"
-		mount -o remount,size=${newsize}M $MEMORY
-	fi
 	
 	SWPNSS=$((100-( $(free -g |grep -i mem |awk '{ print $2 }') +2)*10))
 	[ $SWPNSS -lt $SWPNSSMIN ] && SWPNSS=$SWPNSSMIN
