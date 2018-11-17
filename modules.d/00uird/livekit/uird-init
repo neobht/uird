@@ -33,83 +33,84 @@ MOUNTDIR=$LAYER_BASE
 echo "0" >/proc/sys/kernel/printk
 
 #loadfont < /usr/lib/consolefonts/ter-u16n.psf >/dev/null
-loadfont < /usr/lib/consolefonts/UniCyr_8x14.psf >/dev/null
+loadfont </usr/lib/consolefonts/UniCyr_8x14.psf >/dev/null
 
 loadkeys /usr/lib/kbd/ru.map >/dev/null
 
-header $HEADER_START 
+header $HEADER_START
 header "[ $(cat /uird_version) $LANG]"
 
 debug_start
 debug_shell
 
-[ -d /lib/modules/"$(uname -r)" ] || [ -d /lib64/modules/"$(uname -r)" ] || ( echolog "!!! Ядро и модули ядра не совпадают !!!" && exit 1)
+[ -d /lib/modules/"$(uname -r)" ] || [ -d /lib64/modules/"$(uname -r)" ] || (echolog "!!! Ядро и модули ядра не совпадают !!!" && exit 1)
 
 debug_shell
 
 init_devs
 debug_shell
 
-mkdir -p $MEMORY  /tmp
+mkdir -p $MEMORY /tmp
 
 #find uird parameters in basecfg and cmdline
-getcmdline > /tmp/cmdline
-eval echo $(cat /proc/cmdline /tmp/cmdline 2>/dev/null | tr -s ";" "," ) > /tmp/cmdline
-ln -s  /tmp/cmdline $MEMORY/cmdline
+getcmdline >/tmp/cmdline
+eval echo $(cat /proc/cmdline /tmp/cmdline 2>/dev/null | tr -s ";" ",") >/tmp/cmdline
+ln -s /tmp/cmdline $MEMORY/cmdline
 BASECFG=$(cmdline_value $UIRD_BASECFG)
-[ -f "$BASECFG" -o "$BASECFG" == "help" ]  || BASECFG=/uird_configs/$BASECFG
-if ! [ -f "$BASECFG" -o "$BASECFG" == "help" ]  ; then
-echo "$BASECFG is not  correct uird.basecfg value"
-shell_cmd "help"
+[ -f "$BASECFG" -o "$BASECFG" == "help" ] || BASECFG=/uird_configs/$BASECFG
+if ! [ -f "$BASECFG" -o "$BASECFG" == "help" ]; then
+	echo "$BASECFG is not  correct uird.basecfg value"
+	shell_cmd "help"
 fi
-echo -n " " >> /tmp/cmdline
-eval echo $(cat /tmp/cmdline $BASECFG 2>/dev/null | tr -s ";" "," ) > /tmp/cmdline
+echo -n " " >>/tmp/cmdline
+eval echo $(cat /tmp/cmdline $BASECFG 2>/dev/null | tr -s ";" ",") >/tmp/cmdline
 
 # print help
-if cat $MEMORY/cmdline |grep -q help ; then
-    echo ""
-    header "$HELP_SYSTEM" 
-    echo ""
-    param_list=$( eval echo "$UIRD_BASECFG $UIRD_CONFIG $UIRD_SGNFILES $UIRD_RO $UIRD_RW $UIRD_CP $UIRD_COPY2RAM $UIRD_FORCE  $UIRD_SWAP\
-        $UIRD_COPY2CACHE $UIRD_RAMSIZE $UIRD_IP  $UIRD_NETFSOPT  $UIRD_LOAD $UIRD_NOLOAD  $UIRD_MODE $UIRD_SYSCP $UIRD_SCAN $UIRD_ARIA2RAM \
+if cat $MEMORY/cmdline | grep -q help; then
+	echo ""
+	header "$HELP_SYSTEM"
+	echo ""
+	param_list=$(
+		eval echo "$UIRD_BASECFG $UIRD_CONFIG $UIRD_SGNFILES $UIRD_RO $UIRD_RW $UIRD_CP $UIRD_COPY2RAM $UIRD_FORCE  $UIRD_SWAP        $UIRD_COPY2CACHE $UIRD_RAMSIZE $UIRD_IP  $UIRD_NETFSOPT  $UIRD_LOAD $UIRD_NOLOAD  $UIRD_MODE $UIRD_SYSCP $UIRD_SCAN $UIRD_ARIA2RAM \
         $UIRD_FROM  $UIRD_CACHE $UIRD_HOMES $UIRD_HOME $UIRD_CHANGES $UIRD_MACHINES $UIRD_FIND_PARAMS $UIRD_MOUNTS $UIRD_BREAK" \ 
-        $UIRD_FREEMEDIA $UIRD_RUN)
-    help_dir=/usr/share/uird.help
-    [ -d /usr/share/uird.help/${LANG} ] &&  help_dir=/usr/share/uird.help/${LANG} 
-    for par in $param_list ;do
-        if [ "help" == "$(cmdline_value $par)" ] ; then 
-            header "-=-=-=- $par -=-=-=-"
-            cat ${help_dir}/${par}.help 
-            echo "ENTER --> next page"
-            read qqq
-            if [ "$par" ==  "$UIRD_BASECFG" ] ; then
-			echo "default is:  $(cat /etc/cmdline.d/01-default.conf |grep "$par" )"
-				for cfg in /uird_configs/* ; do
+		$UIRD_FREEMEDIA $UIRD_RUN
+	)
+	help_dir=/usr/share/uird.help
+	[ -d /usr/share/uird.help/${LANG} ] && help_dir=/usr/share/uird.help/${LANG}
+	for par in $param_list; do
+		if [ "help" == "$(cmdline_value $par)" ]; then
+			header "-=-=-=- $par -=-=-=-"
+			cat ${help_dir}/${par}.help
+			echo "ENTER --> next page"
+			read qqq
+			if [ "$par" == "$UIRD_BASECFG" ]; then
+				echo "default is:  $(cat /etc/cmdline.d/01-default.conf | grep "$par")"
+				for cfg in /uird_configs/*; do
 					echo "-=-=-=- $cfg -=-=-=-"
 					cat $cfg
 				done | less
-            fi
-        fi
-        
-    done 
-    if [ "$(cmdline_parameter $UIRD_HELP)" ] ;then
-        for file in $(ls -1 ${help_dir}/*.help) ;do
-            echo "-=-=-=- $file -=-=-=-" # header do not work with less command
-            cat $file
-        done | less 
-    fi
-    shell_cmd "help"
+			fi
+		fi
+
+	done
+	if [ "$(cmdline_parameter $UIRD_HELP)" ]; then
+		for file in $(ls -1 ${help_dir}/*.help); do
+			echo "-=-=-=- $file -=-=-=-" # header do not work with less command
+			cat $file
+		done | less
+	fi
+	shell_cmd "help"
 fi
 debug_shell
 
-#get livekitname 
+#get livekitname
 [ -z $LIVEKITNAME ] && LIVEKITNAME=$(basename $BASECFG)
-sed -i "s:LIVEKITNAME.*:LIVEKITNAME=$LIVEKITNAME:"  /etc/initvars
+sed -i "s:LIVEKITNAME.*:LIVEKITNAME=$LIVEKITNAME:" /etc/initvars
 
 #Waits partitions initialization. It need for  cardreaders with some empty slots
-while  [ $(cat /proc/partitions |tail -n1 |awk '{print $1}') -eq 1 ] ; do 
-		sleep 0.3
-done 
+while [ $(cat /proc/partitions | tail -n1 | awk '{print $1}') -eq 1 ]; do
+	sleep 0.3
+done
 
 #start uird.scan
 uird_scan
@@ -127,35 +128,36 @@ debug_shell
 [ "$(cmdline_value $UIRD_SWAP)" ] && init_swap "$(cmdline_value $UIRD_SWAP)" $DATAMNT/swapfiles
 
 RAMSIZE=$(cmdline_value $UIRD_RAMSIZE)
-ram=$(free -m  |grep -i "^mem.*: " | awk '{print $2}' )
-swap=$(free -m  |grep -i "^swap.*:" | awk '{print $2}' )
-[ "_$swap" == "_"  ] && swap="0" 
+ram=$(free -m | grep -i "^mem.*: " | awk '{print $2}')
+swap=$(free -m | grep -i "^swap.*:" | awk '{print $2}')
+[ "_$swap" == "_" ] && swap="0"
 
 if [ "$RAMSIZE" == "auto" ]; then
 	RAMSIZE="$(expr \( $ram + $swap \) \* 70 \/ $ram)%"
-elif [ "_$RAMSIZE" == "_" ] ; then
+elif [ "_$RAMSIZE" == "_" ]; then
 	RAMSIZE=70%
 fi
 
-echo_green_star ; echolog "RAM - $ram, SWAP - $swap, Ram disk size  - $RAMSIZE of RAM"
+echo_green_star
+echolog "RAM - $ram, SWAP - $swap, Ram disk size  - $RAMSIZE of RAM"
 
-# init zram 
-if [ $(cmdline_parameter $UIRD_ZRAM) ] ; then
+# init zram
+if [ $(cmdline_parameter $UIRD_ZRAM) ]; then
 	modprobe -q lz4
 	modprobe -q zram num_devices=2
 	mem_zram=$(expr $(grep MemTotal /proc/meminfo | awk ' { print $2 } ') \* ${RAMSIZE%%%} / 100 \* 1024)
-	echo lz4 > /sys/block/zram1/comp_algorithm
-	echo $(grep -c processor /proc/cpuinfo)  >  /sys/block/zram1/max_comp_streams 
-	echo  $mem_zram > /sys/block/zram1/disksize
-	echo  $mem_zram > /sys/block/zram1/mem_limit
+	echo lz4 >/sys/block/zram1/comp_algorithm
+	echo $(grep -c processor /proc/cpuinfo) >/sys/block/zram1/max_comp_streams
+	echo $mem_zram >/sys/block/zram1/disksize
+	echo $mem_zram >/sys/block/zram1/mem_limit
 	mkfs.ext4 -O ^has_journal /dev/zram1 >/dev/null 2>&1
-	mount -o discard,rw  /dev/zram1 $MEMORY
+	mount -o discard,rw /dev/zram1 $MEMORY
 else
 	mount -t tmpfs -o "size=$RAMSIZE" tmpfs $MEMORY
 fi
 
 mkdir -p $MOUNTDIR $CHANGES
-mv  /tmp/cmdline $MEMORY/cmdline
+mv /tmp/cmdline $MEMORY/cmdline
 
 # init MOUNTS layer
 [ "$(cmdline_value $UIRD_BREAK)" = "init_mounts" ] && shell_cmd "break"
@@ -164,7 +166,7 @@ debug_shell
 
 #aria2 preDownload
 [ "$(cmdline_value $UIRD_BREAK)" = "init_aria2" ] && shell_cmd "break"
-[ "$(cmdline_value $UIRD_ARIA2RAM)" ] && aria2_preload $DATAMNT/aria2 
+[ "$(cmdline_value $UIRD_ARIA2RAM)" ] && aria2_preload $DATAMNT/aria2
 debug_shell
 
 #init BASE layer
@@ -193,9 +195,9 @@ debug_shell
 setup_changes $DATAMNT/changes $CHANGES
 
 #clear changes dir if CLEAN mode is enabled
-if [ "$(cmdline_value $UIRD_MODE)" = "clear" -o "$(cmdline_value $UIRD_MODE)" = "hybrid" ] ; then 
-rm -rf ${CHANGES}/* 
-echo $(date) >  ${CHANGES}/cleared_by_uird
+if [ "$(cmdline_value $UIRD_MODE)" = "clear" -o "$(cmdline_value $UIRD_MODE)" = "hybrid" ]; then
+	rm -rf ${CHANGES}/*
+	echo $(date) >${CHANGES}/cleared_by_uird
 fi
 
 debug_shell
@@ -247,7 +249,7 @@ rmdir $UNION/mnt/* 2>/dev/null
 debug_shell
 
 # old compatibility to linuxlive init
-mkdir -p $UNION/mnt/live/memory 
+mkdir -p $UNION/mnt/live/memory
 [ -d "$MEMORY/data/from/0" -a ! -d $UNION/mnt/livemedia ] && ln -sf $MEMORY/data/from/0 $UNION/mnt/livemedia
 [ -d "$MEMORY/data/from/1" -a ! -d $UNION/mnt/livedata ] && ln -sf $MEMORY/data/from/1 $UNION/mnt/livedata
 [ -d "$MEMORY/bundles" -a ! -d $UNION/mnt/live/memory/images ] && ln -sf $MEMORY/bundles $UNION/mnt/live/memory/images
@@ -255,8 +257,8 @@ mkdir -p $UNION/mnt/live/memory
 debug_shell
 
 # copy some files to system
-syscp "$(cmdline_value $UIRD_SYSCP)" $UNION 
-[ -f /etc/initvars ] && cat /etc/initvars |sort |uniq  > $UNION/etc/initvars
+syscp "$(cmdline_value $UIRD_SYSCP)" $UNION
+[ -f /etc/initvars ] && cat /etc/initvars | sort | uniq >$UNION/etc/initvars
 
 [ "$(cmdline_value $UIRD_BREAK)" = "rc.preinit" ] && shell_cmd "break"
 cd $UNION
@@ -267,7 +269,7 @@ debug_shell
 mv /var/log/* $UNION/var/log/ 2>/dev/null
 
 #need for usable_root of dracut
-mkdir -p $UNION/proc $UNION/sys $UNION/dev $UNION/$MEMORY 
+mkdir -p $UNION/proc $UNION/sys $UNION/dev $UNION/$MEMORY
 #mkdir -p $UNION/initramfs
 
 [ $(cmdline_parameter $UIRD_FREEMEDIA) ] && . /uird.freemedia && freemedia
@@ -277,12 +279,11 @@ mount --move $MEMORY $UNION/$MEMORY
 #mount --move / $UNION/initramfs
 
 # fix to init link
-if ! [ -x /sysroot/sbin/init ] ; then
-linkpath=$(readlink /sysroot/sbin/init)
-rm /sysroot/sbin/init
-ln -s ..${linkpath} /sysroot/sbin/init && echolog "fix /sbin/init link  to relative path"
-fi 
-
+if ! [ -x /sysroot/sbin/init ]; then
+	linkpath=$(readlink /sysroot/sbin/init)
+	rm /sysroot/sbin/init
+	ln -s ..${linkpath} /sysroot/sbin/init && echolog "fix /sbin/init link  to relative path"
+fi
 
 header "$HEADER_END $LIVEKITNAME"
 debug_shell

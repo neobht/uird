@@ -33,8 +33,6 @@ uird_to_var() {
 #[ -n "$base_from" ] || die "Argument uirdroot needs base_from param"
 #[ -n "$data_from" ] || die "Argument uirdroot needs data_from param"
 
-
-
 # Done, all good!
 root=1
 rootok=1
