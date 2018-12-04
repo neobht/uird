@@ -143,10 +143,10 @@ echolog "RAM - $ram, SWAP - $swap, Ram disk size  - $RAMSIZE of RAM"
 
 # init zram
 if [ $(cmdline_parameter $UIRD_ZRAM) ]; then
-	modprobe -q lz4
-	modprobe -q zram num_devices=2
+	modprobe -q zram num_devices=2 2>/dev/null
 	mem_zram=$(expr $(grep MemTotal /proc/meminfo | awk ' { print $2 } ') \* ${RAMSIZE%%%} / 100 \* 1024)
-	echo lz4 >/sys/block/zram1/comp_algorithm
+	#modprobe -q lz4
+	#echo lz4 >/sys/block/zram1/comp_algorithm
 	echo $(grep -c processor /proc/cpuinfo) >/sys/block/zram1/max_comp_streams
 	echo $mem_zram >/sys/block/zram1/disksize
 	echo $mem_zram >/sys/block/zram1/mem_limit

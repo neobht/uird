@@ -424,23 +424,18 @@ init_devs() {
 }
 
 # Activate zram (auto-compression of RAM)
-# Compressed RAM consumes 1/2 or even 1/4 of original size
-# Setup static size of 500MB
-#
 init_zram_swap() {
-	num_cpus=$(cat /proc/cpuinfo | grep processor | wc -l)
-	ZramSize=35 # % RAM
+	ZramSize=70 # % RAM
 	memtotal=$(grep MemTotal /proc/meminfo | awk ' { print $2 } ')
 	memzram=$(($memtotal * ${ZramSize} / 100 * 1024))
-	modprobe -q zram 2>/dev/null
-	echo lz4 >/sys/block/zram0/comp_algorithm
+	modprobe -q zram num_devices=2 2>/dev/null
 	echo $memzram >/sys/block/zram0/disksize
 	mkswap /dev/zram0
 	swapon -p 100 /dev/zram0
 }
 
 init_zswap() {
-	echo lz4 >/sys/module/zswap/parameters/compressor
+	#echo lz4 >/sys/module/zswap/parameters/compressor
 	echo 1 >/sys/module/zswap/parameters/enabled
 }
 
@@ -1713,12 +1708,8 @@ init_swap() {
 		done
 	fi
 
-	[ $NEEDZRAM == "yes" ] && init_zram_swap && echo_green_star && echolog "init zram swap" && SWPNSSMIN=40
-	[ $NEEDZSWAP == "yes" ] && init_zswap && echo_green_star && echolog "init Zswap" && SWPNSSMIN=40
-
-	SWPNSS=$((100 - ($(free -g | grep -i mem | awk '{ print $2 }') + 2) * 10))
-	[ $SWPNSS -lt $SWPNSSMIN ] && SWPNSS=$SWPNSSMIN
-	echo $SWPNSS >/proc/sys/vm/swappiness
+	[ $NEEDZRAM == "yes" ] && init_zram_swap && echo_green_star && echolog "init zram swap" 
+	[ $NEEDZSWAP == "yes" ] && init_zswap && echo_green_star && echolog "init Zswap" 
 }
 
 # Setup changes
