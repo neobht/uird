@@ -425,18 +425,26 @@ init_devs() {
 
 # Activate zram (auto-compression of RAM)
 init_zram_swap() {
-	ZramSize=70 # % RAM
+	if expr $1 / 2  >/dev/null 2>&1 ;then
+		ZramSize=$1 ; ZramAlg=$2
+	else
+		ZramSize=$2 ; ZramAlg=$1
+	fi
+	modprobe -q $ZramAlg 
 	memtotal=$(grep MemTotal /proc/meminfo | awk ' { print $2 } ')
 	memzram=$(($memtotal * ${ZramSize} / 100 * 1024))
 	modprobe -q zram num_devices=2 2>/dev/null
+	echo $ZramAlg > /sys/block/zram0/comp_algorithm 2>/dev/nulll
 	echo $memzram >/sys/block/zram0/disksize
-	mkswap /dev/zram0
-	swapon -p 100 /dev/zram0
+	mkswap /dev/zram0 > /dev/null
+	swapon -p 100 /dev/zram0 
+	[ $? == 0 ] && echo_green_star && echolog "Init zram swap. Alg: $ZramAlg, size: ${ZramSize}%"
 }
 
 init_zswap() {
 	#echo lz4 >/sys/module/zswap/parameters/compressor
 	echo 1 >/sys/module/zswap/parameters/enabled
+	echo_green_star && echolog "init Zswap" 
 }
 
 # load the AUFS kernel module if needed
@@ -1647,7 +1655,6 @@ init_swap() {
 	local newsize total FSWAP ASWAP DSWAP SOURCE SWAP_FROM NEEDZRAM NEEDZSWAP
 	NEEDZSWAP=no
 	NEEDZRAM=no
-	SWPNSSMIN=10
 	debug_log "setting up swap"
 	echo_green_star
 	echolog "$SETUP_SWAP"
@@ -1658,7 +1665,9 @@ init_swap() {
 			NEEDZSWAP=yes
 		else
 			NEEDZRAM=yes
+			ZRAMPARS="70 default"
 		fi
+		echo "90" > /proc/sys/vm/swappiness
 	else
 		FSWAP=""
 		for DSWAP in $(echo $1 | tr ";,_" " "); do
@@ -1674,8 +1683,9 @@ init_swap() {
 	if [ "${FSWAP}_" != "_" ]; then
 		MNT_DIR=$2
 		for SOURCE in $(echo $FSWAP); do
-			if [ "$SOURCE" == "zram" ]; then
+			if echo "$SOURCE"  |grep -q "^zram.*"  ; then
 				NEEDZRAM=yes
+				ZRAMPARS=$(echo $SOURCE | sed -e 's/::/ /g' -e 's/zram//g' -e 's/^ *//')
 				continue
 			elif [ "$SOURCE" == "zswap" ]; then
 				NEEDZSWAP=yes
@@ -1708,8 +1718,11 @@ init_swap() {
 		done
 	fi
 
-	[ $NEEDZRAM == "yes" ] && init_zram_swap && echo_green_star && echolog "init zram swap" 
-	[ $NEEDZSWAP == "yes" ] && init_zswap && echo_green_star && echolog "init Zswap" 
+	if [ $NEEDZRAM == "yes" ] ; then 
+		init_zram_swap $ZRAMPARS 
+	elif [ $NEEDZSWAP == "yes" ] ; then
+		init_zswap 
+	fi
 }
 
 # Setup changes

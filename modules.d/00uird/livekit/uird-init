@@ -133,7 +133,7 @@ swap=$(free -m | grep -i "^swap.*:" | awk '{print $2}')
 [ "_$swap" == "_" ] && swap="0"
 
 if [ "$RAMSIZE" == "auto" ]; then
-	RAMSIZE="$(expr \( $ram + $swap \) \* 70 \/ $ram)%"
+	[ "$(cmdline_parameter $UIRD_ZRAM)" ] || RAMSIZE="$(expr \( $ram + $swap \) \* 70 \/ $ram)%"
 elif [ "_$RAMSIZE" == "_" ]; then
 	RAMSIZE=70%
 fi
@@ -147,7 +147,7 @@ if [ $(cmdline_parameter $UIRD_ZRAM) ]; then
 	mem_zram=$(expr $(grep MemTotal /proc/meminfo | awk ' { print $2 } ') \* ${RAMSIZE%%%} / 100 \* 1024)
 	#modprobe -q lz4
 	#echo lz4 >/sys/block/zram1/comp_algorithm
-	echo $(grep -c processor /proc/cpuinfo) >/sys/block/zram1/max_comp_streams
+	#echo $(grep -c processor /proc/cpuinfo) >/sys/block/zram1/max_comp_streams
 	echo $mem_zram >/sys/block/zram1/disksize
 	echo $mem_zram >/sys/block/zram1/mem_limit
 	mkfs.ext4 -O ^has_journal /dev/zram1 >/dev/null 2>&1
