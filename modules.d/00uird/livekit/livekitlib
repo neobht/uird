@@ -430,11 +430,12 @@ init_zram_swap() {
 	else
 		ZramSize=$2 ; ZramAlg=$1
 	fi
-	modprobe -q $ZramAlg 
+	expr $ZramSize / 2 >/dev/null 2>&1 || ZramSize=70 
+	modprobe -q $ZramAlg 2>/dev/null
 	memtotal=$(grep MemTotal /proc/meminfo | awk ' { print $2 } ')
 	memzram=$(($memtotal * ${ZramSize} / 100 * 1024))
 	modprobe -q zram num_devices=2 2>/dev/null
-	echo $ZramAlg > /sys/block/zram0/comp_algorithm 2>/dev/nulll
+	echo $ZramAlg > /sys/block/zram0/comp_algorithm 2>/dev/null
 	echo $memzram >/sys/block/zram0/disksize
 	mkswap /dev/zram0 > /dev/null
 	swapon -p 100 /dev/zram0 
