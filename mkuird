@@ -54,7 +54,7 @@ done
 
 FS=''
 if echo FileSystems_KM | egrep -qv "$EXCLUDE" ; then
-for   mod in $FileSestems_KM ; do
+for   mod in $FileSystems_KM ; do
 	if echo "$mod" | egrep -q  "$EXCLUDE" ; then 
 		echo "excluded: $mod"
 		continue
