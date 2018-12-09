@@ -15,7 +15,7 @@ installkernel() {
 	return 0
 }
 
-bins="gettext loadkeys rsync fsck fsck.ext2 fsck.ext3 fsck.ext4 fsck.exfat fsck.vfat fsck.xfs fsck.btrfs btrfsck ntfsfix  aria2c mkfs.ext4 qemu-nbd qemu-img"
+bins="$UIRD_BINS"
 
 install() {
 	local _i _progs _path _busybox _binaries
@@ -61,12 +61,6 @@ install() {
 		ln_r /usr/bin/busybox "$_path"
 	done
 
-	#inst $(type -p kmod) /sbin/kmod
-	#for _i in lsmod modprobe insmod rmmod modinfo depmod ;do
-	#   ln -sf kmod "${initdir}/sbin/$_i"
-	#done
-
-	#    echo "version: $(date +%Y%m%d), for kernel: $(uname -ri)" >$initdir/uird_version
 	echo "version: $(date +%Y%m%d), for kernel: $kernel" >$initdir/uird_version
 	inst_hook cmdline 95 "$moddir/parse-root-uird.sh"
 	inst_hook mount 99 "$moddir/mount-uird.sh"

@@ -1,11 +1,24 @@
 #!/bin/bash
-echo $a
-if [ $1 ]; then
-	CFG=$1
-else
-	#default uird for legacy
-	CFG=legacy
-fi
+CFG=legacy
+CONFIG=./mkuird.cfg
+
+for arg in $@
+do
+  case "${arg}" in
+    "-c" | "--config" ) config=yes;;
+    "-e" | "--exclude" ) exclude=yes;;
+    "-n" | "--name" ) name=yes;;
+    "-"*[A-Za-z]*) echo "$(basename "$0"): invalid option -- '$(echo ${arg} | tr -d '-')'" >&2; exit 1;;
+    *) if [ "${config}" == "yes" ]; then CONFIG="${arg}"
+		elif [ "${exclude}" == "yes" ]; then EXCLUDE="${arg}"
+		elif [ "${name}" == "yes" ]; then NAME="${arg}"
+		else CFG="${arg}" ; fi
+        config="no"; exclude="no"; name="no";;
+  esac
+done
+
+. $CONFIG
+EXCLUDE=$(echo "$EXCLUDE" |sed "s/,/|/g")
 
 if ! [ -f ./configs/uird_configs/$CFG ]; then
 	echo "./configs/uird_configs/$CFG is not exist"
@@ -16,30 +29,75 @@ echo $date >./not_found.log
 cd dracut/modules.d
 ln -s ../../modules.d/* ../modules.d/ 2>/dev/null
 cd ../..
-filesystems="aufs squashfs vfat msdos iso9660 isofs xfs fuse nfs cifs udf nls_cp866 nls_utf8 reiserfs overlay ext3 ntfs"
-kernelmods="loop cryptoloop cbc zram aes-generic aes-i586 aes-x86_64 pata_acpi ata_generic ahci xhci-hcd 
-                       xhci-pci xhci-plat-hcd ohci-pci  usb-storage uhci-hcd hid usbhid ehci-hcd ohci-hcd ehci-pci ehci-platform 
-                       hid-generic sr_mod sd_mod scsi_mod jbd jbd2 lockd evdev sunrpc lz4 af_packet dm-crypt nbd"
 
-FS=''
-for mod in $filesystems; do
-	if /sbin/modinfo $mod >/dev/null; then
-		FS="$FS $mod"
-	else
-		echo "kernel module: $mod not found" >>./not_found.log
+KM=""
+for item in Base_KM  NetWork_KM Dev_KM Crypo_KM CompAlg_KM ; do
+if echo "$item" | egrep -q "$EXCLUDE" ; then 
+	echo "excluded: $item"
+	continue
+fi
+for   mod in ${!item} ; do
+	if echo "$mod" | egrep -q  "$EXCLUDE" ; then 
+		echo "excluded: $mod"
+		continue
 	fi
-done
-
-KM="=drivers/ide =drivers/ata  =drivers/net/ethernet =drivers/usb/storage =drivers/usb/host =fs/nfs"
-for mod in $kernelmods; do
-	if /sbin/modinfo $mod >/dev/null; then
+	if echo $mod | egrep -q "^=" ; then 
+		KM="$KM $mod" 
+	elif /sbin/modinfo $mod >/dev/null ; then
 		KM="$KM $mod"
 	else
-		echo "kernel module: $mod not found" >>./not_found.log
+		echo "kernel module: $mod not found"  >>./not_found.log
 	fi
 done
+done
 
-./dracut/dracut.sh -l -N --strip -f -m "base uird uird-network ntfs kernel-modules crypt" \
+FS=''
+if echo FileSestems_KM | egrep -qv "$EXCLUDE" ; then
+for   mod in $FileSestems_KM ; do
+	if echo "$mod" | egrep -q  "$EXCLUDE" ; then 
+		echo "excluded: $mod"
+		continue
+	fi
+	if echo $mod | egrep -q "^=" ;then 
+		FS="$FS $mod" 
+	elif /sbin/modinfo $mod >/dev/null; then
+		FS="$FS $mod"
+	else
+		echo "FS $mod kernel module: $mod not found"  >>./not_found.log
+	fi
+done
+else
+		echo "excluded: File systems kernel modules"
+fi
+
+DM=''
+for   mod in $DracutM ; do
+	echo "$mod" | egrep -q  "$EXCLUDE" && continue
+	DM="$DM $mod"
+done
+
+UIRD_BINS=""
+for item in  FS_bins NetWork_bins Base_bins ; do
+if echo "$item" | egrep -q "$EXCLUDE" ; then
+	echo "excluded: $item"
+	continue
+fi
+for  binary in ${!item} ; do
+	if echo "$binary" | egrep -q  "$EXCLUDE" ; then
+		echo "excluded: $binary"
+		continue
+	fi
+	if which $binary >/dev/null; then
+		UIRD_BINS="$UIRD_BINS $binary"
+	else
+		echo "File: $binary not found in current PATH"  >>./not_found.log
+	fi
+done
+done
+
+export UIRD_BINS
+
+./dracut/dracut.sh -l -N --strip -f -m "$DM" \
 	-d "$KM" \
 	--filesystems "$FS" \
 	-i initrd / \
@@ -47,8 +105,5 @@ done
 	--kernel-cmdline "uird.basecfg=/uird_configs/$CFG" \
 	-c dracut.conf -v -M uird.$CFG.cpio.xz $(uname -r) >dracut_magos.log 2>&1
 
-[ $2 ] && mv uird.$CFG.cpio.xz "$2"
+[ $NAME ] && mv uird.$CFG.cpio.xz "$NAME"
 
-#./dracut/dracut.sh -l -N --strip -f -m "base uird uird-network ntfs kernel-modules kernel-network-modules"
-#        --kernel-cmdline "uird.from=/MagOS,/MagOS-Data uird.ro=*.xzm,*.rom,*.rom.enc,*.pfs,*.sfs uird.rw=*.rwm,*.rwm.enc uird.cp=*.xzm.cp,*/rootcopy uird.load=/base/,/modules/,rootcopy uird.machines=/MagOS-Data/machines uird.config=MagOS.ini" \
-#        -c dracut.conf -v -M uird.magos.cpio.xz 3.19.4-desktop586-2.mga5 >dracut_magos.log 2>&1
