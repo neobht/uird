@@ -75,9 +75,18 @@ else
 fi
 
 DM=''
-for   mod in $DracutM $UirdM; do
-	echo "$mod" | egrep -q  "$EXCLUDE" && continue
-	DM="$DM $mod"
+for   moditem in DracutM UirdM; do
+	if echo "$moditem" | egrep -q "$EXCLUDE" ; then
+		echo "excluded: $moditem"
+		continue
+	fi
+	for mod in ${!moditem} ; do
+		if echo "$mod" | egrep -q "$EXCLUDE" ; then
+			echo "excluded: $mod"
+			continue
+		fi 
+		DM="$DM $mod"
+	done
 done
 
 UIRD_BINS=""
