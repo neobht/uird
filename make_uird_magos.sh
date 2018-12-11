@@ -1,2 +1,2 @@
 #!/bin/bash
-./mkuird MagOS ./uird.magos.cpio.xz
+./mkuird MagOS -n ./uird.magos.cpio.xz --exclude "uird-soft"
