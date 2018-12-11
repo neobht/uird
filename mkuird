@@ -2,6 +2,7 @@
 CFG=legacy
 CONFIG=./mkuird.cfg
 EXCLUDE=qqqqqqqqqqq
+BUILD=uird
 
 for arg in $@
 do
@@ -9,6 +10,8 @@ do
     "-c" | "--config" ) config=yes;;
     "-e" | "--exclude" ) exclude=yes;;
     "-n" | "--name" ) name=yes;;
+    "--kmod" ) BUILD=kmod;;
+    "--addon" ) BUILD=addon;;
     "-"*[A-Za-z]*) echo "$(basename "$0"): invalid option -- '$(echo ${arg} | tr -d '-')'" >&2; exit 1;;
     *) if [ "${config}" == "yes" ]; then CONFIG="${arg}"
 		elif [ "${exclude}" == "yes" ]; then EXCLUDE="${arg}"
@@ -72,7 +75,7 @@ else
 fi
 
 DM=''
-for   mod in $DracutM ; do
+for   mod in $DracutM $UirdM; do
 	echo "$mod" | egrep -q  "$EXCLUDE" && continue
 	DM="$DM $mod"
 done
@@ -98,13 +101,31 @@ done
 
 export UIRD_BINS
 
-./dracut/dracut.sh -l -N --strip -f -m "$DM" \
+if [ "$BUILD" == "kmod" ] ; then
+	echo "MAKE UIRD (Kernel modules only)"
+	uirdfile=uird.kmod.cpio.xz
+	./dracut/dracut.sh -l -N -f -m "$DracutM" \
 	-d "$KM" \
 	--filesystems "$FS" \
-	-i initrd / \
-	-i configs / \
+	--kernel-only \
+	-c dracut.conf -v -M $uirdfile $(uname -r) >dracut_kmod.log 2>&1
+elif [ "$BUILD" == "addon" ] ; then
+	echo "MAKE UIRD addon "
+	uirdfile=uird.addon.cpio.xz
+	./dracut/dracut.sh -l -N -f -m "$ExtraM" \
+	--no-kernel \
+	-c dracut.conf -v -M $uirdfile $(uname -r) >dracut_addon.log 2>&1
+else
+	echo "MAKE UIRD $CFG"
+	uirdfile="uird.$CFG.cpio.xz"
+	./dracut/dracut.sh -l -N --strip -f -m "$DM" \
+	-d "$KM" \
+	--filesystems "$FS" \
+	-i initrd /  \
+	-i configs /  \
 	--kernel-cmdline "uird.basecfg=/uird_configs/$CFG" \
-	-c dracut.conf -v -M uird.$CFG.cpio.xz $(uname -r) >dracut_magos.log 2>&1
+	-c dracut.conf -v -M $uirdfile $(uname -r)  >dracut_magos.log 2>&1
+fi
 
-[ $NAME ] && mv uird.$CFG.cpio.xz "$NAME"
+[ $NAME ] && mv $uirdfile "$NAME"
 
