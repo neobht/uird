@@ -61,7 +61,7 @@ if echo "$item" | egrep -q "$EXCLUDE" ; then
 fi
 for   mod in ${!item} ; do
 	if echo "$mod" | egrep -q  "$EXCLUDE" ; then 
-		echo "excluded: $mod"
+		echo "excluded: ${PREFIX} - $mod"
 		continue
 	fi
 	if testMOd $PREFIX $mod ; then 
@@ -73,17 +73,14 @@ done
 done
 }
 
-for AAA in KM FS BIN DM; do 
-parser $AAA
-done 
-
 UIRD_BINS="$BIN"
 export UIRD_BINS
 
 if [ "$BUILD" == "kmod" ] ; then
+	parser KM ; parser FS ; parser DM
 	echo "MAKE UIRD (Kernel modules only)...."
 	uirdfile=uird.kmod.cpio.xz
-	./dracut/dracut.sh -l -N -f -m "$DracutM" \
+	./dracut/dracut.sh -l -N -f -m "$DM_base" \
 	-d "$KM" \
 	--filesystems "$FS" \
 	--kernel-only \
@@ -91,10 +88,11 @@ if [ "$BUILD" == "kmod" ] ; then
 elif [ "$BUILD" == "addon" ] ; then
 	echo "MAKE UIRD addon.... "
 	uirdfile=uird.addon.cpio.xz
-	./dracut/dracut.sh -l -N -f -m "$ExtraM" \
+	./dracut/dracut.sh -l -N -f -m "$ExtraDM" \
 	--no-kernel \
 	-c dracut.conf -v -M $uirdfile $(uname -r) >dracut_addon.log 2>&1
 else
+	parser KM ; parser FS ; parser DM ; parser BIN
 	echo "MAKE UIRD ${CFG}...."
 	uirdfile="uird.$CFG.cpio.xz"
 	./dracut/dracut.sh -l -N --strip -f -m "$DM" \
