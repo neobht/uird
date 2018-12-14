@@ -34,10 +34,29 @@ cd dracut/modules.d
 ln -s ../../modules.d/* ../modules.d/ 2>/dev/null
 cd ../..
 
-KM=""
-for item in Base_KM  NetWork_KM Dev_KM Crypto_KM CompAlg_KM ; do
+testMOd () {
+mod=$2 ; type=$1 
+if [ "$type" == "KM" -o "$type" == "FS" ] ;then
+		if echo $mod | egrep -q "^=" ; then 
+			return 0 
+		elif /sbin/modinfo $mod >/dev/null 2>&1 ; then
+			return 0
+		else
+			return 1
+		fi
+elif [ "$type" == "BIN" ] ;then
+		which $mod >/dev/null 2>&1 && 	return 0
+elif [ "$type" == "DM" ] ;then
+		ls -1 ./dracut/modules.d |egrep -q "..${mod}$" && return 0
+fi
+return 1
+}
+
+parser () {
+PREFIX=$1
+for item in $(cat $CONFIG |grep ^$1 |awk -F= '{print $1}') ; do
 if echo "$item" | egrep -q "$EXCLUDE" ; then 
-	echo "excluded: $item"
+	echo "excluded all: $item"
 	continue
 fi
 for   mod in ${!item} ; do
@@ -45,73 +64,24 @@ for   mod in ${!item} ; do
 		echo "excluded: $mod"
 		continue
 	fi
-	if echo $mod | egrep -q "^=" ; then 
-		KM="$KM $mod" 
-	elif /sbin/modinfo $mod >/dev/null ; then
-		KM="$KM $mod"
-	else
-		echo "kernel module: $mod not found"  >>./not_found.log
+	if testMOd $PREFIX $mod ; then 
+			eval $PREFIX="\" \${$PREFIX} $mod \"" 
+	else 
+			echo "not found: ${PREFIX} - $mod "
 	fi
 done
 done
+}
 
-FS=''
-if echo FileSystems_KM | egrep -qv "$EXCLUDE" ; then
-for   mod in $FileSystems_KM ; do
-	if echo "$mod" | egrep -q  "$EXCLUDE" ; then 
-		echo "excluded: $mod"
-		continue
-	fi
-	if echo $mod | egrep -q "^=" ;then 
-		FS="$FS $mod" 
-	elif /sbin/modinfo $mod >/dev/null; then
-		FS="$FS $mod"
-	else
-		echo "FS $mod kernel module: $mod not found"  >>./not_found.log
-	fi
-done
-else
-		echo "excluded: File systems kernel modules"
-fi
+for AAA in KM FS BIN DM; do 
+parser $AAA
+done 
 
-DM=''
-for   moditem in DracutM UirdM; do
-	if echo "$moditem" | egrep -q "$EXCLUDE" ; then
-		echo "excluded: $moditem"
-		continue
-	fi
-	for mod in ${!moditem} ; do
-		if echo "$mod" | egrep -q "$EXCLUDE" ; then
-			echo "excluded: $mod"
-			continue
-		fi 
-		DM="$DM $mod"
-	done
-done
-
-UIRD_BINS=""
-for item in  FS_bins NetWork_bins Base_bins ; do
-if echo "$item" | egrep -q "$EXCLUDE" ; then
-	echo "excluded: $item"
-	continue
-fi
-for  binary in ${!item} ; do
-	if echo "$binary" | egrep -q  "$EXCLUDE" ; then
-		echo "excluded: $binary"
-		continue
-	fi
-	if which $binary >/dev/null; then
-		UIRD_BINS="$UIRD_BINS $binary"
-	else
-		echo "File: $binary not found in current PATH"  >>./not_found.log
-	fi
-done
-done
-
+UIRD_BINS="$BIN"
 export UIRD_BINS
 
 if [ "$BUILD" == "kmod" ] ; then
-	echo "MAKE UIRD (Kernel modules only)"
+	echo "MAKE UIRD (Kernel modules only)...."
 	uirdfile=uird.kmod.cpio.xz
 	./dracut/dracut.sh -l -N -f -m "$DracutM" \
 	-d "$KM" \
@@ -119,13 +89,13 @@ if [ "$BUILD" == "kmod" ] ; then
 	--kernel-only \
 	-c dracut.conf -v -M $uirdfile $(uname -r) >dracut_kmod.log 2>&1
 elif [ "$BUILD" == "addon" ] ; then
-	echo "MAKE UIRD addon "
+	echo "MAKE UIRD addon.... "
 	uirdfile=uird.addon.cpio.xz
 	./dracut/dracut.sh -l -N -f -m "$ExtraM" \
 	--no-kernel \
 	-c dracut.conf -v -M $uirdfile $(uname -r) >dracut_addon.log 2>&1
 else
-	echo "MAKE UIRD $CFG"
+	echo "MAKE UIRD ${CFG}...."
 	uirdfile="uird.$CFG.cpio.xz"
 	./dracut/dracut.sh -l -N --strip -f -m "$DM" \
 	-d "$KM" \
