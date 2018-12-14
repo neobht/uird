@@ -73,8 +73,6 @@ done
 done
 }
 
-UIRD_BINS="$BIN"
-export UIRD_BINS
 
 if [ "$BUILD" == "kmod" ] ; then
 	parser KM ; parser FS ; parser DM
@@ -93,6 +91,8 @@ elif [ "$BUILD" == "addon" ] ; then
 	-c dracut.conf -v -M $uirdfile $(uname -r) >dracut_addon.log 2>&1
 else
 	parser KM ; parser FS ; parser DM ; parser BIN
+	UIRD_BINS="$BIN"
+	export UIRD_BINS
 	echo "MAKE UIRD ${CFG}...."
 	uirdfile="uird.$CFG.cpio.xz"
 	./dracut/dracut.sh -l -N --strip -f -m "$DM" \
@@ -105,4 +105,3 @@ else
 fi
 
 [ $NAME ] && mv $uirdfile "$NAME"
-
