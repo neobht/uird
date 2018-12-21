@@ -3,6 +3,7 @@ CFG=legacy
 CONFIG=./mkuird.cfg
 EXCLUDE=qqqqqqqqqqq
 BUILD=uird
+KERNEL=$(uname -r)
 
 for arg in $@
 do
@@ -10,16 +11,26 @@ do
     "-c" | "--config" ) config=yes;;
     "-e" | "--exclude" ) exclude=yes;;
     "-n" | "--name" ) name=yes;;
+    "-k" | "--kernel" ) kernel=yes;;
+    "-m" | "kmodpath" ) kmodpath=yes;;
     "--kmod" ) BUILD=kmod;;
     "--addon" ) BUILD=addon;;
     "-"*[A-Za-z]*) echo "$(basename "$0"): invalid option -- '$(echo ${arg} | tr -d '-')'" >&2; exit 1;;
     *) if [ "${config}" == "yes" ]; then CONFIG="${arg}"
 		elif [ "${exclude}" == "yes" ]; then EXCLUDE="${arg}"
 		elif [ "${name}" == "yes" ]; then NAME="${arg}"
+		elif [ "${kernel}" == "yes" ]; then KERNEL="${arg}"
+		elif [ "${kmodpath}" == "yes" ]; then KMODPATH="${arg}"
 		else CFG="${arg}" ; fi
-        config="no"; exclude="no"; name="no";;
+        config="no"; exclude="no"; name="no" ; kernel="no" ; kmodpath="no" ;;
   esac
 done
+
+[ -d  $(realpath ${KMODPATH}/$KERNEL 2>/dev/null) ] && ln -s $(realpath ${KMODPATH}/$KERNEL) /lib/modules/$KERNEL
+if ! [ -d /lib/modules/$KERNEL -o -L /lib/modules/$KERNEL  ] ; then
+	echo "Kernel modules for $KERNEL  not found"
+	exit 1
+fi
 
 . $CONFIG
 EXCLUDE=$(echo "$EXCLUDE" |sed "s/,/|/g")
@@ -39,7 +50,7 @@ mod=$2 ; type=$1
 if [ "$type" == "KM" -o "$type" == "FS" ] ;then
 		if echo $mod | egrep -q "^=" ; then 
 			return 0 
-		elif /sbin/modinfo $mod >/dev/null 2>&1 ; then
+		elif /sbin/modinfo $mod -k $KERNEL >/dev/null 2>&1 ; then
 			return 0
 		else
 			return 1
@@ -82,13 +93,13 @@ if [ "$BUILD" == "kmod" ] ; then
 	-d "$KM" \
 	--filesystems "$FS" \
 	--kernel-only \
-	-c dracut.conf -v -M $uirdfile $(uname -r) >dracut_kmod.log 2>&1
+	-c dracut.conf -v -M $uirdfile $KERNEL >dracut_kmod.log 2>&1
 elif [ "$BUILD" == "addon" ] ; then
 	echo "MAKE UIRD addon.... "
 	uirdfile=uird.addon.cpio.xz
 	./dracut/dracut.sh -l -N -f -m "$ExtraDM" \
 	--no-kernel \
-	-c dracut.conf -v -M $uirdfile $(uname -r) >dracut_addon.log 2>&1
+	-c dracut.conf -v -M $uirdfile $KERNEL >dracut_addon.log 2>&1
 else
 	parser KM ; parser FS ; parser DM ; parser BIN
 	UIRD_BINS="$BIN"
@@ -101,7 +112,7 @@ else
 	-i initrd /  \
 	-i configs /  \
 	--kernel-cmdline "uird.basecfg=/uird_configs/$CFG" \
-	-c dracut.conf -v -M $uirdfile $(uname -r)  >dracut_magos.log 2>&1
+	-c dracut.conf -v -M $uirdfile $KERNEL  >dracut_magos.log 2>&1
 fi
-
+[ $KMODPATH -a -L /lib/modules/$KERNEL  ]  && rm /lib/modules/$KERNEL
 [ $NAME ] && mv $uirdfile "$NAME"
