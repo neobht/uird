@@ -114,5 +114,5 @@ else
 	--kernel-cmdline "uird.basecfg=/uird_configs/$CFG" \
 	-c dracut.conf -v -M $uirdfile $KERNEL  >dracut_magos.log 2>&1
 fi
-[ $KMODPATH -a -L /lib/modules/$KERNEL  ]  && rm /lib/modules/$KERNEL
-[ $NAME ] && mv $uirdfile "$NAME"
+[ "$KMODPATH" -a -L "/lib/modules/$KERNEL"  ]  && rm /lib/modules/$KERNEL
+[ "$NAME" ] && mv "$uirdfile" "$NAME"
