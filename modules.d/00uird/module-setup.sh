@@ -61,7 +61,7 @@ install() {
 		ln_r /usr/bin/busybox "$_path"
 	done
 
-	echo "version: $(date +%Y%m%d), for kernel: $kernel" >$initdir/uird_version
+	echo "version: $(date +%Y%m%d), built for kernel: $kernel" >$initdir/uird_version
 	inst_hook cmdline 95 "$moddir/parse-root-uird.sh"
 	inst_hook mount 99 "$moddir/mount-uird.sh"
 	#    inst_hook shutdown 99 "$moddir/shutdown-uird.sh"

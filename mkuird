@@ -32,12 +32,18 @@ if ! [ -d /lib/modules/$KERNEL -o -L /lib/modules/$KERNEL  ] ; then
 	exit 1
 fi
 
+if ! depmod -A "$KERNEL" ; then
+	echo  "depmod error..."
+	exit 2
+fi
+
+
 . $CONFIG
 EXCLUDE=$(echo "$EXCLUDE" |sed "s/,/|/g")
 
 if ! [ -f ./configs/uird_configs/$CFG ]; then
 	echo "./configs/uird_configs/$CFG is not exist"
-	exit 1
+	exit 3
 fi
 
 echo $date >./not_found.log
@@ -83,7 +89,6 @@ for   mod in ${!item} ; do
 done
 done
 }
-
 
 if [ "$BUILD" == "kmod" ] ; then
 	parser KM ; parser FS ; parser DM
