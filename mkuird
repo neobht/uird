@@ -58,6 +58,9 @@ if [ "$type" == "KM" -o "$type" == "FS" ] ;then
 			return 0 
 		elif /sbin/modinfo $mod -k $KERNEL >/dev/null 2>&1 ; then
 			return 0
+		elif for  a in $BUILTIN;do echo $a  ; done |grep -q $mod ; then
+			echo "Built in kernel: $type - $mod"
+			return 0
 		else
 			return 1
 		fi
@@ -89,6 +92,8 @@ for   mod in ${!item} ; do
 done
 done
 }
+BUILTIN=$(cat /lib/modules/$KERNEL/modules.builtin |while read a ; do basename $a ; done |sed 's/.ko$//')
+
 
 if [ "$BUILD" == "kmod" ] ; then
 	parser KM ; parser FS ; parser DM
