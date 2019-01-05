@@ -222,7 +222,7 @@ debug_shell
 # init aufs filesystem
 init_aufs
 
-# init aufs union
+# init aufs/overlay union
 [ "$(cmdline_value $UIRD_BREAK)" = "init_aufs" ] && shell_cmd "break"
 init_union "$CHANGES" "$UNION"
 debug_shell

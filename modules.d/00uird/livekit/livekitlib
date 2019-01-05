@@ -470,14 +470,6 @@ init_aufs() {
 	# and produce useful error message if user has no aufs
 	modprobe aufs 2>/dev/null
 }
-# load the OverlayFS kernel module if needed
-#
-init_overlay() {
-	debug_log "init_overlay" "$*"
-	# TODO maybe check here if overlayfs support is working at all
-	# and produce useful error message if user has no overlayfs
-	modprobe overlay 2>/dev/null
-}
 
 # Setup empty union
 # $1 = changes directory (ramfs or persistent changes)
@@ -487,7 +479,7 @@ init_union() {
 	debug_log "init_union" "$*"
 
 	echo_green_star
-	echolog "$INIT_UNION"
+	echolog "$INIT_UNION/OverlayFS"
 	mkdir -p "$1"
 	mkdir -p "$2"
 
@@ -2045,7 +2037,7 @@ union_append_bundles() {
 			if [ "$UNION_FS" = "overlay" ]; then
 				# OverlayFS
 				LOWER_DIRS="$2/$BUN:$LOWER_DIRS"
-				debug_log "===============>$LOWER_DIRS"
+				# debug_log "===============>$LOWER_DIRS"
 				#mkdir -p "$MEMORY/ovl"
 				#mount -t overlay -o lowerdir="$MEMORY/ovl",upperdir="$1" overlay "$2"
 			else
@@ -2258,9 +2250,11 @@ fstab_update() {
 	FSTABTMP=$FSTAB$$
 	mkdir -p $1/etc $1/mnt
 	cat $FSTAB 2>/dev/null | grep -v "$FSTABLLFLAG" >$FSTABTMP
-
-	if [ $(cmdline_parameter unionfs) ]; then
-		fstab_add_line $FSTABTMP unionfs / unionfs defaults
+	
+	UNION_FS="$(cmdline_value $UIRD_UNION)"
+	[ -z $UNION_FS ] && UNION_FS="aufs"
+	if [ "$UNION_FS" = "overlay" ]; then
+		fstab_add_line $FSTABTMP overlay / overlay defaults
 	else
 		fstab_add_line $FSTABTMP aufs / aufs defaults
 	fi
