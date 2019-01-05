@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-10-04 22:36+0300\n"
+"POT-Creation-Date: 2019-01-05 11:43+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,126 +17,142 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: livekitlib:53
+#: стандартный ввод:79
 msgid "Initializing filesystem AUFS"
 msgstr ""
 
-#: livekitlib:54
+#: стандартный ввод:80
 msgid "Initializing:"
 msgstr ""
 
-#: livekitlib:56
+#: стандартный ввод:82
 msgid "Searching and initializing source:"
 msgstr ""
 
-#: livekitlib:57
+#: стандартный ввод:83
 msgid "using source:"
 msgstr ""
 
-#: livekitlib:58
+#: стандартный ввод:84
 msgid "source not found or not initialized"
 msgstr ""
 
-#: livekitlib:60
+#: стандартный ввод:85
+msgid "[S]hutdown, [R]eboot, [C]ontinue, [T]ry again ?"
+msgstr ""
+
+#: стандартный ввод:87
 msgid "Testing filesystem for POSIX compatibility"
 msgstr ""
 
-#: livekitlib:61
+#: стандартный ввод:88
 msgid "POSIX not available, using POSIXOVL"
 msgstr ""
 
-#: livekitlib:62
+#: стандартный ввод:89
 msgid "Writing is not available, using RAM"
 msgstr ""
 
-#: livekitlib:64
+#: стандартный ввод:91
 msgid "Searching and initializing configuration file:"
 msgstr ""
 
-#: livekitlib:65
+#: стандартный ввод:92
 msgid "using configuration file:"
 msgstr ""
 
-#: livekitlib:66
+#: стандартный ввод:93
 msgid "configuration file not found, using default parameters"
 msgstr ""
 
-#: livekitlib:67
+#: стандартный ввод:94
 msgid "Initializing source for persistent changes:"
 msgstr ""
 
-#: livekitlib:68
+#: стандартный ввод:95
 msgid "using for changes:"
 msgstr ""
 
-#: livekitlib:69
+#: стандартный ввод:96
 msgid "Initializing source for machine-depended changes:"
 msgstr ""
 
-#: livekitlib:70
+#: стандартный ввод:97
 msgid "Searching bundle for machine-depended changes:"
 msgstr ""
 
-#: livekitlib:71
+#: стандартный ввод:98
 msgid "unpacking"
 msgstr ""
 
-#: livekitlib:72
+#: стандартный ввод:99
 msgid "to RAM"
 msgstr ""
 
-#: livekitlib:73
+#: стандартный ввод:100
 msgid "Mounting sources for homes directories:"
 msgstr ""
 
-#: livekitlib:75
+#: стандартный ввод:102
+msgid "Trying to enable SWAP"
+msgstr ""
+
+#: стандартный ввод:103
+msgid "Resizing TMPFS to -"
+msgstr ""
+
+#: стандартный ввод:104
+msgid "Copying some UIRD files to system"
+msgstr ""
+
+#: стандартный ввод:106
 msgid "Initializing network services"
 msgstr ""
 
-#: livekitlib:76
+#: стандартный ввод:107
 msgid "Mounting bundles to root:"
 msgstr ""
 
-#: livekitlib:77
+#: стандартный ввод:108
 msgid "Copy data to RAM, this may take a long time, waiting..."
 msgstr ""
 
-#: livekitlib:78
+#: стандартный ввод:109
 msgid "Copy data to CACHE, this may take a long time, waiting..."
 msgstr ""
 
-#: livekitlib:80
+#: стандартный ввод:111
 msgid "waiting, it is searching and mounting source\\r"
 msgstr ""
 
-#: livekitlib:81
-msgid "Checking filesystem: "
+#: стандартный ввод:112
+msgid "Checking filesystem:"
 msgstr ""
 
-#: livekitlib:82
-msgid "Mounting encrypted filesystem: "
+#: стандартный ввод:113
+msgid "Mounting encrypted filesystem:"
 msgstr ""
 
-#: livekitlib:84
+#: стандартный ввод:115
 msgid "not enough memory."
 msgstr ""
 
-#: uird-init:12
+#: стандартный ввод:2362
 msgid "Starting UIRD init <http://magos-linux.ru>"
 msgstr ""
 
-#: uird-init:13
+#: стандартный ввод:2363
 msgid "UIRD init is finished, starting"
 msgstr ""
 
-#: uird-init:14
+#: стандартный ввод:2364
 msgid "Running rc.preinit scripts"
 msgstr ""
 
-#: uird-init:15
+#: стандартный ввод:2365
 msgid "Updating directory /mnt"
 msgstr ""
 
-#: uird-init:16
+#: стандартный ввод:2366
 msgid "UIRD help system"
 msgstr ""
