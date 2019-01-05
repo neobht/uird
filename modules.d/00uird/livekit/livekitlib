@@ -181,6 +181,7 @@ NOT_ENOUGH_MEMORY=$($GETTEXT "not enough memory.")
 [ -z $UIRD_ZRAM ] && UIRD_ZRAM=uird.zram
 [ -z $UIRD_FREEMEDIA ] && UIRD_FREEMEDIA=uird.freemedia
 [ -z $UIRD_PARALLEL ] && UIRD_PARALLEL=uird.parallel
+[ -z $UIRD_UNION ] && UIRD_UNION=uird.union
 
 # =================================================================
 # debug and output functions
@@ -489,12 +490,19 @@ init_union() {
 	echolog "$INIT_UNION"
 	mkdir -p "$1"
 	mkdir -p "$2"
-	# AUFS
-	mount -t aufs -o nowarn_perm,xino="$MEMORY/.xino_union",trunc_xino,br="$1" aufs "$2"
-	#    mount -t aufs -o br="$1" aufs "$2"
+
+	UNION_FS="$(cmdline_value $UIRD_UNION)"
+	[ -z $UNION_FS ] && UNION_FS="aufs"
 	
-	# OverlayFS
-	#mount -t overlay overlay -olowerdir=/lower,upperdir="$1" "$2"
+	if [ "$UNION_FS" = "overlay" ]; then
+		# OverlayFS
+		mkdir -p "$OVERLAY"
+		#mount -t overlay -o lowerdir="$OVERLAY",upperdir="$1" overlay "$2"
+	else
+		# AUFS
+		mount -t aufs -o nowarn_perm,xino="$MEMORY/.xino_union",trunc_xino,br="$1" aufs "$2"
+		#    mount -t aufs -o br="$1" aufs "$2"
+	fi
 }
 
 # Make sure the part of a script after 'mutex_lock' call is atomic,
@@ -1984,7 +1992,7 @@ list_modules() {
 union_append_bundles() {
 	debug_log "union_append_bundles" "$*"
 
-	local BUN MOD RW RO CP FS OPTIONS PRESERVE MID_BUN BUNDLE
+	local BUN MOD RW RO CP FS OPTIONS PRESERVE MID_BUN BUNDLE LOWER_DIRS
 
 	RW=$(cmdline_value $UIRD_RW | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')
 	RO=$(cmdline_value $UIRD_RO | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')
@@ -1993,6 +2001,9 @@ union_append_bundles() {
 
 	echo_green_star
 	echolog "$UNION_APPEND_BUNDLES" $brown$1$default
+	
+	UNION_FS="$(cmdline_value $UIRD_UNION)"
+	[ -z $UNION_FS ] && UNION_FS="aufs"
 
 	add_bundle() {
 		BUNDLE=$1
@@ -2029,7 +2040,15 @@ union_append_bundles() {
 			fi
 			echolog "  $blue-->" $purple"$BUNDLE"$default
 			mount -o $OPTIONS $FS "$BUNDLE" "$2/$BUN"
-			mount -o remount,add:1:"$2/$BUN"="$MOD" aufs "$3"
+			
+			if [ "$UNION_FS" = "overlay" ]; then
+				# OverlayFS
+				LOWER_DIRS="$2/$BUN:$LOWER_DIRS"
+				#mkdir -p "$MEMORY/ovl"
+				#mount -t overlay -o lowerdir="$MEMORY/ovl",upperdir="$1" overlay "$2"
+			else
+				mount -o remount,add:1:"$2/$BUN"="$MOD" aufs "$3"
+			fi
 		fi
 	}
 
@@ -2041,6 +2060,13 @@ union_append_bundles() {
 		fi
 	done
 	wait
+	
+	if [ "$UNION_FS" = "overlay" ]; then
+		# OverlayFS
+		#LOWER_DIRS="$2/$BUN:$LOWER_DIRS"
+		mkdir -p "$OVERLAY/workdir"
+		mount -t overlay -o lowerdir="$LOWER_DIRS",upperdir="$CHANGES",workdir="$OVERLAY/workdir" overlay "$3"
+	fi	
 }
 
 # Copy content of rootcopy directory to union
