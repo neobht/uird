@@ -52,6 +52,15 @@ BIN_LOSETUP=/sbin/losetup.real
 FSCHECKED=""
 MOUNTBINDS=""
 
+# To translate using gettext:
+#
+# sed "s/\$GETTEXT/GETTEXT/g" livekitlib uird-init | xgettext -o i18n/uird.pot  -L Shell --keyword --keyword=GETTEXT -
+# msgmerge -U i18n/ru.po i18n/uird.pot
+
+# msginit -i i18n/uird.pot -o i18n/ru.po -l ru.UTF-8
+# msgfmt -v i18n/ru.po -o i18n/ru.mo
+#
+
 export TEXTDOMAIN="uird"
 export TEXTDOMAINDIR="/usr/share/locale"
 
@@ -91,8 +100,8 @@ SETUP_MACHINES_TO_RAM=$($GETTEXT "to RAM")
 SETUP_HOMES=$($GETTEXT "Mounting sources for homes directories:")
 
 SETUP_SWAP=$($GETTEXT "Trying to enable SWAP")
-RESIZE_TMPFS=$($GETTEXT "Resizing TMPFS to - ")
-SETUP_SYSCP=$($GETTEXT "Coping some UIRD files to system")
+RESIZE_TMPFS=$($GETTEXT "Resizing TMPFS to -")
+SETUP_SYSCP=$($GETTEXT "Copying some UIRD files to system")
 
 INIT_IFCFG=$($GETTEXT "Initializing network services")
 UNION_APPEND_BUNDLES=$($GETTEXT "Mounting bundles to root:")
@@ -100,8 +109,8 @@ COPY_TO_RAM=$($GETTEXT "Copy data to RAM, this may take a long time, waiting..."
 COPY_TO_CACHE=$($GETTEXT "Copy data to CACHE, this may take a long time, waiting...")
 
 FIND_DATA=" - "$($GETTEXT "waiting, it is searching and mounting source\r")
-FSCK_DEVICE=$($GETTEXT "Checking filesystem: ")
-MOUNT_DEVICE_ENC=$($GETTEXT "Mounting encrypted filesystem: ")
+FSCK_DEVICE=$($GETTEXT "Checking filesystem:")
+MOUNT_DEVICE_ENC=$($GETTEXT "Mounting encrypted filesystem:")
 
 NOT_ENOUGH_MEMORY=$($GETTEXT "not enough memory.")
 
@@ -125,15 +134,16 @@ NOT_ENOUGH_MEMORY=$($GETTEXT "not enough memory.")
 # uird.homes[+]=             - источники, где хранятся домашние директории пользователей
 # uird.home=                 - источник, где хранится домашняя директория пользователей
 # uird.changes=              - источник, где хранить персистентные изменения
-# uird.mode= 		     - режим работы с сохрананиями
+# uird.mode= 		     	 - режим работы с сохрананиями
 # uird.mounts[+]=            - источники, которые необходимо примонтировать
 # uird.find_params[+]=       - параметры для утилиты find при поиске модулей
 # uird.help                  - печатает подсказку по параметрам UIRD
 # uird.break=                - остановка загрузки на определенном этапе и включение режима отладки
-# uird.syscp[+]=               - копирование файлов из UIRD в систему
-# quickshell, qs 	     - консоль на начальном этапе работы uird-init
-# qse 			     - консоль в конце работы uird-init
-# debug 		     - подробный вывод и приостановка uird-init на нескольких этапах работы
+# uird.syscp[+]=             - копирование файлов из UIRD в систему
+# uird.parallel				 - параллельное монтирование модулей
+# quickshell, qs 	     	 - консоль на начальном этапе работы uird-init
+# qse 			     		 - консоль в конце работы uird-init
+# debug 		     		 - подробный вывод и приостановка uird-init на нескольких этапах работы
 
 [ -f "/uird_configs/uird_aliases" ] && . /uird_configs/uird_aliases
 
@@ -168,6 +178,7 @@ NOT_ENOUGH_MEMORY=$($GETTEXT "not enough memory.")
 [ -z $UIRD_FORCE ] && UIRD_FORCE=uird.force
 [ -z $UIRD_ZRAM ] && UIRD_ZRAM=uird.zram
 [ -z $UIRD_FREEMEDIA ] && UIRD_FREEMEDIA=uird.freemedia
+[ -z $UIRD_PARALLEL ] && UIRD_PARALLEL=uird.parallel
 
 # =================================================================
 # debug and output functions
@@ -456,6 +467,14 @@ init_aufs() {
 	# and produce useful error message if user has no aufs
 	modprobe aufs 2>/dev/null
 }
+# load the OverlayFS kernel module if needed
+#
+init_overlay() {
+	debug_log "init_overlay" "$*"
+	# TODO maybe check here if overlayfs support is working at all
+	# and produce useful error message if user has no overlayfs
+	modprobe overlay 2>/dev/null
+}
 
 # Setup empty union
 # $1 = changes directory (ramfs or persistent changes)
@@ -468,8 +487,12 @@ init_union() {
 	echolog "$INIT_UNION"
 	mkdir -p "$1"
 	mkdir -p "$2"
+	# AUFS
 	mount -t aufs -o nowarn_perm,xino="$MEMORY/.xino_union",trunc_xino,br="$1" aufs "$2"
 	#    mount -t aufs -o br="$1" aufs "$2"
+	
+	# OverlayFS
+	#mount -t overlay overlay -olowerdir=/lower,upperdir="$1" "$2"
 }
 
 # Make sure the part of a script after 'mutex_lock' call is atomic,
@@ -2009,7 +2032,7 @@ union_append_bundles() {
 	}
 
 	for BUNDLE in $(list_modules "$1"); do
-		if [ $(cmdline_parameter parallel) ]; then
+		if [ $(cmdline_parameter $UIRD_PARALLEL) ]; then
 			(add_bundle $BUNDLE $@) &
 		else
 			add_bundle $BUNDLE $@

@@ -20,3 +20,4 @@ UIRD_FIND_PARAMS=uird.find_params
 UIRD_HELP=uird.help
 UIRD_MODE=uird.mode
 UIRD_SCAN=uird.scan
+UIRD_PARALLEL=uird.parallel
