@@ -496,7 +496,7 @@ init_union() {
 	
 	if [ "$UNION_FS" = "overlay" ]; then
 		# OverlayFS
-		mkdir -p "$OVERLAY"
+		mkdir -p "$OVERLAY/lowerdir"
 		#mount -t overlay -o lowerdir="$OVERLAY",upperdir="$1" overlay "$2"
 	else
 		# AUFS
@@ -1992,7 +1992,8 @@ list_modules() {
 union_append_bundles() {
 	debug_log "union_append_bundles" "$*"
 
-	local BUN MOD RW RO CP FS OPTIONS PRESERVE MID_BUN BUNDLE LOWER_DIRS
+	local BUN MOD RW RO CP FS OPTIONS PRESERVE MID_BUN BUNDLE
+	LOWER_DIRS="$OVERLAY/lowerdir"
 
 	RW=$(cmdline_value $UIRD_RW | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')
 	RO=$(cmdline_value $UIRD_RO | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')
@@ -2044,6 +2045,7 @@ union_append_bundles() {
 			if [ "$UNION_FS" = "overlay" ]; then
 				# OverlayFS
 				LOWER_DIRS="$2/$BUN:$LOWER_DIRS"
+				debug_log "===============>$LOWER_DIRS"
 				#mkdir -p "$MEMORY/ovl"
 				#mount -t overlay -o lowerdir="$MEMORY/ovl",upperdir="$1" overlay "$2"
 			else
