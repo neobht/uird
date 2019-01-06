@@ -274,6 +274,7 @@ mkdir -p $UNION/proc $UNION/sys $UNION/dev $UNION/$MEMORY
 #mkdir -p $UNION/initramfs
 
 [ $(cmdline_parameter $UIRD_FREEMEDIA) ] && . /uird.freemedia && freemedia
+[ $(cmdline_parameter $UIRD_SHUTDOWN) ] && . /uird.shutdown && mkinitfs
 
 #need TODO
 mount --move $MEMORY $UNION/$MEMORY

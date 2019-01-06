@@ -1,0 +1,27 @@
+#!/bin/ash
+. /oldroot/etc/initvars 
+IMAGES=/oldroot${SYSMNT}/bundles 
+for dir in run proc sys dev ; do
+    mkdir /run/$dir
+    mount -o move /oldroot/$dir /run/$dir
+done
+egrep "$IMAGES" /proc/mounts | awk '{print $2}' | while read a ; do
+   mount -t aufs -o remount,del:"$a" aufs /oldroot 
+   umount $a  && echo "Umount: $a -- OK"
+done
+mkdir /run${SYSMNT}
+mount -o move /oldroot${SYSMNT} /run${SYSMNT}
+
+#savetomodole
+
+umount /oldroot
+umount $(mount | awk  '{print $3}' | sort -r)
+
+echo "#####################################"
+echo "##### ### ## ##     ##     ##########"
+echo "##### ### ##### ### ## #### #########"
+echo "##### ### ## ## ## ### #### #########"
+echo "#####     ## ## ### ##     ##########"
+echo "#####################################"
+/bin/ash
+poweroff -f

@@ -182,6 +182,7 @@ NOT_ENOUGH_MEMORY=$($GETTEXT "not enough memory.")
 [ -z $UIRD_FREEMEDIA ] && UIRD_FREEMEDIA=uird.freemedia
 [ -z $UIRD_PARALLEL ] && UIRD_PARALLEL=uird.parallel
 [ -z $UIRD_UNION ] && UIRD_UNION=uird.union
+[ -z $UIRD_SHUTDOWN ] && UIRD_SHUTDOWN=uird.shutdown
 
 # =================================================================
 # debug and output functions
