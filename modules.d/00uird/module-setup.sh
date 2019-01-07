@@ -25,6 +25,7 @@ install() {
 	inst "$moddir/livekit/liblinuxlive" "/liblinuxlive"
 	inst "$moddir/livekit/uird.scan" "/uird.scan"
 	inst "$moddir/livekit/uird.freemedia" "/uird.freemedia"
+	inst "$moddir/livekit/uird.shutdown" "/uird.shutdown"
 	inst "$moddir/livekit/i18n/ru.mo" "/usr/share/locale/ru/LC_MESSAGES/uird.mo"
 
 	#binaries
