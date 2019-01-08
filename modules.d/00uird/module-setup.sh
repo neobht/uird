@@ -26,7 +26,7 @@ install() {
 	inst "$moddir/livekit/uird.scan" "/uird.scan"
 	inst "$moddir/livekit/uird.freemedia" "/uird.freemedia"
 	inst "$moddir/livekit/uird.shutdown" "/uird.shutdown"
-	inst "$moddir/livekit/shutdown" "/shutdown"
+#	inst "$moddir/livekit/shutdown" "/shutdown"
 	inst "$moddir/livekit/i18n/ru.mo" "/usr/share/locale/ru/LC_MESSAGES/uird.mo"
 
 	#binaries
@@ -66,5 +66,5 @@ install() {
 	echo "version: $(date +%Y%m%d), built for kernel: $kernel" >$initdir/uird_version
 	inst_hook cmdline 95 "$moddir/parse-root-uird.sh"
 	inst_hook mount 99 "$moddir/mount-uird.sh"
-	#    inst_hook shutdown 99 "$moddir/shutdown-uird.sh"
+	inst_hook shutdown 99 "$moddir/shutdown-uird.sh"
 }
