@@ -273,8 +273,8 @@ mv /var/log/* $UNION/var/log/ 2>/dev/null
 mkdir -p $UNION/proc $UNION/sys $UNION/dev $UNION/$MEMORY
 #mkdir -p $UNION/initramfs
 
-[ $(cmdline_parameter $UIRD_SHUTDOWN) ] && . /uird.shutdown && mkinitfs
-[ $(cmdline_parameter $UIRD_FREEMEDIA) ] && . /uird.freemedia && freemedia
+[ $(cmdline_parameter $UIRD_SHUTDOWN) ] && . /uird.shutdown && uird_shutdown
+[ $(cmdline_parameter $UIRD_FREEMEDIA) ] && . /uird.freemedia && uird_freemedia
 
 #need TODO
 mount --move $MEMORY $UNION/$MEMORY

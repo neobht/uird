@@ -1,5 +1,7 @@
 #!/bin/sh
-mk_remount_bin() {
+uird_shutdown() {
+	move_run
+	[ -f $CHANGES/.savetomodule ] || return
 	savesname=$(cat $CHANGES/.savetomodule)
 	savesdir=$(dirname $savesname)
 	savesdev=$(df $savesdir |grep /dev |awk '{print $1}')
@@ -18,14 +20,5 @@ mk_remount_bin() {
 	done
 	echo '' >> "${UNION}/run/initramfs/remount"
 	chmod +x "${UNION}/run/initramfs/remount"
-}
-mkinitfs() {
-	echolog "make /run/initramfs...."
-	mount -o move /run "${UNION}/run"
-	mount -o remount,exec "${UNION}/run"
-	mkdir -p "${UNION}/run/initramfs"
-	rm -rf /lib/modules/*
-	cp -a /{bin,dev,etc,li,root,sbin,usr,var,shut}* "${UNION}/run/initramfs/"
-	mk_remount_bin
 }
 	

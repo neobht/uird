@@ -2338,6 +2338,18 @@ freemedia_old() {
 	fi
 }
 
+move_run() {
+	ismountpoint "${UNION}/run" && return
+	echolog "make /run/initramfs...."
+	mount -o move /run "${UNION}/run"
+	mount -o remount,exec "${UNION}/run"
+	mkdir -p "${UNION}/run/initramfs"
+	rm -rf /lib/modules/*
+	cp -a /{bin,dev,etc,li,root,sbin,usr,var,shut}* "${UNION}/run/initramfs/"
+	mk_remount_bin
+}
+
+
 # Change root and execute init
 # $1 = where to change root
 #

@@ -1,15 +1,16 @@
 #!/bin/sh
-freemedia() {
+uird_freemedia() {
+	move_run
 	echolog "starting freemedia...."
 	LOSETUP=""
 	devs=$(egrep "${DATAMNT}/from|$MOUNTDIR" /proc/mounts | cut -d " " -f 1 | sort | uniq -d)
-	BINDIR="${MEMORY}/run/bin"
+	BINDIR="${UNION}/run/bin"
 	mkdir -p $BINDIR
-	RULESDIR="${MEMORY}/run/udev/rules.d"
+	RULESDIR="${UNION}/run/udev/rules.d"
 	mkdir -p $RULESDIR
 	for dev in $devs; do
 		UUID=$($BIN_BLKID -s UUID | grep $dev | cut -d " " -f 2 | cut -d "\"" -f2)
-		SERIAL_ID=$(udevadm info -a -n $dev | grep "ATTRS{serial}" | head -n1)
+		SERIAL_ID=$(udevadm info -a -n $dev | grep "ATTRS{device}" | head -n1)
 		MNTOPTS=$(grep $dev /proc/mounts | head -n1 | cut -d " " -f 4)
 		RBIND=$(grep $dev /proc/self/mountinfo | awk '{print $4 "," $5}' | grep -v ^/,)
 		for mountstr in $RBIND; do
