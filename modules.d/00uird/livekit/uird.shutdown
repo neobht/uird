@@ -1,4 +1,24 @@
 #!/bin/sh
+mk_remount_bin() {
+	savesname=$(cat $CHANGES/.savetomodule)
+	savesdir=$(dirname $savesname)
+	savesdev=$(df $savesdir |grep /dev |awk '{print $1}')
+	UUID=$($BIN_BLKID -s UUID | grep $savesdev | cut -d " " -f 2 | cut -d "\"" -f2)
+	MPOINT=$(grep $savesdev /proc/self/mountinfo | grep ".* / .*$dev" | cut -d " " -f 5)
+	MNTOPTS=$(grep $savesdev /proc/mounts | head -n1 | cut -d " " -f 4)
+	RBIND=$(grep $savesdev /proc/self/mountinfo | awk '{print $4 "," $5}' | grep -v ^/,)
+	echo "#!/bin/ash" > "${UNION}/run/initramfs/remount"
+	echo "mkdir -p $MPOINT" >> "${UNION}/run/initramfs/remount"
+	echo 'SAVESDEV=$(/sbin/blkid.real | grep -m1 $(echo ' " $UUID " ' ) | awk -F: '\'{print \$1}\'')' >> "${UNION}/run/initramfs/remount"
+	echo "mount  -o $MNTOPTS  "'$SAVESDEV'"  $MPOINT" >> "${UNION}/run/initramfs/remount"
+	for mountstr in $RBIND; do
+		mpoint=$(echo $mountstr | cut -d "," -f2)
+		echo "mkdir -p $mpoint" >> "${UNION}/run/initramfs/remount"
+		echo "mount --rbind $MPOINT$(echo $mountstr | cut -d "," -f1)  $mpoint " >> "${UNION}/run/initramfs/remount"
+	done
+	echo '' >> "${UNION}/run/initramfs/remount"
+	chmod +x "${UNION}/run/initramfs/remount"
+}
 mkinitfs() {
 	echolog "make /run/initramfs...."
 	mount -o move /run "${UNION}/run"
@@ -6,5 +26,6 @@ mkinitfs() {
 	mkdir -p "${UNION}/run/initramfs"
 	rm -rf /lib/modules/*
 	cp -a /{bin,dev,etc,li,root,sbin,usr,var,shut}* "${UNION}/run/initramfs/"
+	mk_remount_bin
 }
 	
