@@ -35,7 +35,7 @@ uird_freemedia() {
 			done
 			echo '' >>$BINDIR/$UUID
 			chmod +x $BINDIR/$UUID
-			echo "KERNEL==\"s??\",  $SERIAL_ID,  ACTION==\"add\", RUN+=\"/run/bin/$UUID \"" >${RULESDIR}/00-${UUID}.rules
+			echo "KERNEL==\"sd?\",  $SERIAL_ID,  ACTION==\"add\", RUN+=\"/run/bin/$UUID \"" >${RULESDIR}/00-${UUID}.rules
 		fi
 	done
 	for device in $(echo $devs | while read a; do echo $a | cut -c 1-8; done | sort | uniq); do
