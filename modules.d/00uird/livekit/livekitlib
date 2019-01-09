@@ -1508,7 +1508,7 @@ mount_data_source() {
 	else
 		rmdir $DST_DIR
 		echolog $red"$MOUNT_DATA_SOURCE_NOT_FOUND"$default
-		echo -ne $yellow"$MOUNT_DATA_SOURCE_ASK"$default
+		echo -ne $yellow"$MOUNT_DATA_SOURCE_ASK"$default"  "
 		read ASK
 		case "$ASK" in
 		"S" | "s")
