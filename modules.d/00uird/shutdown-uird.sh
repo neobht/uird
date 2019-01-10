@@ -3,7 +3,7 @@
 IMAGES=/oldroot${SYSMNT}/bundles 
 egrep "$IMAGES" /proc/mounts | awk '{print $2}' | while read a ; do
    mount -t aufs -o remount,del:"$a" aufs /oldroot 
-   umount $a  && echo "Umount: $a -- OK"
+   umount $a  && echo "[  OK  ] Umount: $a"
 done
 mkdir ${SYSMNT}
 mount -o move /oldroot${SYSMNT}  ${SYSMNT}
@@ -49,21 +49,21 @@ if [ -f ${SYSMNT}/changes/.savetomodule -a -x /remount ] ; then
 		# backuping old module
 		[ -f "$SAVETOMODULENAME" ] && mv -f "$SAVETOMODULENAME" "${SAVETOMODULENAME}.bak"
 		# making module
-		mksquashfs $SRC "$SAVETOMODULENAME" -ef /tmp/excludedfiles $SAVETOMODULEOPTIONS -noappend
+		mksquashfs $SRC "$SAVETOMODULENAME" -ef /tmp/excludedfiles $SAVETOMODULEOPTIONS -noappend > /dev/null
+		[ $? == 0 ] && echo "$SAVETOMODULENAME  -- complete."
 		chmod 444 "$SAVETOMODULENAME"
 	fi
 fi
 for mntp in $(mount | egrep -v "tmpfs|proc|sysfs" | awk  '{print $3}' | sort -r) ; do
 umount $mntp || mount -o remount,ro $mntp
 done 
-
 echo "#####################################"
 echo "##### ### ## ##     ##     ##########"
 echo "##### ### ## ## ### ## #### #########"
 echo "##### ### ## ## ## ### #### #########"
 echo "#####     ## ## ### ##     ##########"
 echo "#####################################"
-sleep 1
-exit 0 
+grep /dev/sd /proc/mounts && exit 1
+exit 0
 
  

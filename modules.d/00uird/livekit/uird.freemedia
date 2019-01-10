@@ -24,6 +24,7 @@ uird_freemedia() {
 			eject $dev 2>/dev/null #may be cdrom
 			log "generate remount scripts to $dev"
 			echo "#!/bin/bash" >$BINDIR/$UUID
+			echo "systemctl status systemd-logind.service || exit " >>$BINDIR/$UUID
 			echo "sleep 3" >>$BINDIR/$UUID
 			echo "mkdir -p $MPOINT" >>$BINDIR/$UUID
 			echo "mount  -o $MNTOPTS  --uuid $UUID  $MPOINT" >>$BINDIR/$UUID
