@@ -1065,13 +1065,13 @@ find_filepath() {
 # if function can't find label or uuid - echo $1
 uuid_label_to_dev() {
 	local DEV DEVPATH
-	DEV=$($BIN_BLKID | grep -m1 $(echo $1 | sed 's:@.*$::') | awk -F: '{print $1}')
+	DEV=$($BIN_BLKID | grep -m1 $(echo $1 | sed 's:@.*$::') 2>/dev/null | awk -F: '{print $1}')
 	if [ -z $DEV ]; then
 		DEVPATH="$1"
 	else
 		DEVPATH=$(echo $1 | sed "s:^.*@:${DEV}:")
 	fi
-	echo $DEVPATH
+	echo $DEVPATH | tail -n1
 }
 
 # Find file in computer by mounting disks or other storage devices
