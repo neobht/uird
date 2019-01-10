@@ -20,6 +20,5 @@ uird_shutdown() {
 	done
 	echo '' >> "${UNION}/run/initramfs/remount"
 	chmod +x "${UNION}/run/initramfs/remount"
-sleep 3
 }
 	

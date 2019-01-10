@@ -1521,7 +1521,7 @@ mount_data_source() {
 			;;
 		"T" | "t")
 			#Try again
-			echo -ne "Changing SOURCE  [ Hit enter for - ${green}${1}${default} ]:  "
+			echo -ne "Changing SOURCE  [ Hit enter for - ${green}${1}${default} ]: "
 			read SRC
 			[ "$SRC" == "" ] && SRC="$1"
 			mount_data_source "$SRC" "$2" "$3" $4 $5

@@ -45,7 +45,7 @@ uird_freemedia() {
 
 	if [ "$notfree" ]; then
 		echo -e "Media:" $red"$notfree"$default "is not free!!!"
-		echo -ne $yellow"(S)hutdown, (R)eboot, (C)ontinue, Shell (default)"$default
+		echo -ne $yellow"(S)hutdown, (R)eboot, (C)ontinue, Shell (default)"$default" "
 		read ASK
 		case "$ASK" in
 		"S" | "s")
