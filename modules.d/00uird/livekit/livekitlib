@@ -1089,7 +1089,7 @@ find_file() {
 	FIND=$(echo "$1" | sed -r "s:^/mnt/:/dev/:")
 
 	echo $FIND | grep -q "@" && FIND=$(uuid_label_to_dev $FIND)
-	echo $FIND | grep -q "@" && return
+	#echo $FIND | grep -q "@" && return
 
 	# if parameter is just a device, echo it and exit
 	#if [ -b "$FIND" -o -c "$FIND" -o "$FIND" = "" ]; then echo "$FIND"; return; fi
