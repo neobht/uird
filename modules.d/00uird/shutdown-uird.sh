@@ -1,9 +1,26 @@
 #!/bin/sh
-. /oldroot/etc/initvars 
+. /oldroot/etc/initvars
+
+red='\033[0;31m'
+green='\033[0;32m'
+yellow='\033[1;33m'
+brown='\033[0;33m'
+blue='\033[0;34m'
+light_blue='\033[1;34m'
+magenta='\033[1;35m'
+cyan='\033[0;36m'
+white='\033[0;37m'
+purple='\033[0;35m'
+default='\033[0m'
+ 
 IMAGES=/oldroot${SYSMNT}/bundles 
 egrep "$IMAGES" /proc/mounts | awk '{print $2}' | while read a ; do
    mount -t aufs -o remount,del:"$a" aufs /oldroot 
-   umount $a  && echo "[  OK  ] Umount: $a"
+   if umount $a  ; then
+		echo -e "[  ${green}OK${default}  ] Umount: $a"
+	else
+		echo -e "[${red}FALSE!${default}] Umount: $a"	
+	fi
 done
 mkdir ${SYSMNT}
 mount -o move /oldroot${SYSMNT}  ${SYSMNT}
@@ -15,7 +32,11 @@ if [ -f ${SYSMNT}/changes/.savetomodule -a -x /remount ] ; then
 	FILELIST=${SYSMNT}/changes/.savelist
 	touch /oldroot/.savelist
 	touch /oldroot/.savetomodule
-	umount /oldroot
+	if umount /oldroot  ; then
+		echo -e "[  ${green}OK${default}  ] Umount: ROOT AUFS"
+	else
+		echo -e "[${red}FALSE!${default}] Umount: ROOT AUFS"	
+	fi
 	umount $(mount | egrep -v "tmpfs|zram|proc|sysfs" | awk  '{print $3}' | sort -r)
 	/remount
 	SAVETOMODULENAME="$(cat ${SYSMNT}/changes/.savetomodule)"
@@ -50,12 +71,17 @@ if [ -f ${SYSMNT}/changes/.savetomodule -a -x /remount ] ; then
 		[ -f "$SAVETOMODULENAME" ] && mv -f "$SAVETOMODULENAME" "${SAVETOMODULENAME}.bak"
 		# making module
 		mksquashfs $SRC "$SAVETOMODULENAME" -ef /tmp/excludedfiles $SAVETOMODULEOPTIONS -noappend > /dev/null
-		[ $? == 0 ] && echo "$SAVETOMODULENAME  -- complete."
+		[ $? == 0 ] && echo -e "[  ${green}OK${default}  ]  $SAVETOMODULENAME  -- complete."
 		chmod 444 "$SAVETOMODULENAME"
 	fi
 fi
 for mntp in $(mount | egrep -v "tmpfs|proc|sysfs" | awk  '{print $3}' | sort -r) ; do
-umount $mntp || mount -o remount,ro $mntp
+if umount $mntp ; then 
+	echo -e "[  ${green}OK${default}  ] Umount: $mntp"
+else
+	"[${red}FALSE!${default}] Umount: $mntp"
+	mount -o remount,ro $mntp && echo -e "[  ${green}OK${default}  ] Remount RO: $mntp"
+fi
 done 
 echo "#####################################"
 echo "##### ### ## ##     ##     ##########"
