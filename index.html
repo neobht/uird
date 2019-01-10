@@ -35,11 +35,11 @@
         dataType: 'jsonp',
         success: function(response)
         {
-          var encodedContent = response.data.content;
-          var markdownText = Base64.decode(encodedContent);
-          var renderedHtml = marked(markdownText);
+          var encodedContent2 = response.data.content;
+          var markdownText2 = Base64.decode(encodedContent2);
+          var renderedHtml2 = marked(markdownText2);
 
-          $(contentContainerId2).html(renderedHtml);
+          $(contentContainerId2).html(renderedHtml2);
         }
       });
     </script>
