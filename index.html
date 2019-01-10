@@ -14,6 +14,8 @@
     <script type="text/javascript">
       var githubApiUrl = 'https://api.github.com/repos/neobht/uird/readme';
       var contentContainerId = "#readmeContent";
+      var githubApiUrl2 = 'https://api.github.com/repos/neobht/uird/contents/UIRD_BUILD.md';
+      var contentContainerId2 = "#readmeContent2";
 
       $.ajax({
         url: githubApiUrl,
@@ -25,6 +27,17 @@
           var renderedHtml = marked(markdownText);
 
           $(contentContainerId).html(renderedHtml);
+        }
+      $.ajax({
+        url: githubApiUrl2,
+        dataType: 'jsonp',
+        success: function(response)
+        {
+          var encodedContent = response.data.content;
+          var markdownText = Base64.decode(encodedContent);
+          var renderedHtml = marked(markdownText);
+
+          $(contentContainerId2).html(renderedHtml);
         }
       });
     </script>
@@ -50,6 +63,8 @@
     <div class="container">
       <section id="main_content">
                 <div id="readmeContent"></div>
+
+                <div id="readmeContent2"></div>
 <!--
         <h3>
 <a id="Базовое-описание-основных-принципов" class="anchor" href="#%D0%91%D0%B0%D0%B7%D0%BE%D0%B2%D0%BE%D0%B5-%D0%BE%D0%BF%D0%B8%D1%81%D0%B0%D0%BD%D0%B8%D0%B5-%D0%BE%D1%81%D0%BD%D0%BE%D0%B2%D0%BD%D1%8B%D1%85-%D0%BF%D1%80%D0%B8%D0%BD%D1%86%D0%B8%D0%BF%D0%BE%D0%B2" aria-hidden="true"><span class="octicon octicon-link"></span></a>Базовое описание основных принципов</h3>
