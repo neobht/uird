@@ -6,7 +6,7 @@ uird_shutdown() {
 	savesdir=$(dirname $savesname)
 	savesdev=$(df $savesdir |grep /dev |awk '{print $1}')
 	UUID=$($BIN_BLKID -s UUID | grep $savesdev | cut -d " " -f 2 | cut -d "\"" -f2)
-	MPOINT=$(grep $savesdev /proc/self/mountinfo | grep ".* / .*$dev" | cut -d " " -f 5)
+	MPOINT=$(grep $savesdev /proc/self/mountinfo | grep ".* / .*$dev" | cut -d " " -f 5 |head -n1)
 	MNTOPTS=$(grep $savesdev /proc/mounts | head -n1 | cut -d " " -f 4)
 	RBIND=$(grep $savesdev /proc/self/mountinfo | awk '{print $4 "," $5}' | grep -v ^/,)
 	echo "#!/bin/ash" > "${UNION}/run/initramfs/remount"
