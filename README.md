@@ -169,7 +169,7 @@ _Более подробную информацию ищите во встрое
       uird.changes=/MagOS-Data/changes
       uird.syscp=/livekitlib::/usr/lib/magos/scripts;/uird.scan::/usr/lib/magos/scripts;/liblinuxlive::/mnt/live/liblinuxlive
   
-Расширения в поддерживаемые в MagOS Linux с этим конфигом:
+Расширения поддерживаемые в MagOS Linux с этим конфигом:
 
     *.ROM - RO слой
     *.RWM - RW слой
