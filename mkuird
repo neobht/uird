@@ -60,8 +60,9 @@ if [ "$type" == "KM" -o "$type" == "FS" ] ;then
 			return 0
 		elif for  a in $BUILTIN;do echo $a  ; done |grep -q $mod ; then
 			echo "Built in kernel: $type - $mod"
-			return 0
+			return 1
 		else
+			echo "Not found: ${PREFIX} - $mod "
 			return 1
 		fi
 elif [ "$type" == "BIN" ] ;then
@@ -86,8 +87,6 @@ for   mod in ${!item} ; do
 	fi
 	if testMOd $PREFIX $mod ; then 
 			eval $PREFIX="\" \${$PREFIX} $mod \"" 
-	else 
-			echo "not found: ${PREFIX} - $mod "
 	fi
 done
 done
