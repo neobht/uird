@@ -1,7 +1,14 @@
 #!/bin/sh
 uird_shutdown() {
 	move_run
-	[ -f $CHANGES/.savetomodule ] || return
+	ARR_CFG=$(echo "$(cmdline_value $UIRD_SHUTDOWN)"  | tr -s ";," "\n" | uniq)
+	: > "${UNION}/run/initramfs/shutdown.cfg"
+	nosave="no"
+	for a in $ARR_CFG ; do 
+		eval $a=yes
+		echo "$a=yes" >> "${UNION}/run/initramfs/shutdown.cfg"
+	done
+	[ -f $CHANGES/.savetomodule -o "$nosave" == "yes" ] || return
 	savesname=$(cat $CHANGES/.savetomodule)
 	savesdir=$(dirname $savesname)
 	savesdev=$(df $savesdir |grep /dev |awk '{print $1}')

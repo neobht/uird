@@ -1,5 +1,8 @@
 #!/bin/sh
+nosave="no" ; shell="no" ; ask="no"
+
 . /oldroot/etc/initvars
+. /shutdown.cfg
 
 red='\033[0;31m'
 green='\033[0;32m'
@@ -26,7 +29,7 @@ mkdir ${SYSMNT}
 mount -o move /oldroot${SYSMNT}  ${SYSMNT}
 
 #savetomodule
-if [ -f ${SYSMNT}/changes/.savetomodule -a -x /remount ] ; then
+if [ -f ${SYSMNT}/changes/.savetomodule -a -x /remount -a "$nosave" == "no" ] ; then
 	SAVETOMODULEOPTIONS="-comp lz4"
 	SRC=${SYSMNT}/changes
 	FILELIST=${SYSMNT}/changes/.savelist
@@ -46,7 +49,6 @@ if [ -f ${SYSMNT}/changes/.savetomodule -a -x /remount ] ; then
 	grep -q /static/ ${SYSMNT}/changes/.savetomodule 2>/dev/null && [ ! -f "$(cat ${SYSMNT}/changes/.savetomodule)" ] && SAVETOMODULENAME=$(sed s=static=dynamic= ${SYSMNT}/changes/.savetomodule)
 	SAVETOMODULEDIR="$(dirname $SAVETOMODULENAME)"
 	if [ -w $SAVETOMODULEDIR  ] ;then
-		echo "Please wait. Saving changes to module $SAVETOMODULENAME"
 		mkdir -p /tmp
 		echo -e "/tmp/includedfiles\n/tmp/excludedfiles" > /tmp/excludedfiles
 		if [ -f "$FILELIST" ] ;then
@@ -67,12 +69,23 @@ if [ -f ${SYSMNT}/changes/.savetomodule -a -x /remount ] ; then
 			rm -f /tmp/savelist* /tmp/allfiles /tmp/includedfiles
 		fi
 		sed -i 's|^/||' /tmp/excludedfiles
-		# backuping old module
-		[ -f "$SAVETOMODULENAME" ] && mv -f "$SAVETOMODULENAME" "${SAVETOMODULENAME}.bak"
-		# making module
-		mksquashfs $SRC "$SAVETOMODULENAME" -ef /tmp/excludedfiles $SAVETOMODULEOPTIONS -noappend > /dev/null
-		[ $? == 0 ] && echo -e "[  ${green}OK${default}  ]  $SAVETOMODULENAME  -- complete."
-		chmod 444 "$SAVETOMODULENAME"
+		[ "$shell" == "yes" ] && /bin/ash
+		if [ "$ask" == "yes" ] ; then
+			echo -e "${brown}The system is ready to save changes to the $SAVETOMODULENAME ${default} "
+			echo -ne $yellow"(C)ontinue(default), (A)bort: $default"
+			read ASK
+			case "$ASK" in
+				"A" | "a") nosave="yes" ;;
+				*) echo "Saving changes..." ;;
+			esac
+		fi
+		if [ "$nosave" == "no"  ] ; then 
+			[ -f "$SAVETOMODULENAME" ] && mv -f "$SAVETOMODULENAME" "${SAVETOMODULENAME}.bak"
+			echo "Please wait. Saving changes to module $SAVETOMODULENAME....."
+			mksquashfs $SRC "$SAVETOMODULENAME" -ef /tmp/excludedfiles $SAVETOMODULEOPTIONS -noappend > /dev/null
+			[ $? == 0 ] && echo -e "[  ${green}OK${default}  ]  $SAVETOMODULENAME  -- complete."
+			chmod 444 "$SAVETOMODULENAME"
+		fi
 	fi
 fi
 for mntp in $(mount | egrep -v "tmpfs|proc|sysfs" | awk  '{print $3}' | sort -r) ; do
