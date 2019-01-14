@@ -261,11 +261,16 @@ debug_shell
 syscp "$(cmdline_value $UIRD_SYSCP)" $UNION
 [ -f /etc/initvars ] && cat /etc/initvars | sort | uniq >$UNION/etc/initvars
 
-[ "$(cmdline_value $UIRD_BREAK)" = "rc.preinit" ] && shell_cmd "break"
 cd $UNION
+
+[ "$(cmdline_value $UIRD_BREAK)" = "rc.preinit" ] && shell_cmd "break"
 echo_green_star
 echolog $RC_PREINIT
-[ -x "etc/rc.d/rc.preinit" ] && /bin/bash etc/rc.d/rc.preinit
+if [ "$(cmdline_parameter $UIRD_PREINIT)$(cmdline_value $UIRD_PREINIT)" ] ; then
+	setup_preinit
+else
+	[ -x "etc/rc.d/rc.preinit" ] && /bin/bash etc/rc.d/rc.preinit
+fi
 debug_shell
 mv /var/log/* $UNION/var/log/ 2>/dev/null
 
@@ -281,10 +286,10 @@ mount --move $MEMORY $UNION/$MEMORY
 #mount --move / $UNION/initramfs
 
 # fix to init link
-if ! [ -x /sysroot/sbin/init ]; then
-	linkpath=$(readlink /sysroot/sbin/init)
-	rm /sysroot/sbin/init
-	ln -s ..${linkpath} /sysroot/sbin/init && echolog "fix /sbin/init link  to relative path"
+if ! [ -x $UNION/sbin/init ]; then
+	linkpath=$(readlink $UNION/sbin/init)
+	rm $UNION/sbin/init
+	ln -s ..${linkpath} $UNION/sbin/init && echolog "fix /sbin/init link  to relative path"
 fi
 
 header "$HEADER_END $LIVEKITNAME"

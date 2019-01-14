@@ -1,5 +1,6 @@
 #!/bin/sh
-uird_shutdown() {
+uird_shutdown() 
+	local  UUID MPOINT MNTOPTS RBIND savesdir savesname savesdev ARR_CFG
 	move_run
 	ARR_CFG=$(echo "$(cmdline_value $UIRD_SHUTDOWN)"  | tr -s ";," "\n" | uniq)
 	: > "${UNION}/run/initramfs/shutdown.cfg"

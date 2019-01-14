@@ -1,5 +1,6 @@
 #!/bin/sh
 uird_freemedia() {
+	local  UUID MPOINT MNTOPTS RBIND
 	move_run
 	echolog "starting freemedia...."
 	LOSETUP=""

@@ -183,6 +183,7 @@ NOT_ENOUGH_MEMORY=$($GETTEXT "not enough memory.")
 [ -z $UIRD_PARALLEL ] && UIRD_PARALLEL=uird.parallel
 [ -z $UIRD_UNION ] && UIRD_UNION=uird.union
 [ -z $UIRD_SHUTDOWN ] && UIRD_SHUTDOWN=uird.shutdown
+[ -z $UIRD_PREINIT ] && UIRD_PREINIT=uird.preinit
 
 # =================================================================
 # debug and output functions
@@ -1656,19 +1657,15 @@ posix_test() {
 }
 
 # Setup config
-#
 setup_config() {
+	local INIFILE
 	debug_log "setup config" "$*"
 	INIFILE=$(cmdline_value $UIRD_CONFIG)
+	[ -z FIND_PARAMS ] && FIND_PARAMS=$(echo $(cmdline_value $UIRD_FIND_PARAMS) | tr ";,_" " ")
 	[ -z $INIFILE ] && return
 	echo_green_star
 	echolog "$SETUP_CONFIG" $brown"$INIFILE"$default
-
-	[ -z "$INIFILE" ] && INIFILE=$LIVEKITNAME.ini
-	[ -f "$LAYER_BASE/0/$INIFILE" ] && PATHINI="$LAYER_BASE/0/$INIFILE"
-	[ -f "$LAYER_BASE/1/$INIFILE" ] && PATHINI="$LAYER_BASE/1/$INIFILE"
-	[ -f "$LAYER_BASE/2/$INIFILE" ] && PATHINI="$LAYER_BASE/2/$INIFILE"
-	#    [ -f "$DATAMNT/0/$INIFILE" ] && PATHINI="$DATAMNT/0/$INIFILE"
+	PATHINI=$(find "$LAYER_BASE" $FIND_PARAMS -name "$INIFILE" -type f 2>/dev/null  |sort | tail -n1)
 	[ -z "$PATHINI" ] && echolog $red"$SETUP_CONFIG_NOTFOUND"$default || echolog "$SETUP_CONFIG_USING" $yellow"$PATHINI"$default
 	[ -z "$PATHINI" ] && PATHINI=/dev/null
 	echo "PATHINI=$PATHINI" >>/etc/initvars
@@ -2385,4 +2382,46 @@ change_root() {
 	mount -n -o remount,ro aufs .
 	pivot_root . mnt/live
 	exec $CHROOT . $INIT <dev/console >dev/console 2>&1
+}
+
+setup_preinit ()  {
+local  FNAME FMODE runscript
+INIGZFILE=$MEMORY/$LIVEKITNAME.ini.gz
+# OS.ini processing
+if [ -f $MEMORY/$LIVEKITNAME.ini.gz ] ;  then
+FNAME="/dev/null" ; FMOD=""
+zcat  $INIGZFILE |  while read a ;do
+   echo "$a" | egrep -q '^[[:space:]]*#|^[[:space:]]*$' && continue
+   if echo "$a" | grep -q "^\[.*\][[:space:]]*" ;then
+      FNAME=$(echo "$a" | tr '[]' '|' | awk -F'|' '{print $2}' | sed s-^/--)
+      FMOD=$(echo "$a" | tr '[]' '|' | awk -F'|' '{print $3}' | tr -d ' ')
+      if [ ! -z "$FMOD" ] ;then
+         mkdir -p "$(dirname "$FNAME")"
+         [ -e "$FNAME" ] || touch "$FNAME"
+         chmod "$FMOD" "$FNAME"
+      fi
+   elif echo "$a" | grep -q "^-" ;then
+      nv="`echo "$a" |sed 's/^-//'`"
+      sed -i /^"$nv"$/d "$FNAME"
+   elif echo "$a" | grep -q "^|" ;then
+      echo "$a" | sed 's/^|//' >> "$FNAME"
+   elif echo "$a" | grep -q "^+" ;then
+      nv="`echo "$a" |sed 's/^+//'`"
+      grep -q "$nv" "$FNAME" || echo "$nv" >> "$FNAME"
+   else
+      nv=`echo $a | awk -F= '{print $1}'`
+      [ "$nv" = "" ] && continue
+      if ! grep -q "^[[:space:]]*$nv=" "$FNAME" 2>/dev/null ;then
+         grep -q "^$a$" "$FNAME" 2>/dev/null || echo "$a" >>"$FNAME"
+      else
+         sed -i 's|'"^[[:space:]]*$nv=.*$"'|'"$a"'|' "$FNAME"
+      fi
+   fi
+done
+fi
+#run preinit script
+if [ $(cmdline_value $UIRD_PREINIT) ] ; then
+	runscript="$(cmdline_value $UIRD_PREINIT |sed 's#^/##')"
+	[ -x $runscript ] && /bin/bash $runscript
+fi
 }
