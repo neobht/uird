@@ -351,9 +351,7 @@ cmdline_parameter() {
 	debug_log "cmdline_parameter" "$*"
 	log "searching for bootparam: $1"
 	ADDFILE=$MEMORY/cmdline
-	#BASECFG=$MEMORY/basecfg.ini
-	#   [ -f /livekitlib ] || ADDFILE=/mnt/live$ADDFILE
-	#echo -n " " | cat - /proc/cmdline $ADDFILE $BASECFG 2>/dev/null | egrep -m1 -o "(^|[[:space:]])$1([[:space:]]|\$)" | tr -d " "
+	echo -n " " | cat - $ADDFILE 2>/dev/null | egrep -q -m1 -o "(^|[[:space:]])$1=" && return
 	echo -n " " | cat - $ADDFILE 2>/dev/null | egrep -m1 -o "(^|[[:space:]])$1([[:space:]]|\$)" | head -n1 | tr -d " "
 }
 
@@ -365,14 +363,10 @@ cmdline_value() {
 	log "searching for bootparam value: $1"
 	local ADDFILE BASECFG VALUE ADD_VALUE
 	ADDFILE=$MEMORY/cmdline
-	#BASECFG=$MEMORY/basecfg.ini
-	#   [ -f /livekitlib ] || ADDFILE=/mnt/$ADDFILE
-	##VALUE=$(echo -n " " | eval echo $(cat - /proc/cmdline $ADDFILE $BASECFG 2>/dev/null | tr -s ";" "," ) | egrep -m1 -o "(^|[[:space:]])$1=[^[:space:]]+" | cut -d "=" -f 2- | head -n1)
-	#ADD_VALUE=$(echo -n " " | eval echo $(cat - /proc/cmdline $ADDFILE $BASECFG 2>/dev/null | tr -s ";" ",") | egrep -m1 -o "(^|[[:space:]])$1\+=[^[:space:]]+" | cut -d "=" -f 2- | head -n1)
 	VALUE=$(echo -n " " | cat - $ADDFILE 2>/dev/null | egrep -m1 -o "(^|[[:space:]])$1=[^[:space:]]+" | cut -d "=" -f 2- | head -n1)
-	# ADD_VALUE=$(echo -n " " | cat - $ADDFILE 2>/dev/null  | egrep -m1 -o "(^|[[:space:]])$1\+=[^[:space:]]+" | cut -d "=" -f 2- | head -n1)
 	ADD_VALUE=$(echo -n " " | cat - $ADDFILE 2>/dev/null | egrep -o "(^|[[:space:]])$1\+=[^[:space:]]+" | cut -d "=" -f 2- | tr [[:cntrl:]] , | sed s/,,*/,/g | sed s/^,// | sed s/,$//)
 	[ -z $ADD_VALUE ] || ADD_VALUE=",$ADD_VALUE"
+	echo "${VALUE}${ADD_VALUE}" |grep -q [[:alnum:]] || return
 	if ! [ -z "${VALUE}${ADD_VALUE}" ]; then
 		echo "$(echo $1 | sed 's/\./_/')"="${VALUE}${ADD_VALUE}" >>/etc/initvars
 		echo "${VALUE}${ADD_VALUE}"

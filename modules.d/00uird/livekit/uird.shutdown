@@ -1,14 +1,16 @@
 #!/bin/sh
-uird_shutdown() 
+uird_shutdown() {
 	local  UUID MPOINT MNTOPTS RBIND savesdir savesname savesdev ARR_CFG
 	move_run
-	ARR_CFG=$(echo "$(cmdline_value $UIRD_SHUTDOWN)"  | tr -s ";," "\n" | uniq)
-	: > "${UNION}/run/initramfs/shutdown.cfg"
 	nosave="no"
+	: > "${UNION}/run/initramfs/shutdown.cfg"
+	if [ "$(cmdline_value $UIRD_SHUTDOWN)" ] ; then
+	ARR_CFG=$(echo "$(cmdline_value $UIRD_SHUTDOWN)"  | tr -s ";," "\n" | uniq)
 	for a in $ARR_CFG ; do 
 		eval $a=yes
 		echo "$a=yes" >> "${UNION}/run/initramfs/shutdown.cfg"
 	done
+	fi
 	[ -f $CHANGES/.savetomodule -o "$nosave" == "yes" ] || return
 	savesname=$(cat $CHANGES/.savetomodule)
 	savesdir=$(dirname $savesname)
