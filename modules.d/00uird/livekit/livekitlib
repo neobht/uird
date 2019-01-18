@@ -2389,6 +2389,8 @@ zcat  $INIGZFILE |  while read a ;do
    if echo "$a" | grep -q "^\[.*\][[:space:]]*" ;then
       FNAME=$(echo "$a" | tr '[]' '|' | awk -F'|' '{print $2}' | sed s-^/--)
       FMOD=$(echo "$a" | tr '[]' '|' | awk -F'|' '{print $3}' | tr -d ' ')
+      FEXEC=$(echo "$a" | tr '[]' '|' | awk -F'|' '{print $4}')
+      [ ! -z "$FEXEC" ]  && echo "$FEXEC  $FNAME" >> /tmp/exec
       if [ ! -z "$FMOD" ] ;then
          mkdir -p "$(dirname "$FNAME")"
          [ -e "$FNAME" ] || touch "$FNAME"
@@ -2413,9 +2415,12 @@ zcat  $INIGZFILE |  while read a ;do
    fi
 done
 fi
-#run preinit script
-if [ $(cmdline_value $UIRD_PREINIT) ] ; then
-	runscript="$(cmdline_value $UIRD_PREINIT |sed 's#^/##')"
-	[ -x $runscript ] && /bin/bash $runscript
+#run preinit scripts
+[ -f /tmp/exec ] && . /tmp/exec
+if [ "$(cmdline_value $UIRD_PREINIT)" ] ; then
+	for str in $(cmdline_value $UIRD_PREINIT | tr ";," " ") ;do 
+		runscript="$(echo $str |sed 's#^/##')"
+		[ -x "$runscript" ]  && /bin/bash $runscript
+	done
 fi
 }
