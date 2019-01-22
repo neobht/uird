@@ -2,7 +2,7 @@
 uird_freemedia() {
 	local  UUID MPOINT MNTOPTS RBIND
 	move_run
-	echolog "starting freemedia...."
+	echo_green_star && echolog "starting freemedia...."
 	LOSETUP=""
 	devs=$(egrep "${DATAMNT}/from|$MOUNTDIR" /proc/mounts | cut -d " " -f 1 | sort | uniq -d)
 	BINDIR="${UNION}/run/bin"

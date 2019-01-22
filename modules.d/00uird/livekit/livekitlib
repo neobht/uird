@@ -1655,11 +1655,11 @@ setup_config() {
 	local INIFILE
 	debug_log "setup config" "$*"
 	INIFILE=$(cmdline_value $UIRD_CONFIG)
-	[ -z FIND_PARAMS ] && FIND_PARAMS=$(echo $(cmdline_value $UIRD_FIND_PARAMS) | tr ";,_" " ")
+	#[ -z $FIND_PARAMS ] && FIND_PARAMS=$(echo $(cmdline_value $UIRD_FIND_PARAMS) | tr ";,_" " ")
 	[ -z $INIFILE ] && return
 	echo_green_star
 	echolog "$SETUP_CONFIG" $brown"$INIFILE"$default
-	PATHINI=$(find "$LAYER_BASE" $FIND_PARAMS -name "$INIFILE" -type f 2>/dev/null  |sort | tail -n1)
+	PATHINI=$(find "$LAYER_BASE" -maxdepth 2  -name "$INIFILE" -type f 2>/dev/null  |sort | tail -n1)
 	[ -z "$PATHINI" ] && echolog $red"$SETUP_CONFIG_NOTFOUND"$default || echolog "$SETUP_CONFIG_USING" $yellow"$PATHINI"$default
 	[ -z "$PATHINI" ] && PATHINI=/dev/null
 	echo "PATHINI=$PATHINI" >>/etc/initvars
@@ -2331,7 +2331,7 @@ freemedia_old() {
 
 move_run() {
 	ismountpoint "${UNION}/run" && return
-	echolog "make /run/initramfs...."
+	echo_green_star && echolog "make /run/initramfs...."
 	mount -o move /run "${UNION}/run"
 	mount -o remount,exec "${UNION}/run"
 	mkdir -p "${UNION}/run/initramfs"
