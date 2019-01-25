@@ -30,7 +30,7 @@ mount -o move /oldroot${SYSMNT}  ${SYSMNT}
 
 #savetomodule
 if [ -f ${SYSMNT}/changes/.savetomodule -a -x /remount -a "$nosave" == "no" ] ; then
-	SAVETOMODULEOPTIONS="-comp lz4"
+	SAVETOMODULEOPTIONS="-b 512K -comp lz4"
 	SRC=${SYSMNT}/changes
 	FILELIST=${SYSMNT}/changes/.savelist
 	touch /oldroot/.savelist
@@ -82,7 +82,7 @@ if [ -f ${SYSMNT}/changes/.savetomodule -a -x /remount -a "$nosave" == "no" ] ; 
 		if [ "$nosave" == "no"  ] ; then 
 			[ -f "$SAVETOMODULENAME" ] && mv -f "$SAVETOMODULENAME" "${SAVETOMODULENAME}.bak"
 			echo "Please wait. Saving changes to module $SAVETOMODULENAME....."
-			mksquashfs $SRC "$SAVETOMODULENAME" -ef /tmp/excludedfiles $SAVETOMODULEOPTIONS -noappend > /dev/null
+			mksquashfs $SRC "$SAVETOMODULENAME" -ef /tmp/excludedfiles $SAVETOMODULEOPTIONS -noappend > /dev/null || mksquashfs $SRC "$SAVETOMODULENAME" -ef /tmp/excludedfiles  -noappend > /dev/null
 			[ $? == 0 ] && echo -e "[  ${green}OK${default}  ]  $SAVETOMODULENAME  -- complete."
 			chmod 444 "$SAVETOMODULENAME"
 		fi
