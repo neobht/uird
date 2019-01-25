@@ -1660,7 +1660,13 @@ setup_config() {
 	[ -z $INIFILE ] && return
 	echo_green_star
 	echolog "$SETUP_CONFIG" $brown"$INIFILE"$default
-	PATHINI=$(find "$LAYER_BASE" -maxdepth 2  -name "$INIFILE" -type f 2>/dev/null  |sort | tail -n1)
+	#PATHINI=$(find "$LAYER_BASE" -maxdepth 2  -name "$INIFILE" -type f 2>/dev/null  |sort | tail -n1)
+	for n in $(ls -1 $LAYER_BASE |sort -r) ; do
+		if [ -f $LAYER_BASE/$n/$INIFILE ] ; then
+			PATHINI="$LAYER_BASE/$n/$INIFILE"
+			break
+		fi
+	done
 	[ -z "$PATHINI" ] && echolog $red"$SETUP_CONFIG_NOTFOUND"$default || echolog "$SETUP_CONFIG_USING" $yellow"$PATHINI"$default
 	[ -z "$PATHINI" ] && PATHINI=/dev/null
 	echo "PATHINI=$PATHINI" >>/etc/initvars
