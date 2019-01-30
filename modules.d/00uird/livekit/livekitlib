@@ -61,7 +61,7 @@ CMDLINE_LANG=$(echo -n " " | cat - /proc/cmdline 2>/dev/null | tr -s ";" "," | e
 [ "$LANG" ]  ||	LANG=en
 export LANG=$LANG
 
-[ -f /usr/lib/consolefonts/${LANG}/$(ls -1 /usr/lib/consolefonts/${LANG}/) ] && loadfont </usr/lib/consolefonts/${LANG}/$(ls -1 /usr/lib/consolefonts/${LANG}/)  >/dev/null
+[ -d "/usr/lib/consolefonts/${LANG}" ] && loadfont </usr/lib/consolefonts/${LANG}/$(ls -1 /usr/lib/consolefonts/${LANG}/)  >/dev/null
 [ -f /usr/lib/kbd/${LANG}.map ] && loadkeys /usr/lib/kbd/${LANG}.map >/dev/null
 
 [ -f $BIN_GETTEXT ] && GETTEXT=gettext || GETTEXT=echo
@@ -2008,12 +2008,12 @@ union_append_bundles() {
 			[ "$OPTIONS" = "bind" -a -f "$BUNDLE" ] && continue
 
 			if [ "$CP" -a "$(echo $BUNDLE | egrep -i "$CP")" ]; then
-				echolog "  $blue-->" $purple"$BUNDLE"$green" [режим CP] "$default
+				echolog "  $blue-->" $purple"$BUNDLE"$green" [CP mode] "$default
 				mount -o $OPTIONS $FS "$BUNDLE" "$2/$BUN"
 				cp -a "$2/$BUN"/. $3 2>/dev/null
 				return
 			elif [ "$RUN" -a "$(echo $BUNDLE | egrep -i "$RUN")" ]; then
-				echolog "  $blue-->" $purple"$BUNDLE"$yellow" [режим RUN] "$default
+				echolog "  $blue-->" $purple"$BUNDLE"$yellow" [RUN mode] "$default
 				[ -x $BUNDLE ] && $BUNDLE
 				return
 			elif [ "$RW" -a "$(echo $BUNDLE | egrep -i "$RW")" ]; then
