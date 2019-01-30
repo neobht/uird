@@ -15,9 +15,8 @@ HELP_SYSTEM=$($GETTEXT "UIRD help system")
 
 UNION=$NEWROOT
 
-[ -f /etc/initvars ] && . /etc/initvars
-
-[ "$SYSMNT" ] && MEMORY=$SYSMNT || MEMORY=/memory
+# [ -f /etc/initvars ] && . /etc/initvars
+#[ "$SYSMNT" ] && MEMORY=$SYSMNT || MEMORY=/memory
 
 BUNDLES=$MEMORY/bundles
 CHANGES=$MEMORY/changes
@@ -32,11 +31,6 @@ LAYER_MOUNTS=$MEMORY/layer-mounts
 MOUNTDIR=$LAYER_BASE
 
 echo "0" >/proc/sys/kernel/printk
-
-#loadfont < /usr/lib/consolefonts/ter-u16n.psf >/dev/null
-loadfont </usr/lib/consolefonts/UniCyr_8x14.psf >/dev/null
-
-loadkeys /usr/lib/kbd/ru.map >/dev/null
 
 header $HEADER_START
 header "[ $(cat /uird_version) $LANG]"

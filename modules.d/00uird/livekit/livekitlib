@@ -52,26 +52,17 @@ BIN_LOSETUP=/sbin/losetup.real
 FSCHECKED=""
 MOUNTBINDS=""
 
-# To translate using gettext:
-#
-# sed "s/\$GETTEXT/GETTEXT/g" livekitlib uird-init | xgettext -o i18n/uird.pot  -L Shell --keyword --keyword=GETTEXT -
-# msgmerge -U i18n/ru.po i18n/uird.pot
-
-# msginit -i i18n/uird.pot -o i18n/ru.po -l ru.UTF-8
-# msgfmt -v i18n/ru.po -o i18n/ru.mo
-#
-
+#lang and fonts
 export TEXTDOMAIN="uird"
 export TEXTDOMAINDIR="/usr/share/locale"
 
-LANG=$(echo -n " " | cat - /proc/cmdline 2>/dev/null | tr -s ";" "," | egrep -m1 -o "(^|[[:space:]])lang=[^[:space:]]+" | cut -d "=" -f 2- | head -n1)
-
-#echo "$LANG"
-if [ "$LANG" = "" -o "$LANG" = "ru_RU" ]; then
-	LANG=ru_RU.UTF-8
-fi
-
+CMDLINE_LANG=$(echo -n " " | cat - /proc/cmdline 2>/dev/null | tr -s ";" "," | egrep -m1 -o "(^|[[:space:]])lang=[^[:space:]]+" | cut -d "=" -f 2- | head -n1)
+[ "_$CMDLINE_LANG" != "_"  ] &&  LANG="$CMDLINE_LANG" 
+[ "$LANG" ]  ||	LANG=en
 export LANG=$LANG
+
+[ -f /usr/lib/consolefonts/${LANG}/$(ls -1 /usr/lib/consolefonts/${LANG}/) ] && loadfont </usr/lib/consolefonts/${LANG}/$(ls -1 /usr/lib/consolefonts/${LANG}/)  >/dev/null
+[ -f /usr/lib/kbd/${LANG}.map ] && loadkeys /usr/lib/kbd/${LANG}.map >/dev/null
 
 [ -f $BIN_GETTEXT ] && GETTEXT=gettext || GETTEXT=echo
 
