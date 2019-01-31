@@ -54,6 +54,8 @@ https://github.com/neobht/uird/
     - uird.force - продолжить загрузку игнорируя ненайденные источники
     - uird.freemedia - освободить (размонтировать) носители с источниками, работает только совместно с uird.copy2ram
     - uird.zram - использовать zram вместо tmpfs 
+    - uird.shurdown - создать папку /run/initramfs, которую использует системд для выключения системы
+    - uird.preinit - включить обработку ini файла заданного в uird.config
     - quickshell, qs - консоль на начальном этапе работы uird-init
     - qse - консоль в конце работы uird-init
     - debug - подробный вывод и приостановка uird-init на нескольких этапах работы
