@@ -4,6 +4,7 @@ CONFIG=./mkuird.cfg
 EXCLUDE=qqqqqqqqqqq
 BUILD=uird
 KERNEL=$(uname -r)
+ADDLOCALES=""
 date > ./notfound.log
 
 for arg in $@
@@ -13,7 +14,8 @@ do
     "-e" | "--exclude" ) exclude=yes;;
     "-n" | "--name" ) name=yes;;
     "-k" | "--kernel" ) kernel=yes;;
-    "-m" | "kmodpath" ) kmodpath=yes;;
+    "-m" | "--kmodpath" ) kmodpath=yes;;
+    "-l" | "--i18n" ) ADDLOCALES="-i i18n /";;
     "--kmod" ) BUILD=kmod;;
     "--addon" ) BUILD=addon;;
     "-"*[A-Za-z]*) echo "$(basename "$0"): invalid option -- '$(echo ${arg} | tr -d '-')'" >&2; exit 1;;
@@ -123,6 +125,7 @@ else
 	--filesystems "$FS" \
 	-i initrd /  \
 	-i configs /  \
+	$ADDLOCALES \
 	--kernel-cmdline "uird.basecfg=/uird_configs/$CFG" \
 	-c dracut.conf -v -M $uirdfile $KERNEL  >dracut_magos.log 2>&1
 fi

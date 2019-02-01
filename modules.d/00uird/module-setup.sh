@@ -27,7 +27,7 @@ install() {
 	inst "$moddir/livekit/uird.freemedia" "/uird.freemedia"
 	inst "$moddir/livekit/uird.shutdown" "/uird.shutdown"
 #	inst "$moddir/livekit/shutdown" "/shutdown"
-	inst "$moddir/livekit/i18n/ru.mo" "/usr/share/locale/ru/LC_MESSAGES/uird.mo"
+#	inst "$moddir/livekit/i18n/ru.mo" "/usr/share/locale/ru/LC_MESSAGES/uird.mo"
 
 	#binaries
 	#    inst "$moddir/bash-$(uname -i)" "/bin/bash"

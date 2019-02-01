@@ -1,0 +1,10 @@
+# Надо переписать инструкцию под измененные пути, и под другие языки.
+
+# To translate using gettext:
+#
+# sed "s/\$GETTEXT/GETTEXT/g" livekitlib uird-init | xgettext -o i18n/uird.pot  -L Shell --keyword --keyword=GETTEXT -
+# msgmerge -U i18n/ru.po i18n/uird.pot
+
+# msginit -i i18n/uird.pot -o i18n/ru.po -l ru.UTF-8
+# msgfmt -v i18n/ru.po -o i18n/ru.mo
+#
