@@ -65,6 +65,8 @@
     * uird.run[+]=               - запуск внешних исполняемых файлов
     * uird.zram                  - использовать zram вместо tmpfs
     * uird.union=overlay         - использовать overlayfs вместо aufs
+    * uird.shutdown              - создать каталог /run/initramfs, который использует systemd при выключении системы, передавая туда управление
+    * uird.preinit               - включить обработку ini файла заданного в uird.config
     * quickshell, qs             - консоль на начальном этапе работы uird-init
     * qse                        - консоль в конце работы uird-init
     * debug                      - подробный вывод и приостановка uird-init на нескольких этапах работы
