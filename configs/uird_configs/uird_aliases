@@ -23,3 +23,4 @@ UIRD_SCAN=uird.scan
 UIRD_PARALLEL=uird.parallel
 UIRD_UNION=uird.union
 UIRD_PREINIT=uird.preinit
+UIRD_SHUTDOWN=uird.shutdown
