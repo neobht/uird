@@ -54,7 +54,7 @@ https://github.com/neobht/uird/
     - uird.force - продолжить загрузку игнорируя ненайденные источники
     - uird.freemedia - освободить (размонтировать) носители с источниками, работает только совместно с uird.copy2ram
     - uird.zram - использовать zram вместо tmpfs 
-    - uird.shurdown - создать папку /run/initramfs, которую использует системд для выключения системы
+    - uird.shutdown - создать каталог /run/initramfs, который использует системд при выключении системы, передавая туда управление
     - uird.preinit - включить обработку ini файла заданного в uird.config
     - quickshell, qs - консоль на начальном этапе работы uird-init
     - qse - консоль в конце работы uird-init
@@ -71,7 +71,7 @@ UIRD имеет встроенную справочную систему. Для
 
 Уровни для источников 
 Вводится уровень точек монтирования layer-mounts и соответствующий параметр uird.mounts=:
-     uird.mounts=/MagOS/www::/var/www;http://magos.sibsau.ru/repository/netlive/2014.64/MagOS::/mnt/http
+     uird.mounts=/MagOS/www::/var/www;http://magos.sibsau.ru/repository/netlive/2016.64/MagOS::/mnt/http
      (параметр не обязательный)
      
 Вводится уровень кеша layer-cache и соответствующий параметр uird.cache=. Служит для синхронизации удаленных 
@@ -80,7 +80,7 @@ UIRD имеет встроенную справочную систему. Для
      (параметр не обязательный)
      
 Вводится базовый уровень layer-base и соответствующий параметр uird.from=:
-    uird.from=/MagOS;/MagOS-Data;MagOS.iso;http://magos.sibsau.ru/repository/netlive/2014.64/MagOS
+    uird.from=/MagOS;/MagOS-Data;MagOS.iso;http://magos.sibsau.ru/repository/netlive/2016.64/MagOS
 
 Вводится уровень домашних директорий пользователя layer-homes и соответствующие параметры: uird.homes=
     uird.homes=/MagOS-Data/home
