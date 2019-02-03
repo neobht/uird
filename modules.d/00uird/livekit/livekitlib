@@ -61,8 +61,8 @@ CMDLINE_LANG=$(echo -n " " | cat - /proc/cmdline 2>/dev/null | tr -s ";" "," | e
 [ "$LANG" ]  ||	LANG=en
 export LANG=$LANG
 
-[ -d "/usr/lib/consolefonts/${LANG}" ] && loadfont </usr/lib/consolefonts/${LANG}/$(ls -1 /usr/lib/consolefonts/${LANG}/)  >/dev/null
-[ -f /usr/lib/kbd/${LANG}.map ] && loadkeys /usr/lib/kbd/${LANG}.map >/dev/null
+[ -d "/usr/lib/consolefonts/${LANG}" -o -L "/usr/lib/consolefonts/${LANG}" ] && loadfont < /usr/lib/consolefonts/${LANG}/$(ls -1 /usr/lib/consolefonts/${LANG}/)  >/dev/null
+[ -d "/usr/lib/kbd/${LANG}" -o -L "/usr/lib/kbd/${LANG}" ] && loadkeys /usr/lib/kbd/${LANG}$(ls -1 /usr/lib/kbd/${LANG}/) >/dev/null
 
 [ -f $BIN_GETTEXT ] && GETTEXT=gettext || GETTEXT=echo
 
