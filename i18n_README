@@ -3,10 +3,10 @@ UIRD i18n HOWTO
 ru_RU.UTF-8 example:
 
 # Make dirs for RU locale
-i18n/usr/lib/consolefonts/ru_RU.UTF-8
-i18n/usr/lib/kbd/ru_RU.UTF-8
+i18n/usr/lib/consolefonts/ru_RU.UTF-8 # Do not create the folder if you do not plan to add a font
+i18n/usr/lib/kbd/ru_RU.UTF-8 # Do not create the folder if you do not plan to add a keymap
 i18n/usr/share/locale/ru/LC_MESSAGES
-i18n/usr/share/uird.help/ru_RU.UTF-8
+i18n/usr/share/uird.help/ru_RU.UTF-8 # # Do not create the folder if you do not plan to translate help files
 
 
 # make links
