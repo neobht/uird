@@ -16,7 +16,7 @@ i18n/usr/share/uird.help/ru --> ./ru_RU.UTF-8
 
 Put the font file to i18n/usr/lib/consolefonts/ru_RU.UTF-8
 Put the map file to i18n/usr/lib/kbd/ru_RU.UTF-8
-Put translated help files to ./i18n/usr/share/uird.help/ru_RU.UTF-8
+Put translated help files to i18n/usr/share/uird.help/ru_RU.UTF-8
 
 Now you need to translate UIRD messages
 To translate using gettext:
