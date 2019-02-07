@@ -1780,13 +1780,16 @@ setup_changes() {
 		if [ -f "$CHANGESMNT" ]; then
 			echolog $default"  $SETUP_MACHINES_UNPACKING $yellow$CHANGESMNT$default $SETUP_MACHINES_TO_RAM ($2)"
 			unsquashfs -f -d "$2" "$CHANGESMNT" # >/dev/null 2>&1
+		elif 	[ "$DATA_FROM_DIR" ] ; then
+			CHANGESMNT="$DATA_FROM_DIR/$(basename $SOURCE)"
 		fi
-		[ "$DATA_FROM_DIR" ] && CHANGESMNT="$DATA_FROM_DIR/$(basename $SOURCE)"
-
+		
 		if [ "$CHANGESMNT" ]; then
 			echo "$CHANGESMNT" >$2/.savetomodule
-			touch $(dirname $CHANGESMNT)/.lock
-			losetup $(losetup -f) $(dirname $CHANGESMNT)/.lock
+			if  ! [ "$(cmdline_parameter $UIRD_SHUTDOWN)$(cmdline_value $UIRD_SHUTDOWN)" ]  ; then
+				touch $(dirname $CHANGESMNT)/.lock
+				losetup $(losetup -f) $(dirname $CHANGESMNT)/.lock
+			fi
 		fi
 	fi
 	#   posix_test $1 $2
@@ -1837,8 +1840,10 @@ setup_machines() {
 	# save module filename
 	echo "$CHANGESMNT" >$3/.savetomodule
 	# lock media from systemd umount
-	touch $1/.lock
-	losetup $(losetup -f) $1/.lock
+	if  ! [ "$(cmdline_parameter $UIRD_SHUTDOWN)$(cmdline_value $UIRD_SHUTDOWN)" ]  ; then
+		touch $1/.lock
+		losetup $(losetup -f) $1/.lock
+	fi
 }
 
 # Setup homes
@@ -2075,6 +2080,7 @@ Copy_timer() {
 	MARKERS_LIST="$@"
 	REWRITE="\e[25D\e[1A\e[K"
 	sek=0
+	echo "wait..."
 	while true; do
 		BREAK=yes
 		echo -ne $green
