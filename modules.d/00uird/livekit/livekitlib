@@ -428,10 +428,10 @@ init_devs() {
 
 # Activate zram (auto-compression of RAM)
 init_zram_swap() {
-	if expr $1 / 2  >/dev/null 2>&1 ;then
-		ZramSize=$1 ; ZramAlg=$2
+	if expr ${1%%%} / 2  >/dev/null 2>&1 ;then
+		ZramSize=${1%%%} ; ZramAlg=$2
 	else
-		ZramSize=$2 ; ZramAlg=$1
+		ZramSize=${2%%%} ; ZramAlg=$1
 	fi
 	expr $ZramSize / 2 >/dev/null 2>&1 || ZramSize=70 
 	modprobe -q $ZramAlg 2>/dev/null

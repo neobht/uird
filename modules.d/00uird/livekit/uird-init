@@ -148,7 +148,7 @@ if [ $(cmdline_parameter $UIRD_ZRAM) ]; then
 	mkfs.ext4 -O ^has_journal /dev/zram1 >/dev/null 2>&1
 	mount -o discard,rw /dev/zram1 $MEMORY
 else
-	mount -t tmpfs -o "size=$RAMSIZE" tmpfs $MEMORY
+	mount -t tmpfs -o "size=${RAMSIZE%%%}%" tmpfs $MEMORY
 fi
 
 mkdir -p $MOUNTDIR $CHANGES
