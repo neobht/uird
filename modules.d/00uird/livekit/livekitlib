@@ -59,7 +59,9 @@ export TEXTDOMAINDIR="/usr/share/locale"
 CMDLINE_LANG=$(echo -n " " | cat - /proc/cmdline 2>/dev/null | tr -s ";" "," | egrep -m1 -o "(^|[[:space:]])lang=[^[:space:]]+" | cut -d "=" -f 2- | head -n1)
 [ "_$CMDLINE_LANG" != "_"  ] &&  LANG="$CMDLINE_LANG" 
 [ "$LANG" ]  ||	LANG=en
+[ -f /usr/share/locale/${LANG}.alias ] && LANG=$(cat /usr/share/locale/${LANG}.alias)
 export LANG=$LANG
+export LOCALE=$LANG
 
 [ -d "/usr/lib/consolefonts/${LANG}" -o -L "/usr/lib/consolefonts/${LANG}" ] && loadfont < /usr/lib/consolefonts/${LANG}/$(ls -1 /usr/lib/consolefonts/${LANG}/)  >/dev/null
 [ -d "/usr/lib/kbd/${LANG}" -o -L "/usr/lib/kbd/${LANG}" ] && loadkeys /usr/lib/kbd/${LANG}/$(ls -1 /usr/lib/kbd/${LANG}/) >/dev/null
@@ -1188,31 +1190,6 @@ device_bestfs() {
 	[ -z "$FS" ] || echo "-t $FS"
 }
 
-# Find out what locale is requested
-# If no locale is given, use the firts one available (if any)
-# $1 = locale (optional argument, if exists, no autodetection is made)
-locale_id() {
-	debug_log "locale_id" "$*"
-	local LOCALE i
-
-	# first try to find out locale from boot parameters
-	LOCALE="$1"
-	if [ "$LOCALE" = "" ]; then LOCALE=$(cmdline_value locale); fi
-	if [ "$LOCALE" = "" ]; then LOCALE=$(cmdline_value language); fi
-	if [ "$LOCALE" = "" ]; then LOCALE=$(cmdline_value lang); fi
-
-	# if not found, set it to locale from usr/lib/locale,
-	# but only if there is just ONE directory, nothing more
-	# (so we are sure which one to use)
-	if [ "$LOCALE" = "" ]; then
-		LOCALE=ru_RU.UTF-8
-	fi
-
-	if [ "$LOCALE" != "" ]; then
-		cat /usr/share/locale/locale.alias | sed -r "s/#.*//" | egrep "$LOCALE|$LOCALE""_" | tail -n 1 | tr -s "[[:space:]]" " " | cut -d " " -f 2- | tr -d " "
-	fi
-}
-
 # Find out what iocharset to use
 iocharset() {
 	debug_log "iocharset" "$*"
@@ -1295,7 +1272,7 @@ fs_options() {
 	fi
 
 	if [ "$1" = "ntfs-3g" ]; then
-		echo ",locale=$(locale_id),uid=$MUID,gid=$MUID"
+		echo ",locale=$LOCALE,uid=$MUID,gid=$MUID"
 	fi
 
 	if [ "$1" = "squashfs" ]; then
