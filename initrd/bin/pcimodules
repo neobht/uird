@@ -1,5 +1,5 @@
 #!/bin/bash
-# list all pci device modules
+# list of all pci device modules
 
 KERNEL=$(uname -r)
 

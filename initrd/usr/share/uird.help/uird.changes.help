@@ -1,21 +1,21 @@
-**************************************************************************************************
-!!! This text was translated from russian  by the Google service !!!
+*******************************************************************************************************
+!!! This text was translated from russian by the Google service !!!
 !!! If you can translate better, please visit www.magos-linux.ru !!!
 
-uird.changes= - source, for storage of persistent changes
-	      for uird.mode=changes uird.mode=machines uird.mode=clear 
+uird.changes= - source for storage of persistent changes
+                for uird.mode=changes uird.mode=machines uird.mode=clear
 
 Legitimate values:
 
 uird.changes=dir                    - directory (search this dir in all disks and devices and use first 
-                                    found)
+                                      found)
 uird.changes=/dev/[..]/path/dir     - directory on the selected device
 uird.changes=LABEL@/path/dir        - directory on the device with label LABEL
 uird.changes=UUID@/path/dir         - directory on the device with uuid UUID
 uird.changes=file.img               - disk image (ISO, block device image)
-uird.changes=ssh://server/path/...  - SSH source  (use by sshfs)
-uird.changes=ftp://server/path/...  - FTP source  (use by curlftpfs)
+uird.changes=ssh://server/path/...  - SSH source (sshfs is in use)
+uird.changes=ftp://server/path/...  - FTP source (curlftpfs is in use)
 uird.changes=nfs://server/path/...  - NFS source
 uird.changes=cifs://server/path/... - CIFS source
 
-**************************************************************************************************
+*******************************************************************************************************

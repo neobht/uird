@@ -13,5 +13,3 @@ uird.syscp=/livekitlib::/usr/bin;/uird.scan::/usr/bin;/usr/bin/busybox::/usr/bin
 # Комментарии могут быть только в конце файла
 # конфиг для запуска pra64 в чистом режиме
 # из папки pra64, в систему копируется busybox
-
-

@@ -1,5 +1,5 @@
-**************************************************************************************************
-!!! This text was translated from russian  by the Google service !!!
+********************************************************************************************************
+!!! This text was translated from russian by the Google service !!!
 !!! If you can translate better, please visit www.magos-linux.ru !!!
 
 uird.rw= -the list of filters for modules/directories which will be mounted in the RW mode (read/write)
@@ -12,4 +12,4 @@ Example:
 uird.rw=*.rwm;*.rwm.enc
 This string means: activate modules/directories with extensions rwm, rwm.enc, which was found in sources 
 uird.from and passed filters uird.load-->uird.noload-->uird.cp in the RW mode
-**************************************************************************************************
+********************************************************************************************************

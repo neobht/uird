@@ -2,10 +2,10 @@
 uird.syscp= - список файлов и каталогов, которые нужно скопировать из UIRD в систему
 
 
-uird.syscp=SOURCE::TARGET;SUORCE2::TARGET2   -копировать SOURCE (uird) в TARGET (система)
+uird.syscp=SOURCE::TARGET;SUORCE2::TARGET2 -копировать SOURCE (uird) в TARGET (система)
 
 
-Пример: 
-uird.syscp=/usr/bin/busybox::/usr/bin;/livekitlib::/usr/lib/  
+Пример:
+uird.syscp=/usr/bin/busybox::/usr/bin;/livekitlib::/usr/lib/
 
 **************************************************************************************************

@@ -54,7 +54,7 @@ ln -s /tmp/cmdline $MEMORY/cmdline
 BASECFG=$(cmdline_value $UIRD_BASECFG)
 [ -f "$BASECFG" -o "$BASECFG" == "help" ] || BASECFG=/uird_configs/$BASECFG
 if ! [ -f "$BASECFG" -o "$BASECFG" == "help" ]; then
-	echo "$BASECFG is not  correct uird.basecfg value"
+	echo "$BASECFG is not correct uird.basecfg value"
 	shell_cmd "help"
 fi
 echo -n " " >>/tmp/cmdline
@@ -283,7 +283,7 @@ mount --move $MEMORY $UNION/$MEMORY
 if ! [ -x $UNION/sbin/init ]; then
 	linkpath=$(readlink $UNION/sbin/init)
 	rm $UNION/sbin/init
-	ln -s ..${linkpath} $UNION/sbin/init && echolog "fix /sbin/init link  to relative path"
+	ln -s ..${linkpath} $UNION/sbin/init && echolog "fix /sbin/init link to relative path"
 fi
 
 header "$HEADER_END $LIVEKITNAME"

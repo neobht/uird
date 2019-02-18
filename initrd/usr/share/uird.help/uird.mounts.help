@@ -1,5 +1,5 @@
-**************************************************************************************************
-!!! This text was translated from russian  by the Google service !!!
+*******************************************************************************************************
+!!! This text was translated from russian by the Google service !!!
 !!! If you can translate better, please visit www.magos-linux.ru !!!
 
 uird.mounts= -   the list of sources which will be mounted in the specified points. Source and
@@ -10,14 +10,14 @@ uird.mounts+=  - add sources to list from basecfg.ini
 
 Legitimate values: (for sources):
 uird.mounts=/path/dir               - directory (search this dir in all disks and devices and use first 
-                                    found)
+                                      found)
 uird.mounts=/dev/[..]/path/dir      - directory on the selected device
 uird.mounts=LABEL@/path/dir         - directory on the device with label LABEL
 uird.mounts=UUID@/path/dir          - directory on the device with uuid UUID
 uird.mounts=file-dvd.iso, file.img  - disk image (ISO, block device image)
-uird.mounts=http://server/path/...  - HTTP source (use by  httpfs)
-uird.mounts=ssh://server/path/...   - SSH source  (use by sshfs)
-uird.mounts=ftp://server/path/...   - FTP source  (use by curlftpfs)
+uird.mounts=http://server/path/...  - HTTP source (httpfs is in use)
+uird.mounts=ssh://server/path/...   - SSH source (sshfs is in use)
+uird.mounts=ftp://server/path/...   - FTP source (curlftpfs is in use)
 uird.mounts=nfs://server/path/...   - NFS source
 uird.mounts=cifs://server/path/...  - CIFS source
 
@@ -28,4 +28,4 @@ Example:
 uird.mounts=/dev/sda3/MagOS-Data/opt::/opt;/MagOS-Data/myfolder::/opt/myfolder
 This string means: mount /MagOS-Data/opt directory from device /dev/sda3 to /opt dir,
 find /MagOS-Data/myfolder in all available physical disks and mount it to /opt/myfolder
-**************************************************************************************************
+*******************************************************************************************************

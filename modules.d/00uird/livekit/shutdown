@@ -12,7 +12,7 @@ done
 mkdir /run${SYSMNT}
 mount -o move /oldroot${SYSMNT} /run${SYSMNT}
 
-#savetomodole
+#savetomodule
 #############################################################################
 
 # save2module mode parser

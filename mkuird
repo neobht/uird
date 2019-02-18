@@ -31,7 +31,7 @@ done
 
 [ -d  $(realpath ${KMODPATH}/$KERNEL 2>/dev/null) ] && ln -s $(realpath ${KMODPATH}/$KERNEL) /lib/modules/$KERNEL
 if ! [ -d /lib/modules/$KERNEL -o -L /lib/modules/$KERNEL  ] ; then
-	echo "Kernel modules for $KERNEL  not found"
+	echo "Kernel modules for $KERNEL were not found"
 	exit 1
 fi
 
@@ -55,7 +55,7 @@ cd ../..
 
 notfound() {
 echo "Not found: $1 - $2"
-echo "Not found: $1 - $2" >> ./notfound.log	
+echo "Not found: $1 - $2" >> ./notfound.log
 }
 
 testMOd () {

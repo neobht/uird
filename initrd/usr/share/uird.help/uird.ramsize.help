@@ -1,8 +1,8 @@
 **************************************************************************************************
-!!! This text was translated from russian  by the Google service !!!
+!!! This text was translated from russian by the Google service !!!
 !!! If you can translate better, please visit www.magos-linux.ru !!!
 
-uird.ramsize= - parametr sets the tmpfs size   
+uird.ramsize= - parameter sets the tmpfs size   
 
 Examples:
 uird.ramsize=80%
