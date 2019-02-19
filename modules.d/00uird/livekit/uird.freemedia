@@ -5,6 +5,7 @@ uird_freemedia() {
 	MEDIA=$($GETTEXT "Media")
 	NOTFREE=$($GETTEXT "is not free")
 	RULES=$($GETTEXT "add the udev rules to remount sources")
+	CANT_UNMOUNT=$($GETTEXT "Can't unmount")
 	move_run
 	echo_green_star && echolog "$FREEMEDIA_BEGIN"
 	LOSETUP=""
@@ -21,7 +22,7 @@ uird_freemedia() {
 		for mountstr in $RBIND; do
 			unmnt=$(echo $mountstr | cut -d "," -f2)
 			$BIN_LOSETUP -d $($BIN_LOSETUP | grep $unmnt | cut -d " " -f 1) 2>/dev/null && LOSETUP=$unmnt
-			umount $unmnt 2>/dev/null || echolog "can't unmount $unmnt"
+			umount $unmnt 2>/dev/null || echolog "$CANT_UNMOUNT $unmnt"
 		done
 		MPOINT=$(grep $dev /proc/self/mountinfo | grep ".* / .*$dev" | cut -d " " -f 5)
 		umount $dev 2>/dev/null

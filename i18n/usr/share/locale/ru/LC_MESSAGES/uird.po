@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 1.1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-02-19 13:32+0700\n"
+"POT-Creation-Date: 2019-02-19 19:22+0700\n"
 "PO-Revision-Date: 2015-10-20 00:00+0700\n"
 "Last-Translator: Anton Goroshkin <neobht@gmail.com>\n"
 "Language-Team: Russian <http://magos-linux.ru>\n"
@@ -135,21 +135,21 @@ msgstr "Идёт проверка файловой системы:"
 msgid "Mounting encrypted filesystem:"
 msgstr "Подключение шифрованной файловой системы:"
 
-#: стандартный ввод:108
+#: стандартный ввод:107
 msgid "not enough memory."
 msgstr "недостаточно памяти."
 
-#: стандартный ввод:2417
+#: стандартный ввод:109
+msgid "initializing"
+msgstr "Инициализируем"
+
+#: стандартный ввод:2418
 msgid "Starting UIRD init <http://magos-linux.ru>"
 msgstr "Запускается UIRD init <http://magos-linux.ru>"
 
-#: стандартный ввод:2418
+#: стандартный ввод:2419
 msgid "UIRD init is finished, starting"
 msgstr "UIRD init завершил работу, запускается"
-
-#: стандартный ввод:2419
-msgid "Running rc.preinit scripts"
-msgstr "Выполняются rc.preinit скрипты"
 
 #: стандартный ввод:2420
 msgid "Updating directory /mnt"
@@ -163,9 +163,13 @@ msgstr "Справка по UIRD"
 msgid "No modules found for current kernel"
 msgstr "Модули для текущего ядра не найдены"
 
+#: стандартный ввод:2423
+msgid "RAM disk size"
+msgstr "Размер RAM диска"
+
 #: стандартный ввод:2701
 msgid "Starting freemedia...."
-msgstr "Отключаются источники (freemedia)"
+msgstr "Отключаются источники (freemedia)..."
 
 #: стандартный ввод:2702
 msgid "Media"
@@ -177,4 +181,8 @@ msgstr "не удалось отключить"
 
 #: стандартный ввод:2704
 msgid "add the udev rules to remount sources"
-msgstr "создаются правила UDEV для перемонтирования источников"
+msgstr "создаются правила UDEV для повторного монтирования источников"
+
+#: стандартный ввод:2705
+msgid "Can't unmount"
+msgstr "Невозможно размонтировать"

@@ -9,11 +9,10 @@
 #Messages
 HEADER_START=$($GETTEXT "Starting UIRD init <http://magos-linux.ru>")
 HEADER_END=$($GETTEXT "UIRD init is finished, starting")
-RC_PREINIT=$($GETTEXT "Running rc.preinit scripts")
 MNT_REFRESH=$($GETTEXT "Updating directory /mnt")
 HELP_SYSTEM=$($GETTEXT "UIRD help system")
 NO_MODULES=$($GETTEXT "No modules found for current kernel")
-
+RAMDISK_SIZE=$($GETTEXT "RAM disk size")
 UNION=$NEWROOT
 
 BUNDLES=$MEMORY/bundles
@@ -132,7 +131,7 @@ elif [ "_$RAMSIZE" == "_" ]; then
 fi
 
 echo_green_star
-echolog "RAM - $ram, SWAP - $swap, Ram disk size  - $RAMSIZE of RAM"
+echolog "RAM: $ram,  SWAP: $swap, ${RAMDISK_SIZE}:  $RAMSIZE RAM"
 
 # init zram
 if [ $(cmdline_parameter $UIRD_ZRAM) ]; then
@@ -257,7 +256,7 @@ cd $UNION
 
 [ "$(cmdline_value $UIRD_BREAK)" = "rc.preinit" ] && shell_cmd "break"
 echo_green_star
-echolog $RC_PREINIT
+echolog "$INITIALIZE preinit actions"
 if [ "$(cmdline_parameter $UIRD_PREINIT)$(cmdline_value $UIRD_PREINIT)" ] ; then
 	setup_preinit
 else

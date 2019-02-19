@@ -104,8 +104,9 @@ COPY_TO_CACHE=$($GETTEXT "Copy data to CACHE, this may take a long time, waiting
 FIND_DATA=" - "$($GETTEXT "waiting, it is searching and mounting source\r")
 FSCK_DEVICE=$($GETTEXT "Checking filesystem:")
 MOUNT_DEVICE_ENC=$($GETTEXT "Mounting encrypted filesystem:")
-
 NOT_ENOUGH_MEMORY=$($GETTEXT "not enough memory.")
+
+INITIALIZE=$($GETTEXT "initializing")
 
 ##### UIRD cmdline parameters aliases
 
@@ -442,13 +443,13 @@ init_zram_swap() {
 	echo $memzram >/sys/block/zram0/disksize
 	mkswap /dev/zram0 > /dev/null
 	swapon -p 100 /dev/zram0 
-	[ $? == 0 ] && echo_green_star && echolog "Init zram swap. Alg: $ZramAlg, size: ${ZramSize}%"
+	[ $? == 0 ] && echo_green_star && echolog "$INITIALIZE zram swap. Alg: $ZramAlg, size: ${ZramSize}%"
 }
 
 init_zswap() {
 	#echo lz4 >/sys/module/zswap/parameters/compressor
 	echo 1 >/sys/module/zswap/parameters/enabled
-	echo_green_star && echolog "init Zswap" 
+	echo_green_star && echolog "$INITIALIZE Zswap" 
 }
 
 # load the AUFS kernel module if needed
@@ -2312,7 +2313,7 @@ freemedia_old() {
 
 move_run() {
 	ismountpoint "${UNION}/run" && return
-	echo_green_star && echolog "make /run/initramfs...."
+	echo_green_star && echolog "$INITIALIZE /run/initramfs...."
 	mount -o move /run "${UNION}/run"
 	mount -o remount,exec "${UNION}/run"
 	mkdir -p "${UNION}/run/initramfs"
