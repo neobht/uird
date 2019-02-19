@@ -2318,6 +2318,7 @@ move_run() {
 	mount -o remount,exec "${UNION}/run"
 	mkdir -p "${UNION}/run/initramfs"
 	rm -rf /lib/modules/*
+	rm -rf /lib/firmware/*
 	cp -a /{bin,dev,etc,li,root,sbin,usr,var,shut}* "${UNION}/run/initramfs/"
 }
 
