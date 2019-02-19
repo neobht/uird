@@ -12,11 +12,9 @@ HEADER_END=$($GETTEXT "UIRD init is finished, starting")
 RC_PREINIT=$($GETTEXT "Running rc.preinit scripts")
 MNT_REFRESH=$($GETTEXT "Updating directory /mnt")
 HELP_SYSTEM=$($GETTEXT "UIRD help system")
+NO_MODULES=$($GETTEXT "No modules found for current kernel")
 
 UNION=$NEWROOT
-
-# [ -f /etc/initvars ] && . /etc/initvars
-#[ "$SYSMNT" ] && MEMORY=$SYSMNT || MEMORY=/memory
 
 BUNDLES=$MEMORY/bundles
 CHANGES=$MEMORY/changes
@@ -38,7 +36,7 @@ header "[ $(cat /uird_version) $LANG]"
 debug_start
 debug_shell
 
-[ -d /lib/modules/"$(uname -r)" ] || [ -d /lib64/modules/"$(uname -r)" ] || (echolog "!!! Ядро и модули ядра не совпадают !!!" && exit 1)
+[ -d /lib/modules/"$(uname -r)" ] || [ -d /lib64/modules/"$(uname -r)" ] || (echolog "$NO_MODULES" && exit 1)
 
 debug_shell
 

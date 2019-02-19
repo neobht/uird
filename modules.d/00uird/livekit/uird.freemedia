@@ -1,8 +1,12 @@
 #!/bin/sh
 uird_freemedia() {
 	local  UUID MPOINT MNTOPTS RBIND
+	FREEMEDIA_BEGIN=$($GETTEXT "Starting freemedia....")
+	MEDIA=$($GETTEXT "Media")
+	NOTFREE=$($GETTEXT "is not free")
+	RULES=$($GETTEXT "add the udev rules to remount sources")
 	move_run
-	echo_green_star && echolog "starting freemedia...."
+	echo_green_star && echolog "$FREEMEDIA_BEGIN"
 	LOSETUP=""
 	devs=$(egrep "${DATAMNT}/from|$MOUNTDIR" /proc/mounts | cut -d " " -f 1 | sort | uniq -d)
 	BINDIR="${UNION}/run/bin"
@@ -45,7 +49,7 @@ uird_freemedia() {
 	done
 
 	if [ "$notfree" ]; then
-		echo -e "Media:" $red"$notfree"$default "is not free!!!"
+		echo -e "${MEDIA}:" $red"$notfree"$default "${NOTFREE}:"
 		echo -ne $yellow"(S)hutdown, (R)eboot, (C)ontinue, Shell (default)"$default" "
 		read ASK
 		case "$ASK" in
@@ -67,5 +71,5 @@ uird_freemedia() {
 		esac
 	fi
 	echo -ne $blue"  * "$default
-	echo "adding  udev rules for remount sources"
+	echo "$RULES"
 }
