@@ -6,5 +6,3 @@ cd /
 for a in $(blkid |grep /dev/sd | awk -F: '{ print $1 }') ; do
    mount_device  $a /mnt/$(basename $a) rw
 done
-
-

@@ -4,7 +4,7 @@ filexzm=""
 destdir=$(pwd)
 for a in "$@" ; do
 [ -f "$a" ] && filexzm=$a
-done 
+done
 set -- `getopt "fd:"  "$@"`
 while [ ! -z "$1" ] ; do
   case "$1" in
@@ -21,6 +21,3 @@ mount_device  $filexzm /tmp/tmpmntdir
 cp  -a"$force" /tmp/tmpmntdir/* ${destdir}/
 umount  /tmp/tmpmntdir
 rm -rf /tmp/tmpmntdir
-
-
-

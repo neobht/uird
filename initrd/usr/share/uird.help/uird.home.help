@@ -1,5 +1,5 @@
 **************************************************************************************************
-!!! This text was translated from russian  by the Google service !!!
+!!! This text was translated from russian by the Google service !!!
 !!! If you can translate better, please visit www.magos-linux.ru !!!
 
 uird.home= -  source which will be mounted in /home mount point (users home directories are stored 
@@ -13,16 +13,16 @@ uird.home=/path/dir             - directory (search this dir in all disks and de
 uird.home=/dev/[..]/path/dir    - directory in the selected disk
 uird.home=LABEL@/path/dir       - directory on the device with label LABEL
 uird.home=UUID@/path/dir        - directory on the device with uuid UUID
-uird.home=/dev/[..]/file.img    - block device image (file in selected disk) 
-uird.home=ssh://server/path/... - SSH source (use by sshfs)
-uird.home=ftp://server/path/... - FTP source (use by curlftpfs)
+uird.home=/dev/[..]/file.img    - block device image (file in selected disk)
+uird.home=ssh://server/path/... - SSH source (sshfs is in use)
+uird.home=ftp://server/path/... - FTP source (curlftpfs is in use)
 uird.home=nfs://server/path/... - NFS source
 uird.home=cifs://server/path/...- CIFS source
 
 Example:
 uird.home=/dev/sda3/myhomes
-This string means: mount the directory myhomes located in disk/dev/sda3  to /home mount point
-thus user's home directories will located in the catalogue myhomes on a disk 
+This string means: mount the directory myhomes located in disk/dev/sda3 to /home mount point
+thus user's home directories will located in the directory myhomes on a disk 
 /dev/sda3
 
 **************************************************************************************************
