@@ -100,7 +100,7 @@ debug_shell
 sed -i "s:LIVEKITNAME.*:LIVEKITNAME=$LIVEKITNAME:" /etc/initvars
 
 #Waits partitions initialization. It need for  cardreaders with some empty slots
-while [ "$(cat /proc/partitions | tail -n1 | awk '{print $1}')0" -lt 10 ]; do
+while [ "$(cat /proc/partitions | tail -n1 | awk '{print $1}')0" -le 10 ]; do
 	sleep 0.3
 done
 
