@@ -69,7 +69,7 @@ export LOCALE=$LANG
 [ -f $BIN_GETTEXT ] && GETTEXT=gettext || GETTEXT=echo
 
 # Messages
-INIT_UNION=$($GETTEXT "Initializing filesystem AUFS")
+INIT_UNION=$($GETTEXT "Initializing filesystem")
 INIT_LAYER=$($GETTEXT "Initializing:")
 
 MOUNT_DATA_SOURCE=$($GETTEXT "Searching and initializing source:")
@@ -468,13 +468,13 @@ init_aufs() {
 init_union() {
 	debug_log "init_union" "$*"
 
-	echo_green_star
-	echolog "$INIT_UNION/OverlayFS"
-	mkdir -p "$1"
-	mkdir -p "$2"
-
 	UNION_FS="$(cmdline_value $UIRD_UNION)"
 	[ -z $UNION_FS ] && UNION_FS="aufs"
+	
+	echo_green_star
+	echolog "$INIT_UNION - $UNION_FS"
+	mkdir -p "$1"
+	mkdir -p "$2"
 	
 	if [ "$UNION_FS" = "overlay" ]; then
 		# OverlayFS

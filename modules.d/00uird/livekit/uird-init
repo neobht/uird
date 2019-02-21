@@ -13,8 +13,8 @@ MNT_REFRESH=$($GETTEXT "Updating directory /mnt")
 HELP_SYSTEM=$($GETTEXT "UIRD help system")
 NO_MODULES=$($GETTEXT "No modules found for current kernel")
 RAMDISK_SIZE=$($GETTEXT "RAM disk size")
-UNION=$NEWROOT
 
+UNION=$NEWROOT
 BUNDLES=$MEMORY/bundles
 CHANGES=$MEMORY/changes
 OVERLAY=$MEMORY/ovl
@@ -63,9 +63,10 @@ if cat $MEMORY/cmdline | grep -q help; then
 	header "$HELP_SYSTEM"
 	echo ""
 	param_list=$(
-		eval echo "$UIRD_BASECFG $UIRD_CONFIG $UIRD_SGNFILES $UIRD_RO $UIRD_RW $UIRD_CP $UIRD_COPY2RAM $UIRD_FORCE  $UIRD_SWAP        $UIRD_COPY2CACHE $UIRD_RAMSIZE $UIRD_IP  $UIRD_NETFSOPT  $UIRD_LOAD $UIRD_NOLOAD  $UIRD_MODE $UIRD_SYSCP $UIRD_SCAN $UIRD_ARIA2RAM \
+		eval echo "$UIRD_BASECFG $UIRD_CONFIG $UIRD_SGNFILES $UIRD_RO $UIRD_RW $UIRD_CP $UIRD_COPY2RAM $UIRD_FORCE  $UIRD_SWAP \
+		$UIRD_COPY2CACHE $UIRD_RAMSIZE $UIRD_IP  $UIRD_NETFSOPT  $UIRD_LOAD $UIRD_NOLOAD  $UIRD_MODE $UIRD_SYSCP $UIRD_SCAN $UIRD_ARIA2RAM \
         $UIRD_FROM  $UIRD_CACHE $UIRD_HOMES $UIRD_HOME $UIRD_CHANGES $UIRD_MACHINES $UIRD_FIND_PARAMS $UIRD_MOUNTS $UIRD_BREAK" \ 
-		$UIRD_FREEMEDIA $UIRD_RUN
+		$UIRD_FREEMEDIA $UIRD_RUN $UIRD_PREINIT $UIRD_SHUTDOWN
 	)
 	help_dir=/usr/share/uird.help
 	[ -d /usr/share/uird.help/${LANG} ] && help_dir=/usr/share/uird.help/${LANG}
@@ -83,7 +84,6 @@ if cat $MEMORY/cmdline | grep -q help; then
 				done | less
 			fi
 		fi
-
 	done
 	if [ "$(cmdline_parameter $UIRD_HELP)" ]; then
 		for file in $(ls -1 ${help_dir}/*.help); do

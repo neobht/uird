@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 1.1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-02-19 19:22+0700\n"
+"POT-Creation-Date: 2019-02-21 21:26+0700\n"
 "PO-Revision-Date: 2015-10-20 00:00+0700\n"
 "Last-Translator: Anton Goroshkin <neobht@gmail.com>\n"
 "Language-Team: Russian <http://magos-linux.ru>\n"
@@ -18,8 +18,8 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 
 #: стандартный ввод:72
-msgid "Initializing filesystem AUFS"
-msgstr "Инициализация файловой системы AUFS"
+msgid "Initializing filesystem"
+msgstr "Инициализация файловой системы"
 
 #: стандартный ввод:73
 msgid "Initializing:"
@@ -143,46 +143,46 @@ msgstr "недостаточно памяти."
 msgid "initializing"
 msgstr "Инициализируем"
 
-#: стандартный ввод:2418
+#: стандартный ввод:2419
 msgid "Starting UIRD init <http://magos-linux.ru>"
 msgstr "Запускается UIRD init <http://magos-linux.ru>"
 
-#: стандартный ввод:2419
+#: стандартный ввод:2420
 msgid "UIRD init is finished, starting"
 msgstr "UIRD init завершил работу, запускается"
 
-#: стандартный ввод:2420
+#: стандартный ввод:2421
 msgid "Updating directory /mnt"
 msgstr "Обновление директории /mnt"
 
-#: стандартный ввод:2421
+#: стандартный ввод:2422
 msgid "UIRD help system"
 msgstr "Справка по UIRD"
 
-#: стандартный ввод:2422
+#: стандартный ввод:2423
 msgid "No modules found for current kernel"
 msgstr "Модули для текущего ядра не найдены"
 
-#: стандартный ввод:2423
+#: стандартный ввод:2424
 msgid "RAM disk size"
 msgstr "Размер RAM диска"
 
-#: стандартный ввод:2701
+#: стандартный ввод:2702
 msgid "Starting freemedia...."
 msgstr "Отключаются источники (freemedia)..."
 
-#: стандартный ввод:2702
+#: стандартный ввод:2703
 msgid "Media"
 msgstr "Ресурс"
 
-#: стандартный ввод:2703
+#: стандартный ввод:2704
 msgid "is not free"
 msgstr "не удалось отключить"
 
-#: стандартный ввод:2704
+#: стандартный ввод:2705
 msgid "add the udev rules to remount sources"
 msgstr "создаются правила UDEV для повторного монтирования источников"
 
-#: стандартный ввод:2705
+#: стандартный ввод:2706
 msgid "Can't unmount"
 msgstr "Невозможно размонтировать"
