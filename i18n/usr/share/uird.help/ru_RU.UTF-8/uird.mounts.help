@@ -20,6 +20,7 @@ uird.mounts=ssh://server/path/...  - источник, доступный по S
 uird.mounts=ftp://server/path/...  - источник, доступный по FTP (используется curlftpfs)
 uird.mounts=nfs://server/path/...  - источник, доступный по NFS
 uird.mounts=cifs://server/path/... - источник, доступный по CIFS
+uird.mounts=/path/file.vdi;/dev/nbd0p1 - файл vdi VirtualBox (vmdk,qcow2, etc)         - 
 
 Допустимое значение (для точки монтирования):
 /path/to/dir                       - имя каталога с полным путем
