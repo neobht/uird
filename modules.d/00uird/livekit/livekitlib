@@ -137,6 +137,8 @@ INITIALIZE=$($GETTEXT "initializing")
 # uird.parallel				 - параллельное монтирование модулей
 # uird.run[+]=               - запуск внешних исполняемых файлов
 # uird.zram                  - использовать zram вместо tmpfs
+# uird.preinit               - обработка ини файла задданного в uird.config
+# uird.shutdown          - создание /run/initramfs
 # quickshell, qs 	     	 - консоль на начальном этапе работы uird-init
 # qse 			     		 - консоль в конце работы uird-init
 # debug 		     		 - подробный вывод и приостановка uird-init на нескольких этапах работы
@@ -267,11 +269,6 @@ start_quickshell() {
 		ln -s /root/bashrc /root/.bashrc
 		ln -s /root/bash_profile /root/.bash_profile
 		mkdir -p /mnt
-		#        getty -n -l /bin/autologin 9600 tty2 linux &
-		#        getty -n -l /bin/autologin 9600 tty3 linux &
-		#        getty -n -l /bin/autologin 9600 tty4 linux &
-		#        getty -n -l /bin/autologin 9600 tty5 linux &
-		#        getty -n -l /bin/autologin 9600 tty6 linux &
 		automount
 		clear
 		cat /usr/share/uird.help/${LANG}/uird.quickshell.help 2>/dev/null || cat /usr/share/uird.help/uird.quickshell.help
@@ -358,9 +355,9 @@ cmdline_value() {
 	local ADDFILE BASECFG VALUE ADD_VALUE
 	ADDFILE=$MEMORY/cmdline
 	VALUE=$(echo -n " " | cat - $ADDFILE 2>/dev/null | egrep -m1 -o "(^|[[:space:]])$1=[^[:space:]]+" | cut -d "=" -f 2- | head -n1)
-	ADD_VALUE=$(echo -n " " | cat - $ADDFILE 2>/dev/null | egrep -o "(^|[[:space:]])$1\+=[^[:space:]]+" | cut -d "=" -f 2- | tr [[:cntrl:]] , | sed s/,,*/,/g | sed s/^,// | sed s/,$//)
+	ADD_VALUE=$(echo -n " " | cat - $ADDFILE 2>/dev/null | egrep -o "(^|[[:space:]])$1\+=[^[:space:]]+" | cut -d "=" -f 2- | sort -u | tr [[:cntrl:]] , | sed s/,,*/,/g | sed s/^,// | sed s/,$//)
 	[ -z $ADD_VALUE ] || ADD_VALUE=",$ADD_VALUE"
-	echo "${VALUE}${ADD_VALUE}" |grep -q [[:alnum:]] || return
+	echo "${VALUE}${ADD_VALUE}" |grep -q [^\",\',\ ] || return
 	if ! [ -z "${VALUE}${ADD_VALUE}" ]; then
 		echo "$(echo $1 | sed 's/\./_/')"="${VALUE}${ADD_VALUE}" >>/etc/initvars
 		echo "${VALUE}${ADD_VALUE}"
