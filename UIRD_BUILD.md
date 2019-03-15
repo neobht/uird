@@ -1,5 +1,5 @@
 ## 1. Клонируем репозиторий
-    uird clone --recursive https://github.com/neobht/uird.git
+    git clone --recursive https://github.com/neobht/uird.git
 ## 2. Устанавливаем зависимости, необходимые для сборки dracut
 
 Проще всего установить src пакет dracut для вашего дистрибутива.
