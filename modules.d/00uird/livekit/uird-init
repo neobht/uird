@@ -117,7 +117,7 @@ debug_shell
 
 #init swap
 [ "$(cmdline_value $UIRD_BREAK)" = "init_swap" ] && shell_cmd "break"
-[ "$(cmdline_value $UIRD_SWAP)" ] && init_swap "$(cmdline_value $UIRD_SWAP)" $DATAMNT/swapfiles
+[ "$(cmdline_value $UIRD_SWAP)" ] && init_swap "$(cmdline_value $UIRD_SWAP)" 
 
 RAMSIZE=$(cmdline_value $UIRD_RAMSIZE)
 ram=$(free -m | grep -i "^mem.*: " | awk '{print $2}')
@@ -129,9 +129,8 @@ if [ "$RAMSIZE" == "auto" ]; then
 elif [ "_$RAMSIZE" == "_" ]; then
 	RAMSIZE=70%
 fi
-
 echo_green_star
-echolog "RAM: $ram,  SWAP: $swap, ${RAMDISK_SIZE}:  $RAMSIZE RAM"
+echolog "RAM: $ram,  DISK SWAP: $swap, ${RAMDISK_SIZE}:  $RAMSIZE RAM"
 
 # init zram
 if [ $(cmdline_parameter $UIRD_ZRAM) ]; then
@@ -176,6 +175,9 @@ debug_shell
 [ "$(cmdline_value $UIRD_HOMES)" ] && init_layer $DATAMNT/homes $LAYER_HOMES $UIRD_HOMES
 [ "$(cmdline_value $UIRD_HOME)" ] && init_layer $DATAMNT/homes $LAYER_HOMES $UIRD_HOME
 debug_shell
+
+#if some of uird.swap values are swap files 
+[ "$SWAPFILES" ] && init_swapfiles "$SWAPFILES" $DATAMNT/swapfiles
 
 #setting up config
 [ "$(cmdline_value $UIRD_BREAK)" = "config" ] && shell_cmd "break"

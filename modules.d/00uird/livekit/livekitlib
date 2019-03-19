@@ -1645,8 +1645,7 @@ setup_config() {
 # Init swap and resize tmpfs
 init_swap() {
 	local newsize total FSWAP ASWAP DSWAP SOURCE SWAP_FROM NEEDZRAM NEEDZSWAP
-	NEEDZSWAP=no
-	NEEDZRAM=no
+	NEEDZSWAP=no ;	NEEDZRAM=no
 	debug_log "setting up swap"
 	echo_green_star
 	echolog "$SETUP_SWAP"
@@ -1671,9 +1670,7 @@ init_swap() {
 			fi
 		done
 	fi
-
 	if [ "${FSWAP}_" != "_" ]; then
-		MNT_DIR=$2
 		for SOURCE in $(echo $FSWAP); do
 			if echo "$SOURCE"  |grep -q "^zram.*"  ; then
 				NEEDZRAM=yes
@@ -1683,38 +1680,49 @@ init_swap() {
 				NEEDZSWAP=yes
 				continue
 			fi
-
-			if [ "$(echo $SOURCE | grep "://")" != "" ]; then
-				init_ifcfg
-				echo $SOURCE | grep -iq ^"nfs://" && SWAP_FROM=$(mount_nfs $SOURCE $MNT_DIR)
-				echo $SOURCE | grep -iq ^"cifs://" && SWAP_FROM=$(mount_cifs $SOURCE $MNT_DIR)
-				echo $SOURCE | grep -iq ^"ssh://" && SWAP_FROM=$(mount_sshfs $SOURCE $MNT_DIR)
-				echo $SOURCE | grep -iq ^"ftp://" && SWAP_FROM=$(mount_curlftpfs $SOURCE $MNT_DIR)
-			else
-				SWAP_FROM=$(find_data $SOURCE $MNT_DIR "")
-			fi
-			if [ -f "$SWAP_FROM" ]; then
-				if swapon "$SWAP_FROM" >/dev/null 2>&1; then
-					echo_green_star
-					echolog "swap file $FSWAP enabled"
-				else
-					LOOPDEV=$(losetup -f)
-					[ -z "$LOOPDEV" ] && LOOPDEV=$(mknod_next_loop_dev)
-					$BIN_LOSETUP $LOOPDEV "$SWAP_FROM"
-					mkswap $LOOPDEV >/dev/null
-					swapon $LOOPDEV
-					echo_green_star
-					echolog "enable swap file: $FSWAP, setup a loop device $LOOPDEV as wrapper for it to work"
-				fi
-			fi
+			SWAPFILES="$SWAPFILES $SOURCE"
 		done
 	fi
-
 	if [ $NEEDZRAM == "yes" ] ; then 
 		init_zram_swap $ZRAMPARS 
 	elif [ $NEEDZSWAP == "yes" ] ; then
 		init_zswap 
 	fi
+}
+
+# $1 - swap files list
+# $2 - mnt dir for swap files
+init_swapfiles() {
+	local SOURCE MNT_DIR SWAP_FROM swap
+	MNT_DIR=$2
+	echo_green_star
+	echolog "setup swap files"
+	for SOURCE in $1; do
+		if [ "$(echo $SOURCE | grep "nfs://")" != "" ]; then
+			init_ifcfg
+			echo $SOURCE | grep -iq ^"nfs://" && SWAP_FROM=$(mount_nfs $SOURCE $MNT_DIR/$(basename $SOURCE) )
+		else
+			SWAP_FROM=$(find_data $SOURCE $MNT_DIR "")
+		fi
+		if [ -f "$SWAP_FROM" ]; then
+			if swapon "$SWAP_FROM" >/dev/null 2>&1; then
+				echo_green_star
+				echolog "swap file $SOURCE enabled"
+			else
+				LOOPDEV=$(losetup -f)
+				[ -z "$LOOPDEV" ] && LOOPDEV=$(mknod_next_loop_dev)
+				$BIN_LOSETUP $LOOPDEV "$SWAP_FROM"
+				mkswap $LOOPDEV >/dev/null
+				swapon $LOOPDEV
+				echo_green_star
+				echolog "enable swap file: $SOURCE, setup a loop device $LOOPDEV as wrapper for it to work"
+			fi
+		fi
+	done
+	swap=$(free -m | grep -i "^swap.*:" | awk '{print $2}')
+	echo_green_star
+	echolog "ALL SWAPS: $swap"
+
 }
 
 # Setup changes
