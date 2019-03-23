@@ -1542,18 +1542,13 @@ init_layer() {
 		fi
 		PARS=$(echo $DATAFROMTO | sed 's/::/  /g')
 		DATAFROM=$(echo $PARS | cut -f1 -d " ")
-		qpar=$(echo $PARS | wc -w)
 		MNTOPTS='+'
 		DATATO=''
-		if [ $qpar -ge 2 ]; then
-			par2=$(echo $PARS | cut -f2 -d " ")
-			if echo $par2 | grep -q "^\/.*"; then
-				DATATO=$par2
-			else
-				MNTOPTS=$par2
-			fi
-			[ $qpar -eq 3 ] && MNTOPTS=$(echo $PARS | cut -f3 -d " ")
-		fi
+		for par in $PARS ; do 
+			[ "$par" == "$DATAFROM" ] && continue
+			if echo "$par" | grep -q "^\/.*" ; then DATATO=$par ; continue ; fi
+			MNTOPTS="$par"
+		done
 		if [ "$DATAFROM" ]; then
 			DATA=$2/$NUM_SUBL
 			DATAMNTM=$1/$NUM_SUBL
@@ -1731,13 +1726,19 @@ setup_changes() {
 	UMODE="$(cmdline_value $UIRD_MODE)"
 	[ "$UMODE" != "changes" -a "$UMODE" != "clear" -a "$UMODE" != "hybrid" ] && return
 
-	CHANGESVAL=$(cmdline_value $UIRD_CHANGES)
+	CHANGES_VALUE=$(cmdline_value $UIRD_CHANGES | sed 's/::/  /g')
+	CHANGESVAL=$(echo $CHANGES_VALUE | awk '{print $1}')
+	MNT_OPTS=$(echo $CHANGES_VALUE | awk '{print $2}')
+	
 	[ -z "$CHANGESVAL" ] && CHANGESVAL="changes"
+		
 	echo_green_star
 	echolog "$SETUP_CHANGES" $brown"$2"$default
 
 	if ! echo "$CHANGESVAL" | grep -q [XxLl][Zz][Mm]$; then
-		mount_data_source $CHANGESVAL $2 $1 ""
+		log "mount_data_source $CHANGESVAL $2 $1  nosgn  "$MNT_OPTS""
+		mount_data_source $CHANGESVAL $2 $1  nosgn  "$MNT_OPTS"
+		
 	else
 		echo_green_star
 		echolog $SETUP_MACHINES_MOD $yellow"$CHANGESVAL"$default # text is not correct here
@@ -2413,34 +2414,34 @@ fi
 }
 
 mkimg() {
-	local a DIR newimg SIZE FSTYPE MNT_DIR
+	local a DIR newimg SIZE MKFS MNT_DIR
 		newimg=$1 #new img (or new dir) name
 		MNT_DIR=$2 #mount point
 		echo $newimg | grep -q "@" && newimag=$(uuid_label_to_dev $newimg)
 		echo '' ; echo_green_star
 		echolog "Trying to create $SOURCE"
 		if $(dirname $newimg |grep -q [[:alnum:]] ); then
-		read -p  "$SOURCE was not found, create it?(Y/N): " ANS
-			if [ "$ANS" == "y" -o "$ANS" == "Y" ] ; then
-				if $(dirname $newimg |grep -q ^$SYSMNT ) ; then
+			if $(dirname $newimg |grep -q ^$SYSMNT ) ; then
 					DIR=$(dirname $newimg)
 					mkdir -p $DIR
-				else
+					MKFS=$(basename $newimg |cut -f1 -d ".")
+					SIZE=$(basename $newimg |cut -f2 -d ".")
+			else
+				read -p  "$SOURCE was not found, create it? (Y/N): " ANS
+				if [ "$ANS" == "y" -o "$ANS" == "Y" ] ; then
 					DIR=$(find_data $(dirname $newimg) $MNT_DIR "")
-				fi	
-				if [ -d $DIR ] ; then
-					if basename $newimg | grep -qi img$ ; then
-						maxsize=$(df -m $DIR |tail -n1 |awk '{print $4}')
-						read -p "enter new image size Mb (default: 1024, max: $maxsize): " SIZE  ;	[ "$SIZE" == "" ] && SIZE='1024'
-						read -p "enter FS type (default ext4): " MKFS ; 	[ "$MKFS" == "" ] && MKFS='ext4'
-						dd if=/dev/zero of="$DIR/$(basename $newimg)" bs=1 count=0 seek=${SIZE}M >/dev/null 2>&1
-						mkfs.$MKFS  "$DIR/$(basename $newimg)" >/dev/null 2>&1 &&	DATA_FROM="$DIR/$(basename $newimg)" 
-					elif basename $newimg | grep -qv "\." ; then
-						mkdir "$DIR/$(basename $newimg)" && DATA_FROM="$DIR/$(basename $newimg)"
-					fi
+					maxsize=$(df -m $DIR |tail -n1 |awk '{print $4}')
+					read -p "enter new image size Mb (default: 1024, max: $maxsize): " SIZE  ;	[ "$SIZE" == "" ] && SIZE='1024'
+					read -p "enter FS type (default ext4): " MKFS ; 	[ "$MKFS" == "" ] && MKFS='ext4'
 				fi
 			fi
+			if  basename $newimg |grep -q img$  ; then
+					dd if=/dev/zero of="$DIR/$(basename $newimg)" bs=1 count=0 seek=${SIZE}M >/dev/null 2>&1
+					mkfs.$MKFS  "$DIR/$(basename $newimg)" >/dev/null 2>&1 &&	DATA_FROM="$DIR/$(basename $newimg)" 
+			elif basename $newimg | grep -qv "\." ; then
+						mkdir "$DIR/$(basename $newimg)" && DATA_FROM="$DIR/$(basename $newimg)"
+			fi
 		else
-			echo "Add path to image file and try again"
+			echo "Add path to image filename and try again"
 		fi
 }
