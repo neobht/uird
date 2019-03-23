@@ -2422,25 +2422,22 @@ mkimg() {
 		if $(dirname $newimg |grep -q [[:alnum:]] ); then
 		read -p  "$SOURCE was not found, create it?(Y/N): " ANS
 			if [ "$ANS" == "y" -o "$ANS" == "Y" ] ; then
-				if basename $SOURCE | grep -qi img$ ; then
-					read -p "enter new image size Mb (default 1024): " SIZE  ;	[ "$SIZE" == "" ] && SIZE='1024'
-					read -p "enter FS type (default ext4): " MKFS ; 	[ "$MKFS" == "" ] && MKFS='ext4'
+				if $(dirname $newimg |grep -q ^$SYSMNT ) ; then
+					DIR=$(dirname $newimg)
+					mkdir -p $DIR
 				else
-					SIZE="" ; MKFS=""
-				fi
-			fi	
-			if $(dirname $newimg |grep -q ^$SYSMNT ) ; then
-				DIR=$(dirname $newimg)
-				mkdir -p $DIR
-			else
-				DIR=$(find_data $(dirname $newimg) $MNT_DIR "")
-			fi	
-			if [ -d $DIR ] ; then
-				if basename $newimg | grep -qi img$ ; then
-					dd if=/dev/zero of="$DIR/$(basename $newimg)" bs=1 count=0 seek=${SIZE}M >/dev/null 2>&1
-					mkfs.$MKFS  "$DIR/$(basename $newimg)" >/dev/null 2>&1 &&	DATA_FROM="$DIR/$(basename $newimg)" 
-				elif basename $newimg | grep -qv "\." ; then
-					mkdir "$DIR/$(basename $newimg)" && DATA_FROM="$DIR/$(basename $newimg)"
+					DIR=$(find_data $(dirname $newimg) $MNT_DIR "")
+				fi	
+				if [ -d $DIR ] ; then
+					if basename $newimg | grep -qi img$ ; then
+						maxsize=$(df -m $DIR |tail -n1 |awk '{print $4}')
+						read -p "enter new image size Mb (default: 1024, max: $maxsize): " SIZE  ;	[ "$SIZE" == "" ] && SIZE='1024'
+						read -p "enter FS type (default ext4): " MKFS ; 	[ "$MKFS" == "" ] && MKFS='ext4'
+						dd if=/dev/zero of="$DIR/$(basename $newimg)" bs=1 count=0 seek=${SIZE}M >/dev/null 2>&1
+						mkfs.$MKFS  "$DIR/$(basename $newimg)" >/dev/null 2>&1 &&	DATA_FROM="$DIR/$(basename $newimg)" 
+					elif basename $newimg | grep -qv "\." ; then
+						mkdir "$DIR/$(basename $newimg)" && DATA_FROM="$DIR/$(basename $newimg)"
+					fi
 				fi
 			fi
 		else
