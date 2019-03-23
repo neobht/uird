@@ -1419,16 +1419,14 @@ init_nbd() {
 # $5 = mount options
 # $6 = force check source (yes, no)."Yes" means - do not stop uird-init then the source was not found
 mount_data_source() {
-	local SOURCE DST_DIR MNT_DIR SGN_CHECK MNT_OPTS
+	local SOURCE DST_DIR MNT_DIR SGN_CHECK MNT_OPTS par iPARS SIZE MKFS
 	debug_log "mount_data_source" "$*"
 	SOURCE=$1
 	DST_DIR=$2
 	MNT_DIR=$3
 	SGN_CHECK=$4
 	MNT_OPTS=$5
-
 	echo -ne $blue"  * "$default
-
 	echolog "$MOUNT_DATA_SOURCE" $yellow"$SOURCE"$default
 
 	mkdir -p $DST_DIR
@@ -1441,13 +1439,13 @@ mount_data_source() {
 		echo $SOURCE | grep -iq ^"ssh://" && DATA_FROM=$(mount_sshfs $SOURCE $MNT_DIR $MNT_OPTS)
 		echo $SOURCE | grep -iq ^"ftp://" && DATA_FROM=$(mount_curlftpfs $SOURCE $MNT_DIR $MNT_OPTS)
 		echo $SOURCE | grep -iq ^"rsync://" && mount_rsync $SOURCE $MNT_DIR && DATA_FROM=$MNT_DIR
-	elif [ "$(echo $SOURCE | grep "magnet:")" != "" ]; then
-		init_ifcfg
-		echo $SOURCE | grep -iq ^"magnet:" && DATA_FROM=$(mount_btfs "$SOURCE" $MNT_DIR $MNT_OPTS)
 	else
 		echo $SOURCE | grep -q "@" && SOURCE=$(uuid_label_to_dev $SOURCE)
 		log "find_data $SOURCE $MNT_DIR $SGN_CHECK $MNT_OPTS"
 		DATA_FROM=$(find_data $SOURCE $MNT_DIR $SGN_CHECK $MNT_OPTS)
+##################################################################
+		[ -e "$DATA_FROM" ] || mkimg $SOURCE $MNT_DIR
+##################################################################
 		[ -b "$DATA_FROM" ] && mount_device $DATA_FROM $DST_DIR $MNT_OPTS # mount block device
 	fi
 	if [ -r "$DATA_FROM" ]; then
@@ -2368,7 +2366,7 @@ change_root() {
 }
 
 setup_preinit ()  {
-local  FNAME FMODE runscript
+local  FNAME FMODE runscript str
 INIGZFILE=$MEMORY/$LIVEKITNAME.ini.gz
 # OS.ini processing
 if [ -f $MEMORY/$LIVEKITNAME.ini.gz ] ;  then
@@ -2412,4 +2410,40 @@ if [ "$(cmdline_value $UIRD_PREINIT)" ] ; then
 		[ -x "$runscript" ]  && /bin/bash $runscript
 	done
 fi
+}
+
+mkimg() {
+	local a DIR newimg SIZE FSTYPE MNT_DIR
+		newimg=$1 #new img (or new dir) name
+		MNT_DIR=$2 #mount point
+		echo $newimg | grep -q "@" && newimag=$(uuid_label_to_dev $newimg)
+		echo '' ; echo_green_star
+		echolog "Trying to create $SOURCE"
+		if $(dirname $newimg |grep -q [[:alnum:]] ); then
+		read -p  "$SOURCE was not found, create it?(Y/N): " ANS
+			if [ "$ANS" == "y" -o "$ANS" == "Y" ] ; then
+				if basename $SOURCE | grep -qi img$ ; then
+					read -p "enter new image size Mb (default 1024): " SIZE  ;	[ "$SIZE" == "" ] && SIZE='1024'
+					read -p "enter FS type (default ext4): " MKFS ; 	[ "$MKFS" == "" ] && MKFS='ext4'
+				else
+					SIZE="" ; MKFS=""
+				fi
+			fi	
+			if $(dirname $newimg |grep -q ^$SYSMNT ) ; then
+				DIR=$(dirname $newimg)
+				mkdir -p $DIR
+			else
+				DIR=$(find_data $(dirname $newimg) $MNT_DIR "")
+			fi	
+			if [ -d $DIR ] ; then
+				if basename $newimg | grep -qi img$ ; then
+					dd if=/dev/zero of="$DIR/$(basename $newimg)" bs=1 count=0 seek=${SIZE}M >/dev/null 2>&1
+					mkfs.$MKFS  "$DIR/$(basename $newimg)" >/dev/null 2>&1 &&	DATA_FROM="$DIR/$(basename $newimg)" 
+				elif basename $newimg | grep -qv "\." ; then
+					mkdir "$DIR/$(basename $newimg)" && DATA_FROM="$DIR/$(basename $newimg)"
+				fi
+			fi
+		else
+			echo "Add path to image file and try again"
+		fi
 }
