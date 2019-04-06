@@ -265,7 +265,7 @@ shell_cmd() {
 
 # start quickshell
 start_quickshell() {
-	if [ "$(cmdline_parameter quickshell)$(cmdline_parameter qs)" ]; then
+	if getpar qs  > /dev/null ; then
 		ln -s /root/bashrc /root/.bashrc
 		ln -s /root/bash_profile /root/.bash_profile
 		mkdir -p /mnt
@@ -281,7 +281,7 @@ start_quickshell() {
 
 # Resume from swsuspend
 resume_from_suspend() {
-	if [ -z $(cmdline_parameter noresume) ]; then
+	if ! getpar noresume; then
 		RESUME_DEV=$($BIN_BLKID | grep -m1 swsuspend | awk -F: '{print $1}')
 		[ -z "$RESUME_DEV" ] || resume $RESUME_DEV
 	fi
@@ -333,6 +333,67 @@ echodebug() {
 			$command "$@"
 		fi
 	fi
+}
+
+cfg_parser() {
+getcmdline >/tmp/cmdline
+eval echo $(cat /proc/cmdline /tmp/cmdline 2>/dev/null | tr -s ";" ",") >/tmp/cmdline
+BASECFG=$(echo -n " " | cat - /tmp/cmdline 2>/dev/null | egrep -m1 -o "(^|[[:space:]])uird.basecfg=[^[:space:]]+" | cut -d "=" -f 2- | head -n1)
+[ -f "$BASECFG" -o "$BASECFG" == "help" ] || BASECFG=/uird_configs/$BASECFG
+if ! [ -f "$BASECFG" -o "$BASECFG" == "help" ]; then
+	echo "$BASECFG is not correct uird.basecfg value"
+	shell_cmd "help"
+fi
+echo $(cat  $BASECFG |grep -v "^[[:space:]]*\#"  2>/dev/null | tr -s ";" ",") >/tmp/basecfg
+echo $(cat  /tmp/cmdline  | tr -s ";" "," |sed 's/ /\n/g' | sort -u ) >>/tmp/basecfg
+for par in $(cat  /tmp/basecfg) ; do
+	if echo $par |grep -q "+=" ; then
+		parDir=$(echo $par |cut -d "+" -f1)
+		separ="+="
+	else 
+		parDir=$(echo $par |cut -d "=" -f1)
+		rm -rf /tmp/parameters/$parDir 2>/dev/null
+		separ="="
+	fi
+	mkdir -p /tmp/parameters/$parDir
+	NUM_PAR=$(( $(ls -1 /tmp/parameters/$parDir |wc -l) +1 ))
+	if echo $par |grep -q "=" ; then
+		for val in $(echo $par |sed "s/${parDir}${separ}//" | tr -s ";," " ") ; do
+			echo "$val" |grep -q ^\{.*}$  &&  val="$(echo "$val" |sed 's/[\{,\}]//g')::force"
+			for value in $(echo $val | sed 's/::/ /g') ; do
+				[ $NUM_PAR -eq 1 ] && value=$(uuid_label_to_dev $value) 
+				echo $value >> /tmp/parameters/$parDir/$NUM_PAR
+			done
+		NUM_PAR=$((NUM_PAR + 1))
+		done
+	else
+		echo "ok" > /tmp/parameters/$parDir/enabled
+	fi
+	echo "$par" |sed 's/uird\./uird_/' >> /etc/initvars 
+done
+}
+
+#$1 - uird.par
+#$2 - number of value
+#$3 - number of subvalue 
+getpar() {
+#if [ "$1" != "$(getpar UIRD_BREAK 1 1)"  -a "$DEBUG_IS_ENABLED" != "1" ] ; then
+#	[ "$(getpar $UIRD_BREAK 1 1)" == "$1" ] && shell_cmd "break"
+#fi
+tdir=/tmp/parameters
+if [ $3 ] ; then
+	cat  $tdir/$1/$2 2>/dev/null |sed -n "${3}p" 
+	return
+elif [ $2 ] ; then
+	cat  $tdir/$1/$2 2>/dev/null  ; return
+else
+	if  [ -f  "$tdir/$1/enabled" ] ; then
+		echo "enabled" && 	return
+	elif [ -f  "$tdir/$1/1" ] ; then
+		ls "$tdir/$1" && 	return 
+	fi
+	return 2
+fi
 }
 
 # look into cmdline and echo $1 back if $1 is set
@@ -466,7 +527,7 @@ init_aufs() {
 init_union() {
 	debug_log "init_union" "$*"
 
-	UNION_FS="$(cmdline_value $UIRD_UNION)"
+	UNION_FS="$(getpar $UIRD_UNION 1 1)"
 	[ -z $UNION_FS ] && UNION_FS="aufs"
 	
 	echo_green_star
@@ -614,15 +675,15 @@ list_block_devices() {
 
 #using /uird.scan script to configure UIRD
 uird_scan() {
-	if [ "$(cmdline_parameter $UIRD_SCAN)" == "$UIRD_SCAN" ]; then
+	if [ "$(getpar $UIRD_SCAN)" == "enabled" ]; then
 		/uird.scan
 		shell_cmd help
-	else
-		SCANPAR="$(cmdline_value $UIRD_SCAN)"
+	elif getpar $UIRD_SCAN >/dev/null ; then
+		SCANPAR="$(getpar $UIRD_SCAN 1 )"
 		[ -z $SCANPAR ] && return
 		if echo "$SCANPAR" | grep -q legacy; then
 			export BASECFG
-			/uird.scan --legacy $(echo $SCANPAR | grep : | sed 's|^.*:||') || shell_cmd "help"
+			/uird.scan --legacy $(getpar $UIRD_SCAN 1 2) || shell_cmd "help"
 		elif [ "$SCANPAR" == "modules" ]; then
 			export BASECFG
 			/uird.scan --modules || shell_cmd "help"
@@ -1500,22 +1561,20 @@ mount_data_source() {
 }
 
 # copy files from UIRD to system
-# $1 - uird.syscp value
-# $2 - union dir
+# $1 - union dir
 syscp() {
 	debug_log "syscp" "$*"
 	echo_green_star
 	echolog "$SETUP_SYSCP"
 	local SYSCP ARR_SYSCP FILEFROM FILETO FILEFROMTO UNION
 	ARR_SYSCP=$(echo $1 | tr -s ";," "\n" | uniq)
-	for FILEFROMTO in $ARR_SYSCP; do
-		FILEFROMTO=$FILEFROMTO"::"
-		FILEFROM=${FILEFROMTO%%::*}
-		FILETO=${FILEFROMTO#*::}
-		mkdir -p ${2}${FILETO%%::*}
-		cp -fr ${FILEFROM} ${2}${FILETO%%::*}
+	for NUMPAR in $(getpar $UIRD_SYSCP ); do
+		FILEFROM=$(getpar $UIRD_SYSCP $NUMPAR 1)
+		FILETO=$(getpar $UIRD_SYSCP $NUMPAR 2)
+		mkdir -p ${1}${FILETO}
+		cp -fr ${FILEFROM} ${1}${FILETO}/
 		echo -ne $blue"  * "$default
-		echo "${FILEFROM} -->  ${FILETO%%::*}"
+		echo "${FILEFROM} -->  ${FILETO}"
 	done
 }
 
@@ -1526,27 +1585,20 @@ syscp() {
 # $4 = check SGN
 init_layer() {
 	debug_log "init_layer" "$*"
-
 	echo_green_star
 	echolog "$INIT_LAYER" $brown$(basename $2) " -> " $1$default
 	local NUM_SUBL FROM CMD_PARAM ARR_FROM DATAFROMTO DATAFROM DATATO DATA DATAMNTM MNTOPTS qpar par2 FORCE
 	FORCE=no
 	NUM_SUBL=0
 	CMD_PARAM=$3
-	FROM=$(cmdline_value $CMD_PARAM)
-	ARR_FROM=$(echo $FROM | tr -s ";," " ")
-	for DATAFROMTO in $ARR_FROM; do
-		if $(echo "$DATAFROMTO" | grep -q '^{.*}$'); then
-			DATAFROMTO=$(echo "$DATAFROMTO" | sed -e s/^{// -e s/}$//)
-			FORCE=yes
-		fi
-		PARS=$(echo $DATAFROMTO | sed 's/::/  /g')
-		DATAFROM=$(echo $PARS | cut -f1 -d " ")
+	for PARNUM in $(getpar $CMD_PARAM) ; do
+		PARS=$(getpar $CMD_PARAM $PARNUM '2,$')
+		DATAFROM=$(getpar $CMD_PARAM $PARNUM 1)
 		MNTOPTS='+'
 		DATATO=''
 		for par in $PARS ; do 
-			[ "$par" == "$DATAFROM" ] && continue
 			if echo "$par" | grep -q "^\/.*" ; then DATATO=$par ; continue ; fi
+			if [ "$par" == "force" ]  ; then FORCE=yes ; continue ; fi
 			MNTOPTS="$par"
 		done
 		if [ "$DATAFROM" ]; then
@@ -1615,12 +1667,10 @@ posix_test() {
 setup_config() {
 	local INIFILE
 	debug_log "setup config" "$*"
-	INIFILE=$(cmdline_value $UIRD_CONFIG)
-	#[ -z $FIND_PARAMS ] && FIND_PARAMS=$(echo $(cmdline_value $UIRD_FIND_PARAMS) | tr ";,_" " ")
+	INIFILE=$(getpar $UIRD_CONFIG 1 1)
 	[ -z $INIFILE ] && return
 	echo_green_star
 	echolog "$SETUP_CONFIG" $brown"$INIFILE"$default
-	#PATHINI=$(find "$LAYER_BASE" -maxdepth 2  -name "$INIFILE" -type f 2>/dev/null  |sort | tail -n1)
 	for n in $(ls -1 $LAYER_BASE |sort -r) ; do
 		if [ -f $LAYER_BASE/$n/$INIFILE ] ; then
 			PATHINI="$LAYER_BASE/$n/$INIFILE"
@@ -1642,7 +1692,7 @@ init_swap() {
 	debug_log "setting up swap"
 	echo_green_star
 	echolog "$SETUP_SWAP"
-	if [ "$1" == "auto" ]; then
+	if [ "$(getpar $UIRD_SWAP 1 1)" == "auto" ]; then
 		ASWAP=$(list_swap_devices | head -n 1)
 		[ -b "$ASWAP" ] && swapon $ASWAP
 		if [ $(cat /proc/swaps | wc -l) -gt 1 ]; then
@@ -1654,9 +1704,9 @@ init_swap() {
 		echo "90" > /proc/sys/vm/swappiness
 	else
 		FSWAP=""
-		for DSWAP in $(echo $1 | tr ";,_" " "); do
-			DSWAP=$(uuid_label_to_dev $DSWAP)
-			if [ -b $DSWAP ]; then
+		for NSWAP in $(getpar $UIRD_SWAP ); do
+			DSWAP=$(getpar $UIRD_SWAP $NSWAP 1)
+			if [ -b  ]; then
 				swapon $DSWAP
 			else
 				FSWAP="$DSWAP $FSWAP"
@@ -1723,12 +1773,11 @@ init_swapfiles() {
 # $2 = changes directory
 setup_changes() {
 	debug_log "setup changes" "$*"
-	UMODE="$(cmdline_value $UIRD_MODE)"
+	UMODE="$(getpar $UIRD_MODE 1 1)"
 	[ "$UMODE" != "changes" -a "$UMODE" != "clear" -a "$UMODE" != "hybrid" ] && return
 
-	CHANGES_VALUE=$(cmdline_value $UIRD_CHANGES | sed 's/::/  /g')
-	CHANGESVAL=$(echo $CHANGES_VALUE | awk '{print $1}')
-	MNT_OPTS=$(echo $CHANGES_VALUE | awk '{print $2}')
+	CHANGESVAL=$(getpar $UIRD_CHANGES 1 1 )
+	MNT_OPTS=$(getpar $UIRD_CHANGES 1 2 )
 	
 	[ -z "$CHANGESVAL" ] && CHANGESVAL="changes"
 		
@@ -1753,7 +1802,6 @@ setup_changes() {
 			echo $SOURCE | grep -iq ^"ftp://" && DATA_FROM=$(mount_curlftpfs $SOURCE $MNT_DIR)
 			DATA_FROM_DIR=$DATA_FROM
 		else
-			echo $SOURCE | grep -q "@" && SOURCE=$(uuid_label_to_dev $SOURCE)
 			DATA_FROM=$(find_data $SOURCE $MNT_DIR "")
 			DATA_FROM_DIR=$(find_data $(dirname $SOURCE) $MNT_DIR "")
 		fi
@@ -1769,7 +1817,7 @@ setup_changes() {
 		
 		if [ "$CHANGESMNT" ]; then
 			echo "$CHANGESMNT" >$2/.savetomodule
-			if  ! [ "$(cmdline_parameter $UIRD_SHUTDOWN)$(cmdline_value $UIRD_SHUTDOWN)" ]  ; then
+			if  ! getpar $UIRD_SHUTDOWN >/dev/null ; then
 				touch $(dirname $CHANGESMNT)/.lock
 				losetup $(losetup -f) $(dirname $CHANGESMNT)/.lock
 			fi
@@ -1785,7 +1833,7 @@ setup_changes() {
 setup_machines() {
 	debug_log "setup_machines" "$*"
 	local CHANGESMNT MACHINES SOURCE MNT_DIR MUID
-	[ $(cmdline_value $UIRD_MODE) != "machines" ] && return
+	[ $(getpar $UIRD_MODE 1 1) != "machines" ] && return
 
 	# calculate machine UID
 	MUID=mac-$(cat /sys/class/net/e*/address 2>/dev/null | head -1 | tr -d :)
@@ -1795,7 +1843,7 @@ setup_machines() {
 	# locate machines folders
 	if cat /proc/cmdline | grep -q "uird.changes="; then
 		# machine source was specified, we have to mount it
-		MACHINES=$(cmdline_value $UIRD_CHANGES)
+		MACHINES=$(getpar $UIRD_CHANGES 1 1)
 		echo_green_star
 		echolog "$SETUP_MACHINES" $yellow"$1"$default
 		mount_data_source $MACHINES $1 $2 ""
@@ -1823,7 +1871,7 @@ setup_machines() {
 	# save module filename
 	echo "$CHANGESMNT" >$3/.savetomodule
 	# lock media from systemd umount
-	if  ! [ "$(cmdline_parameter $UIRD_SHUTDOWN)$(cmdline_value $UIRD_SHUTDOWN)" ]  ; then
+	if  ! getpar $UIRD_SHUTDOWN >/dev/null ; then
 		touch $1/.lock
 		losetup $(losetup -f) $1/.lock
 	fi
@@ -1837,8 +1885,8 @@ setup_homes() {
 
 	local MNT_HOME LAYER_HOMES HOMES_BR HOMES HOME
 
-	HOMES=$(cmdline_value $UIRD_HOMES)
-	HOME=$(cmdline_value $UIRD_HOME)
+	HOMES=$(getpar $UIRD_HOMES [[:digit:]] )
+	HOME=$(getpar $UIRD_HOME 1 1)
 	[ -z "$HOMES" ] && [ -z "$HOME" ] && return
 
 	LAYER_HOMES=$1
@@ -1924,8 +1972,8 @@ persistent_changes() {
 find_modules() {
 	debug_log "find_modules" "$*"
 	local ARR_FILTER FIND_PARAMS filter
-	ARR_FILTER=$(echo $(cmdline_value $UIRD_RO)","$(cmdline_value $UIRD_RW)","$(cmdline_value $UIRD_RUN)","$(cmdline_value $UIRD_CP) | tr -s ";," " ")
-	FIND_PARAMS=$(echo $(cmdline_value $UIRD_FIND_PARAMS) | tr ";,_" " ")
+	ARR_FILTER=$(echo $(getpar $UIRD_RO [[:digit:]] )" "$(getpar $UIRD_RW [[:digit:]])" "$(getpar $UIRD_RUN [[:digit:]])" "$(getpar $UIRD_CP [[:digit:]] ) )
+	FIND_PARAMS=$(echo $(getpar $UIRD_FIND_PARAMS [[:digit:]]) |sed 's/_/ /g')
 	#    echolog "======================"$FIND_PARAMS"================="
 	for filter in $ARR_FILTER; do
 		find "$1" -path "$filter" $FIND_PARAMS 2>/dev/null | sort
@@ -1934,15 +1982,13 @@ find_modules() {
 
 # List all modules in all directories
 # and filter out
-# separator for $UIRD_LOAD and $UIRD_NOLOAD arguments is "," or ";"
 # $1 = layer directory
 
 list_modules() {
 	debug_log "list_modules" "$*"
 	local LOAD NOLOAD MODNAME LINE
-
-	LOAD=$(cmdline_value $UIRD_LOAD | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')
-	NOLOAD=$(cmdline_value $UIRD_NOLOAD | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')
+	LOAD=$(echo $(getpar $UIRD_LOAD [[:digit:]]) |sed 's/ /|/g')
+	NOLOAD=$(echo $(getpar $UIRD_NOLOAD [[:digit:]]) |sed 's/ /|/g')
 	find_modules "$1" | sort | uniq | while read LINE; do
 		MODNAME=$(echo $LINE | cut -b ${#1}- | cut -b 2-)
 		if [ "$LOAD" -a "$(echo $MODNAME | egrep -i "$LOAD")" ]; then
@@ -1965,15 +2011,15 @@ union_append_bundles() {
 	local BUN MOD RW RO CP FS OPTIONS PRESERVE MID_BUN BUNDLE
 	LOWER_DIRS="$OVERLAY/lowerdir"
 
-	RW=$(cmdline_value $UIRD_RW | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')
-	RO=$(cmdline_value $UIRD_RO | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')
-	CP=$(cmdline_value $UIRD_CP | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')
-	RUN=$(cmdline_value $UIRD_RUN | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')
+	RW=$(echo $(getpar $UIRD_RW [[:digit:]]) | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/ /|/g')
+	RO=$(echo $(getpar $UIRD_RO [[:digit:]]) | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/ /|/g')
+	CP=$(echo $(getpar $UIRD_CP [[:digit:]]) | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/ /|/g')
+	RUN=$(echo $(getpar $UIRD_RUN [[:digit:]]) | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/ /|/g')
 
 	echo_green_star
 	echolog "$UNION_APPEND_BUNDLES" $brown$1$default
 	
-	UNION_FS="$(cmdline_value $UIRD_UNION)"
+	UNION_FS="$(getpar $UIRD_UNION 1 1 )"
 	[ -z $UNION_FS ] && UNION_FS="aufs"
 
 	add_bundle() {
@@ -1987,8 +2033,8 @@ union_append_bundles() {
 			PRESERVE="true"
 		else
 			MID_BUN=${BUNDLE#*$1}
-			[ -e "$5/$MID_BUN" -a "$(cmdline_value $UIRD_COPY2CACHE)$(cmdline_parameter $UIRD_COPY2CACHE)" ] && BUNDLE="$5/$MID_BUN"
-			[ -e "$4/$MID_BUN" -a "$(cmdline_value $UIRD_COPY2RAM)$(cmdline_parameter $UIRD_COPY2RAM)" ] && BUNDLE="$4/$MID_BUN"
+			[ -e "$5/$MID_BUN" -a "$(getpar $UIRD_COPY2CACHE 1 1)$(getpar $UIRD_COPY2CACHE 1 1)" ] && BUNDLE="$5/$MID_BUN"
+			[ -e "$4/$MID_BUN" -a "$(getpar $UIRD_COPY2RAM 1 1)$(getpar $UIRD_COPY2RAM 1 1)" ] && BUNDLE="$4/$MID_BUN"
 
 			FS="$(device_bestfs "$BUNDLE")"
 			OPTIONS="$(fs_options $FS mount)"
@@ -2025,7 +2071,7 @@ union_append_bundles() {
 	}
 
 	for BUNDLE in $(list_modules "$1"); do
-		if [ $(cmdline_parameter $UIRD_PARALLEL) ]; then
+		if getpar $UIRD_PARALLEL >/dev/null; then
 			(add_bundle $BUNDLE $@) &
 		else
 			add_bundle $BUNDLE $@
@@ -2150,12 +2196,14 @@ copy_to() {
 #
 copy_to_ram() {
 	debug_log "copy_to_ram" "$*"
-	if [ "$(cmdline_parameter toram)$(cmdline_value toram)$(cmdline_parameter $UIRD_COPY2RAM)$(cmdline_value $UIRD_COPY2RAM)" ]; then
+	if [ "$(getpar toram)$(getpar $UIRD_COPY2RAM)" ]; then
 		[ "$2" = "" ] && return
 		echo_green_star
 		echolog "$COPY_TO_RAM"
-		log "$(cmdline_value $UIRD_COPY2RAM)$(cmdline_value toram)"
-		copy_to $1 $2 RAM "$(cmdline_value $UIRD_COPY2RAM)$(cmdline_value toram)"
+		log "$(getpar $UIRD_COPY2RAM)$(getpar toram)"
+		TORAM="$(getpar $UIRD_COPY2RAM 1 1)$(getpar toram 1 1)"
+		[ "${TORAM}_" == "_" ] &&  TORAM="*"
+		copy_to $1 $2 RAM "$TORAM"
 	fi
 }
 
@@ -2165,11 +2213,11 @@ copy_to_ram() {
 #
 copy_to_cache() {
 	debug_log "copy_to_cache" "$*"
-	if [ "$(cmdline_parameter $UIRD_COPY2CACHE)$(cmdline_value $UIRD_COPY2CACHE)" ]; then
+	if getpar $UIRD_COPY2CACHE >/dev/null ; then
 		[ "$2" = "" ] && return
 		echo_green_star
 		echolog "$COPY_TO_CACHE"
-		copy_to $1 $2 CACHE "$(cmdline_value $UIRD_COPY2CACHE)"
+		copy_to $1 $2 CACHE "$(getpar $UIRD_COPY2CACHE 1 1)"
 	fi
 }
 
@@ -2405,9 +2453,9 @@ done
 fi
 #run preinit scripts
 [ -f /tmp/exec ] && . /tmp/exec
-if [ "$(cmdline_value $UIRD_PREINIT)" ] ; then
-	for str in $(cmdline_value $UIRD_PREINIT | tr ";," " ") ;do 
-		runscript="$(echo $str |sed 's#^/##')"
+if getpar $UIRD_PREINIT >/dev/null ; then
+	for NUMPAR in $(getpar $UIRD_PREINIT ) ;do 
+		runscript="$(getpar $UIRD_PREINIT $NUMPAR 1)"
 		[ -x "$runscript" ]  && /bin/bash $runscript
 	done
 fi
