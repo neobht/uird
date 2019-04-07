@@ -45,6 +45,9 @@ debug_shell
 mkdir -p $MEMORY /tmp
 
 cfg_parser
+BREAKSTEP="$(getpar $UIRD_BREAK 1 1)"
+SCANTIMEOUT="$(getpar scantimeout 1 1)"
+FINDPARAMS="$(getpar $UIRD_FIND_PARAMS 1 1 |sed 's/_/ /g')"
 
 # print help
 if cat /tmp/basecfg | grep -q help; then
@@ -105,7 +108,6 @@ resume_from_suspend
 debug_shell
 
 #init swap
-[ "$(getpar $UIRD_BREAK 1 1)" = "init_swap" ] && shell_cmd "break"
 getpar $UIRD_SWAP >/dev/null && init_swap  
 
 RAMSIZE=$(getpar $UIRD_RAMSIZE 1 1)
@@ -136,27 +138,22 @@ fi
 mkdir -p $MOUNTDIR $CHANGES
 
 # init MOUNTS layer
-[ "$(getpar $UIRD_BREAK 1 1)" = "init_mounts" ] && shell_cmd "break"
 [ "$(getpar $UIRD_MOUNTS)" ] && init_layer $DATAMNT/mounts $LAYER_MOUNTS $UIRD_MOUNTS
 debug_shell
 
 #aria2 preDownload
-[ "$(getpar $UIRD_BREAK 1 1)" = "init_aria2" ] && shell_cmd "break"
 [ "$(getpar $UIRD_ARIA2RAM)" ] && aria2_preload $DATAMNT/aria2
 debug_shell
 
 #init BASE layer
-[ "$(getpar $UIRD_BREAK 1 1)" = "init_base" ] && shell_cmd "break"
 [ "$(getpar $UIRD_FROM)" ] && init_layer $DATAMNT/from $LAYER_BASE $UIRD_FROM "check_SGN"
 debug_shell
 
 # init CACHE layer
-[ "$(getpar $UIRD_BREAK 1 1)" = "init_cache" ] && shell_cmd "break"
 [ "$(getpar $UIRD_CACHE)" ] && init_layer $DATAMNT/cache $LAYER_CACHE $UIRD_CACHE
 debug_shell
 
 # init HOMES layer
-[ "$(getpar $UIRD_BREAK 1 1)" = "init_home" ] && shell_cmd "break"
 [ "$(getpar $UIRD_HOMES)" ] && init_layer $DATAMNT/homes $LAYER_HOMES $UIRD_HOMES
 [ "$(getpar $UIRD_HOME)" ] && init_layer $DATAMNT/homes $LAYER_HOMES $UIRD_HOME
 debug_shell
@@ -165,12 +162,10 @@ debug_shell
 [ "$SWAPFILES" ] && init_swapfiles "$SWAPFILES" $DATAMNT/swapfiles
 
 #setting up config
-[ "$(getpar $UIRD_BREAK 1 1)" = "config" ] && shell_cmd "break"
 setup_config
 debug_shell
 
 #setting up source for changes
-[ "$(getpar $UIRD_BREAK 1 1)" = "changes" ] && shell_cmd "break"
 setup_changes $DATAMNT/changes $CHANGES
 
 #clear changes dir if CLEAN mode is enabled
@@ -181,17 +176,14 @@ fi
 
 debug_shell
 #setting up machines mode
-[ "$(getpar $UIRD_BREAK 1 1)" = "machines" ] && shell_cmd "break"
 setup_machines $MACHINES $DATAMNT/machines $CHANGES $DATAMNT/changes
 debug_shell
 
 # sync data from BASE layer to CACHE layer
-[ "$(getpar $UIRD_BREAK 1 1)" = "sync_to_cache" ] && shell_cmd "break"
 copy_to_cache $LAYER_BASE "$LAYER_CACHE"
 debug_shell
 
 # sync data from BASE,CACHE layers to RAM
-[ "$(getpar $UIRD_BREAK 1 1)" = "sync_to_ram" ] && shell_cmd "break"
 copy_to_ram $LAYER_BASE "$COPY2RAM"
 debug_shell
 getpar $UIRD_CACHE >/dev/null && copy_to_ram $LAYER_CACHE "$COPY2RAM"
@@ -201,7 +193,7 @@ debug_shell
 init_aufs
 
 # init aufs/overlay union
-[ "$(getpar $UIRD_BREAK 1 1)" = "init_aufs" ] && shell_cmd "break"
+[ "$BREAKSTEP)" = "init_aufs" ] && shell_cmd "break"
 init_union "$CHANGES" "$UNION"
 debug_shell
 
@@ -209,12 +201,11 @@ debug_shell
 mount_binds
 
 # add data to union
-[ "$(getpar  $UIRD_BREAK 1 1)" = "append_bundles" ] && shell_cmd "break"
 union_append_bundles $LAYER_BASE "$BUNDLES" "$UNION" "$COPY2RAM" "$LAYER_CACHE"
 debug_shell
 
 #setup homes by using aufs
-[ "$(getpar $UIRD_BREAK 1 1)" = "set_homes" ] && shell_cmd "break"
+[ "$BREAKSTEP" = "set_homes" ] && shell_cmd "break"
 setup_homes "$LAYER_HOMES" "$UNION/home"
 debug_shell
 
@@ -241,7 +232,6 @@ syscp  $UNION
 
 cd $UNION
 
-[ "$(getpar $UIRD_BREAK 1 1)" = "rc.preinit" ] && shell_cmd "break"
 echo_green_star
 echolog "$INITIALIZE preinit actions"
 if getpar $UIRD_PREINIT >/dev/null ; then

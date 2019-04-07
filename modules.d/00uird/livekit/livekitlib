@@ -366,20 +366,21 @@ for par in $(cat  /tmp/basecfg) ; do
 			done
 		NUM_PAR=$((NUM_PAR + 1))
 		done
+	echo "$par" |sed 's/\./_/' >> /etc/initvars
 	else
-		echo "ok" > /tmp/parameters/$parDir/enabled
+		: > /tmp/parameters/$parDir/enabled
+		echo "${par}=enabled" >> /etc/initvars
 	fi
-	echo "$par" |sed 's/uird\./uird_/' >> /etc/initvars 
+	 
 done
+#tar -czf $SYSMNT/parameters.tar.gz /tmp/parameters &
 }
 
 #$1 - uird.par
 #$2 - number of value
 #$3 - number of subvalue 
 getpar() {
-#if [ "$1" != "$(getpar UIRD_BREAK 1 1)"  -a "$DEBUG_IS_ENABLED" != "1" ] ; then
-#	[ "$(getpar $UIRD_BREAK 1 1)" == "$1" ] && shell_cmd "break"
-#fi
+[ "$1" == "$BREAKSTEP"  -a "$DEBUG_IS_ENABLED" != "1" ]   && shell_cmd "break"
 tdir=/tmp/parameters
 if [ $3 ] ; then
 	cat  $tdir/$1/$2 2>/dev/null |sed -n "${3}p" 
