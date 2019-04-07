@@ -396,34 +396,6 @@ else
 fi
 }
 
-# look into cmdline and echo $1 back if $1 is set
-# $1 = value name, case sensitive, for example 'debug'
-#
-cmdline_parameter() {
-	debug_log "cmdline_parameter" "$*"
-	log "searching for bootparam: $1"
-	ADDFILE=$MEMORY/cmdline
-	echo -n " " | cat - $ADDFILE 2>/dev/null | egrep -q -m1 -o "(^|[[:space:]])$1=" && return
-	echo -n " " | cat - $ADDFILE 2>/dev/null | egrep -m1 -o "(^|[[:space:]])$1([[:space:]]|\$)" | head -n1 | tr -d " "
-}
-
-# look into cmdline and echo value of $1 option
-# $1 = value name, case sensitive, for example 'changes'
-#
-cmdline_value() {
-	debug_log "cmdline_value" "$*"
-	log "searching for bootparam value: $1"
-	local ADDFILE BASECFG VALUE ADD_VALUE
-	ADDFILE=$MEMORY/cmdline
-	VALUE=$(echo -n " " | cat - $ADDFILE 2>/dev/null | egrep -m1 -o "(^|[[:space:]])$1=[^[:space:]]+" | cut -d "=" -f 2- | head -n1)
-	ADD_VALUE=$(echo -n " " | cat - $ADDFILE 2>/dev/null | egrep -o "(^|[[:space:]])$1\+=[^[:space:]]+" | cut -d "=" -f 2- | sort -u | tr [[:cntrl:]] , | sed s/,,*/,/g | sed s/^,// | sed s/,$//)
-	[ -z $ADD_VALUE ] || ADD_VALUE=",$ADD_VALUE"
-	echo "${VALUE}${ADD_VALUE}" |grep -q [^\",\',\ ] || return
-	if ! [ -z "${VALUE}${ADD_VALUE}" ]; then
-		echo "$(echo $1 | sed 's/\./_/')"="${VALUE}${ADD_VALUE}" >>/etc/initvars
-		echo "${VALUE}${ADD_VALUE}"
-	fi
-}
 
 # test if the script is started by root user. If not, exit
 #
@@ -638,7 +610,7 @@ list_mounted_directories() {
 #
 list_partition_devices() {
 	debug_log "list_partition_devices" "$*"
-	if [ "$(cmdline_parameter nohd)" != "" ]; then return 1; fi
+	if [ "$(getpar nohd)" == "enabled" ]; then return 1; fi
 	MOUNTED=$(cat /proc/mounts | egrep '/dev/(sd|nbd).*[[:digit:]]' | cut -d " " -f 1 | sort -u)
 	#not mounted
 	for DEV in $MOUNTED $(egrep -v 'ram|loop|major|sr|^$| [0-9] [a-z]' /proc/partitions | grep [0-9] | sed -r "s:^[0-9 ]+:/dev/:"); do
@@ -661,7 +633,7 @@ list_disk_devices() {
 #
 list_swap_devices() {
 	debug_log "list_swap_devices" "$*"
-	if [ "$(cmdline_parameter nohd)" != "" -o "$(cmdline_parameter noswap)" != "" ]; then return 1; fi
+	if [ "$(getpar nohd)" == "enabled" -o "$(getpar noswap)" == "enabled" ]; then return 1; fi
 	$BIN_BLKID -t TYPE="swap" -o device
 }
 
@@ -670,7 +642,7 @@ list_swap_devices() {
 list_block_devices() {
 	debug_log "list_block_devices" "$*"
 	list_partition_devices
-	[ "$(cmdline_parameter nocd)" = "" ] && list_cdrom_devices
+	getpar nocd || list_cdrom_devices
 }
 
 #using /uird.scan script to configure UIRD
@@ -679,12 +651,11 @@ uird_scan() {
 		/uird.scan
 		shell_cmd help
 	elif getpar $UIRD_SCAN >/dev/null ; then
-		SCANPAR="$(getpar $UIRD_SCAN 1 )"
-		[ -z $SCANPAR ] && return
-		if echo "$SCANPAR" | grep -q legacy; then
+		getpar $UIRD_SCAN 1 1 || return
+		if [ "getpar $UIRD_SCAN 1 1"  == "legacy" ] ; then
 			export BASECFG
-			/uird.scan --legacy $(getpar $UIRD_SCAN 1 2) || shell_cmd "help"
-		elif [ "$SCANPAR" == "modules" ]; then
+			/uird.scan --legacy $(getpar $UIRD_SCAN 1 '2,$') || shell_cmd "help"
+		elif [ "getpar $UIRD_SCAN 1 1"  == "modules" ]; then
 			export BASECFG
 			/uird.scan --modules || shell_cmd "help"
 		fi
@@ -809,14 +780,14 @@ mount_device() {
 	if [ "$3" ]; then OPTIONS="$OPTIONS,$(echo $3 | tr -s "+" ",")"; fi
 	OPTIONS=$(echo "$OPTIONS" | sed -r "s/^,+//")
 	if [ "$FS" = "-t ntfs-3g" ]; then
-		[ $(cmdline_parameter fsck) ] && fsck_device "$DEV" ntfs
+		getpar fsck >/dev/null && fsck_device "$DEV" ntfs
 		ntfsmount "$DEV" "$2" -o $OPTIONS >>/var/log/uird.dbg.log 2>&1
 		ERR=$?
 		#elif [ -f $DEV ] ; then
 		#	echo $DEV |grep -q "\.torrent$" && (  init_ifcfg ; mount_btfs $DEV $2 )
 		#	ERR=$?
 	else
-		if [ $(cmdline_parameter fsck) ]; then
+		if getpar fsck >/dev/null; then
 			FS_T=$(echo $FS | sed "s/-t //" | tr -d " ")
 			#if [ "$(echo 'ext2 ext3 ext4 btrfs vfat exfat xfs'| ([ "$FS_T" ] && grep '$FS_T') || echo '')" != "" ] ;then
 			if [ "$FS_T" == "ext2" -o "$FS_T" == "ext3" -o "$FS_T" == "ext4" -o "$FS_T" == "btrfs" -o "$FS_T" == "vfat" -o "$FS_T" == "exfat" -o "$FS_T" == "xfs" ]; then
@@ -850,7 +821,7 @@ mount_device() {
 			else
 				echo accepted! >/dev/console
 				umount "$2"
-				[ $(cmdline_parameter fsck) ] && fsck_device "/dev/mapper/$LOOPDEV"
+				getpar fsck && fsck_device "/dev/mapper/$LOOPDEV"
 				mount -n -o $OPTIONS "/dev/mapper/$LOOPDEV" "$2" >>/var/log/uird.dbg.log 2>&1
 				break
 			fi
@@ -918,7 +889,7 @@ mount_curlftpfs() {
 	local OPTIONS
 	debug_log "mount_curlftpfs" "$*"
 	OPTIONS=
-	[ "$(cmdline_value $UIRD_NETFSOPT)" ] && OPTIONS="-o $(cmdline_value $UIRD_NETFSOPT)"
+	getcpar $UIRD_NETFSOPT >/dev/null && OPTIONS="-o $(getpar $UIRD_NETFSOPT 1 1)"
 
 	mkdir -p $2
 	$BIN_CURLFTPFS $OPTIONS $1 $2 </dev/console >/dev/console 2>/dev/console || return
@@ -937,7 +908,7 @@ mount_sshfs() {
 	local OPTIONS
 	debug_log "mount_sshfs" "$*"
 	OPTIONS=
-	[ "$(cmdline_value $UIRD_NETFSOPT)" ] && OPTIONS="-o $(cmdline_value $UIRD_NETFSOPT)"
+	getpar $UIRD_NETFSOPT >/dev/null && OPTIONS="-o $(getpar $UIRD_NETFSOPT 1 1)"
 	mkdir -p $2
 	times=3
 	while [ $times -gt 0 ]; do
@@ -966,7 +937,7 @@ mount_sshfs() {
 mount_nfs() {
 	debug_log "mount_nfs" "$*"
 	OPTIONS="nolock,rsize=4096,wsize=4096"
-	[ "$(cmdline_value $UIRD_NETFSOPT)" ] && OPTIONS="$OPTIONS,$(cmdline_value $UIRD_NETFSOPT)"
+	getpar $UIRD_NETFSOPT >/dev/null && OPTIONS="$OPTIONS,$(getpar $UIRD_NETFSOPT 1 1)"
 	mkdir -p $2
 	modprobe nfs
 	local SHARE=$(echo $1 | sed s-^nfs://--)
@@ -983,7 +954,7 @@ mount_nfs() {
 mount_cifs() {
 	debug_log "mount_cifs" "$*"
 	OPTIONS=""
-	[ "$(cmdline_value $UIRD_NETFSOPT)" ] && OPTIONS="$(cmdline_value $UIRD_NETFSOPT)"
+	getpar $UIRD_NETFSOPT >/dev/null && OPTIONS="$(getpar $UIRD_NETFSOPT 1 1)"
 	mkdir -p $2
 	modprobe cifs
 	local SHARE=$(echo $1 | sed s-^cifs://--)
@@ -1000,7 +971,7 @@ mount_cifs() {
 mount_rsync() {
 	debug_log "mount_rsync" "$*"
 	OPTIONS="--progress -a"
-	[ "$(cmdline_value $UIRD_NETFSOPT)" ] && OPTIONS="$(cmdline_value $UIRD_NETFSOPT)"
+	getpar $UIRD_NETFSOPT >/dev/null && OPTIONS="$(getpar $UIRD_NETFSOPT)"
 	mkdir -p $2
 	#    local SHARE=`echo $1 | sed s-^cifs://-- `
 	# if
@@ -1073,11 +1044,8 @@ find_filepath() {
 
 	FOUND=$(ls -A1d $DIR/$2 2>/dev/null | head -n 1 | tr -s '/')
 
-	if [ "$(cmdline_value $UIRD_SGNFILES)" -a "$4" != "nosgn" ]; then
-		SGN_FILES="$(cmdline_value $UIRD_SGNFILES)"
-		ARR_SGN_FILES=$(echo $SGN_FILES | tr -s "," ";")
-		SGN_FILE=$(echo $ARR_SGN_FILES | cut -d ";" -f "$4")
-
+	if [ "$(getpar $UIRD_SGNFILES)" -a "$4" != "nosgn" ]; then
+		SGN_FILE="$(getpar $UIRD_SGNFILES "$4" 1)"
 		if [ -f "$DIR/$2/$SGN_FILE" ]; then
 			FOUND=$FOUND
 		else
@@ -1181,7 +1149,7 @@ find_data() {
 	debug_log "find_data" "$*"
 	local TIMEOUT RESULT
 
-	TIMEOUT=$(cmdline_value scantimeout | sed -r 's/[^0-9]*([0-9]+).*/\1/') #'
+	TIMEOUT=$(getpar scantimeout 1 1 | sed -r 's/[^0-9]*([0-9]+).*/\1/') #'
 	if [ "$TIMEOUT" = "" ]; then TIMEOUT=10; fi
 
 	log "find_file "$1" "$2" "$3" "$4""
@@ -1257,7 +1225,7 @@ iocharset() {
 
 	# if iocharset is explicitly set at the boot prompt,
 	# return it regardless the locale settings
-	IOCHARSET=$(cmdline_value iocharset)
+	IOCHARSET=$(getpar iocharset 1 1)
 	if [ "$IOCHARSET" = "" ]; then IOCHARSET=utf8; fi
 	echo $IOCHARSET
 	return 0
@@ -1270,7 +1238,7 @@ codepage() {
 
 	# if codepage is explicitly set at the boot prompt,
 	# return it regardless the locale settings
-	CODEPAGE=$(cmdline_value codepage)
+	CODEPAGE=$(getpar codepage 1 1)
 	if [ "$CODEPAGE" = "" ]; then CODEPAGE=866; fi
 	echo $CODEPAGE
 	return 0
@@ -1290,8 +1258,12 @@ fs_options() {
 
 	local NOAUTO IOCHARSET CODEPAGE
 
-	NOAUTO=$(cmdline_parameter noauto)
-	if [ "$NOAUTO" = "" ]; then NOAUTO="auto"; fi
+	NOAUTO="$(getpar noauto 2>/dev/null)"
+	if [ "$NOAUTO" = "enabled" ]; then 
+		NOAUTO="noauto" 
+	else
+		NOAUTO="auto"
+	fi
 	if [ "$2" = "fstab" ]; then echo -n "$NOAUTO,"; fi
 	if [ "$1" = "swap" ]; then
 		echo "defaults,pri=1"
@@ -1307,7 +1279,7 @@ fs_options() {
 	IOCHARSET=$(iocharset)
 	CODEPAGE=$(codepage)
 
-	MUID=$(cmdline_value users | awk -F: '{print $2}')
+	MUID=$(getpar users 1 1| awk -F: '{print $2}')
 	[ "$MUID" = "" ] && MUID=500
 
 	if [ "$1" = "vfat" ]; then
@@ -1385,7 +1357,7 @@ init_ifcfg() {
 
 	modprobe af_packet 2>/dev/null
 
-	IP=$(cmdline_value $UIRD_IP)
+	IP=$(getpar $UIRD_IP 1 1)
 	[ "$IP" = "" ] && IP=::
 
 	echo $IP | while IFS=":" read CLIENT GW MASK; do
@@ -1415,7 +1387,7 @@ download_data_pxe() {
 
 	mkdir -p "$1/$LIVEKITNAME"
 
-	cmdline_value ip | while IFS=":" read CLIENT SERVER GW MASK PORT; do
+	getpar ip 1 1 | while IFS=":" read CLIENT SERVER GW MASK PORT; do
 		echo_green_star
 		echo "Downloading files from $SERVER ..."
 
@@ -1523,7 +1495,7 @@ mount_data_source() {
 				echolog "$MOUNT_DATA_SOURCE_USING" $yellow$DATA_FROM$default
 			fi
 		fi
-	elif [ $(cmdline_parameter $UIRD_FORCE)_ == "${UIRD_FORCE}_" -o "$6" == "yes" ]; then
+	elif [ "$(getpar $UIRD_FORCE)_" == "enabled_" -o "$6" == "yes" ]; then
 		rmdir $DST_DIR
 		echolog $red"$MOUNT_DATA_SOURCE_NOT_FOUND"$default
 		echolog $yellow"Source $SOURCE droped. Continue..."$default
@@ -2135,8 +2107,8 @@ Copy_timer() {
 aria2_preload() {
 	local PiD ARIA_IN
 	mkdir -p $1/data
-	ARIA_IN=$(cmdline_value $UIRD_ARIA2RAM | sed 's/+/  /g' | sed 's/::/  /g')
-	[ $(cmdline_value $UIRD_ARIA2RAM | grep -q ::) ] && ARIA_IN="$ARIA_IN -Z"
+	ARIA_IN=$(getpar $UIRD_ARIA2RAM [[:digit:]]| sed 's/+/  /g')
+	[ "$(getpar $UIRD_ARIA2RAM 2 )" ] && ARIA_IN="$ARIA_IN -Z"
 	init_ifcfg
 	echolog "Aria2c preload media" $green${ARIA_IN} " -> " $brown$1$default
 	aria2c -q --no-netrc --seed-time=0 $ARIA_IN -d $1/data >/dev/null 2>&1 &
@@ -2278,7 +2250,7 @@ fstab_update() {
 	mkdir -p $1/etc $1/mnt
 	cat $FSTAB 2>/dev/null | grep -v "$FSTABLLFLAG" >$FSTABTMP
 	
-	UNION_FS="$(cmdline_value $UIRD_UNION)"
+	UNION_FS="$(getpar $UIRD_UNION 1 1)"
 	[ -z $UNION_FS ] && UNION_FS="aufs"
 	if [ "$UNION_FS" = "overlay" ]; then
 		fstab_add_line $FSTABTMP overlay / overlay defaults
