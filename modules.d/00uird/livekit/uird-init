@@ -2,7 +2,7 @@
 #
 # UIRD Init script
 # Author: Anton Goroshkin <http://magos-linux.ru>
-#
+# Author: Alexander Betkher <http://magos-linux.ru>
 
 . /livekitlib
 
@@ -46,8 +46,6 @@ mkdir -p $MEMORY /tmp
 
 cfg_parser
 BREAKSTEP="$(getpar $UIRD_BREAK 1 1)"
-SCANTIMEOUT="$(getpar scantimeout 1 1)"
-FINDPARAMS="$(getpar $UIRD_FIND_PARAMS 1 1 |sed 's/_/ /g')"
 
 # print help
 if cat /tmp/basecfg | grep -q help; then

@@ -359,19 +359,18 @@ for par in $(cat  /tmp/basecfg) ; do
 	NUM_PAR=$(( $(ls -1 /tmp/parameters/$parDir |wc -l) +1 ))
 	if echo $par |grep -q "=" ; then
 		for val in $(echo $par |sed "s/${parDir}${separ}//" | tr -s ";," " ") ; do
-			echo "$val" |grep -q ^\{.*}$  &&  val="$(echo "$val" |sed 's/[\{,\}]//g')::force"
+			echo "$val" |grep -q ^\{.*}$  &&  val="$(echo "$val" |sed 's/[\{,\}]//g')::FORCE=yes"
 			for value in $(echo $val | sed 's/::/ /g') ; do
 				[ $NUM_PAR -eq 1 ] && value=$(uuid_label_to_dev $value) 
 				echo $value >> /tmp/parameters/$parDir/$NUM_PAR
 			done
 		NUM_PAR=$((NUM_PAR + 1))
 		done
-	echo "$par" |sed 's/\./_/' >> /etc/initvars
+	echo "$par" | sed -r 's/^(.*)\.(.*\=.*)$/\1_\2/'  >> /etc/initvars
 	else
 		: > /tmp/parameters/$parDir/enabled
 		echo "${par}=enabled" >> /etc/initvars
 	fi
-	 
 done
 #tar -czf $SYSMNT/parameters.tar.gz /tmp/parameters &
 }
@@ -1148,22 +1147,26 @@ find_file() {
 # $4 = mount options
 find_data() {
 	debug_log "find_data" "$*"
-	local TIMEOUT RESULT
-
-	TIMEOUT=$(getpar scantimeout 1 1 | sed -r 's/[^0-9]*([0-9]+).*/\1/') #'
+	local TIMEOUT RESULT MNT_OPTS FPARS
+	MNT_OPTS='' ; TIMEOUT=''
+	FPARS=$4
+	if [ "$FPARS" ] ; then
+			for str in  $(cat $FPARS |sed -n '2,$p')  ; do
+				local |grep -q "$(echo $str |cut  -f1 -d=)=" &&  eval $str 
+			done 
+	fi
+	MNT_OPTS="$(echo $MNT_OPTS |sed 's/+/,/')"
+	[ "$TIMEOUT" ] || TIMEOUT=$(getpar scantimeout 1 1 | sed -r 's/[^0-9]*([0-9]+).*/\1/')
 	if [ "$TIMEOUT" = "" ]; then TIMEOUT=10; fi
-
-	log "find_file "$1" "$2" "$3" "$4""
-	RESULT=$(find_file "$1" "$2" "$3" "$4")
+	log "find_file "$1" "$2" "$3" "$MNT_OPTS""
+	RESULT=$(find_file "$1" "$2" "$3" "$MNT_OPTS")
 
 	while [ $TIMEOUT -gt 0 -a "$RESULT" = "" ]; do
 		echo -ne "." >&2
-		#echolog $green"$FIND_DATA"$default >&2
 		sleep 1
 		TIMEOUT=$((TIMEOUT - 1))
-		RESULT=$(find_file "$1" "$2" "$3" "$4")
+		RESULT=$(find_file "$1" "$2" "$3" "$MNT_OPTS")
 	done
-
 	echo $RESULT
 }
 
@@ -1450,16 +1453,22 @@ init_nbd() {
 # $2 = destination directory
 # $3 = mount point directory
 # $4 = check SGN
-# $5 = mount options
-# $6 = force check source (yes, no)."Yes" means - do not stop uird-init then the source was not found
+# $5 = file with ext parameters
 mount_data_source() {
-	local SOURCE DST_DIR MNT_DIR SGN_CHECK MNT_OPTS par iPARS SIZE MKFS
+	local SOURCE DST_DIR MNT_DIR SGN_CHECK MNT_OPTS par iPARS FPARS SRC FORCE
 	debug_log "mount_data_source" "$*"
+	MNT_OPTS='' ; FORCE=''
 	SOURCE=$1
 	DST_DIR=$2
 	MNT_DIR=$3
 	SGN_CHECK=$4
-	MNT_OPTS=$5
+	FPARS=$5
+	if [ "$FPARS" ] ; then
+		for str in  $(cat $FPARS |sed -n '2,$p')  ; do
+			local |grep -q "$(echo $str |cut  -f1 -d=)"   && 	eval $str 
+		done 
+	fi
+	MNT_OPTS="$(echo $MNT_OPTS |sed 's/+/,/')" 
 	echo -ne $blue"  * "$default
 	echolog "$MOUNT_DATA_SOURCE" $yellow"$SOURCE"$default
 
@@ -1474,11 +1483,13 @@ mount_data_source() {
 		echo $SOURCE | grep -iq ^"ftp://" && DATA_FROM=$(mount_curlftpfs $SOURCE $MNT_DIR $MNT_OPTS)
 		echo $SOURCE | grep -iq ^"rsync://" && mount_rsync $SOURCE $MNT_DIR && DATA_FROM=$MNT_DIR
 	else
-		echo $SOURCE | grep -q "@" && SOURCE=$(uuid_label_to_dev $SOURCE)
-		log "find_data $SOURCE $MNT_DIR $SGN_CHECK $MNT_OPTS"
-		DATA_FROM=$(find_data $SOURCE $MNT_DIR $SGN_CHECK $MNT_OPTS)
+		log "find_data $SOURCE $MNT_DIR $SGN_CHECK $FPARS"
+		DATA_FROM=$(find_data "$SOURCE" "$MNT_DIR" "$SGN_CHECK"  "$FPARS" )
 ##################################################################
-		[ -e "$DATA_FROM" ] || mkimg $SOURCE $MNT_DIR
+		if ! [ -e "$DATA_FROM" ] ; then 
+			echo $FPARS |egrep -q 'uird.home|uird.changes' && mkimg $SOURCE $MNT_DIR $FPARS
+			log "mkimg maked DATA_FROM - $DATA_FROM"
+		fi
 ##################################################################
 		[ -b "$DATA_FROM" ] && mount_device $DATA_FROM $DST_DIR $MNT_OPTS # mount block device
 	fi
@@ -1496,7 +1507,7 @@ mount_data_source() {
 				echolog "$MOUNT_DATA_SOURCE_USING" $yellow$DATA_FROM$default
 			fi
 		fi
-	elif [ "$(getpar $UIRD_FORCE)_" == "enabled_" -o "$6" == "yes" ]; then
+	elif [ "$(getpar $UIRD_FORCE)_" == "enabled_" -o  "$FORCE" == "yes"  ] ; then
 		rmdir $DST_DIR
 		echolog $red"$MOUNT_DATA_SOURCE_NOT_FOUND"$default
 		echolog $yellow"Source $SOURCE droped. Continue..."$default
@@ -1560,26 +1571,22 @@ init_layer() {
 	debug_log "init_layer" "$*"
 	echo_green_star
 	echolog "$INIT_LAYER" $brown$(basename $2) " -> " $1$default
-	local NUM_SUBL FROM CMD_PARAM ARR_FROM DATAFROMTO DATAFROM DATATO DATA DATAMNTM MNTOPTS qpar par2 FORCE
-	FORCE=no
+	local NUM_SUBL FROM CMD_PARAM   DATAFROM MNT DATA DATAMNTM   FPARS
 	NUM_SUBL=0
 	CMD_PARAM=$3
 	for PARNUM in $(getpar $CMD_PARAM) ; do
-		PARS=$(getpar $CMD_PARAM $PARNUM '2,$')
+		FPARS="/tmp/parameters/$CMD_PARAM/$PARNUM"
 		DATAFROM=$(getpar $CMD_PARAM $PARNUM 1)
-		MNTOPTS='+'
-		DATATO=''
-		for par in $PARS ; do 
-			if echo "$par" | grep -q "^\/.*" ; then DATATO=$par ; continue ; fi
-			if [ "$par" == "force" ]  ; then FORCE=yes ; continue ; fi
-			MNTOPTS="$par"
-		done
+		MNT='' 
+		for str in  $(cat $FPARS |sed -n '2,$p')  ; do
+			local |grep -q "$(echo $str |cut  -f1 -d=)"   && 	eval $str 
+		done 
 		if [ "$DATAFROM" ]; then
 			DATA=$2/$NUM_SUBL
 			DATAMNTM=$1/$NUM_SUBL
-			mount_data_source $DATAFROM $DATA $DATAMNTM "$([ $4 ] && echo $(($NUM_SUBL + 1)) || echo 'nosgn')" $MNTOPTS $FORCE
-			if [ "$DATATO" ]; then
-				MOUNTBINDS="${MOUNTBINDS} ${DATA};$DATATO"
+			mount_data_source "$DATAFROM" "$DATA" "$DATAMNTM" "$([ $4 ] && echo $(($NUM_SUBL + 1)) || echo 'nosgn')"  "$FPARS"
+			if [ "$MNT" ]; then
+				MOUNTBINDS="${MOUNTBINDS} ${DATA};$MNT"
 				log "MOUNTBINDS: $MOUNTBINDS"
 			fi
 		fi
@@ -1745,21 +1752,21 @@ init_swapfiles() {
 # $1 = changes mount directory
 # $2 = changes directory
 setup_changes() {
+	local FPARS UMODE CHANGESVAL SOURCE CHANGESMNT
 	debug_log "setup changes" "$*"
 	UMODE="$(getpar $UIRD_MODE 1 1)"
 	[ "$UMODE" != "changes" -a "$UMODE" != "clear" -a "$UMODE" != "hybrid" ] && return
 
 	CHANGESVAL=$(getpar $UIRD_CHANGES 1 1 )
-	MNT_OPTS=$(getpar $UIRD_CHANGES 1 2 )
-	
+	FPARS="/tmp/parameters/$UIRD_CHANGES/1" 
 	[ -z "$CHANGESVAL" ] && CHANGESVAL="changes"
 		
 	echo_green_star
 	echolog "$SETUP_CHANGES" $brown"$2"$default
 
 	if ! echo "$CHANGESVAL" | grep -q [XxLl][Zz][Mm]$; then
-		log "mount_data_source $CHANGESVAL $2 $1  nosgn  "$MNT_OPTS""
-		mount_data_source $CHANGESVAL $2 $1  nosgn  "$MNT_OPTS"
+		log "mount_data_source $CHANGESVAL $2 $1  nosgn  "$FPARS""
+		mount_data_source $CHANGESVAL $2 $1 sgn  "$FPARS"
 		
 	else
 		echo_green_star
@@ -1775,8 +1782,8 @@ setup_changes() {
 			echo $SOURCE | grep -iq ^"ftp://" && DATA_FROM=$(mount_curlftpfs $SOURCE $MNT_DIR)
 			DATA_FROM_DIR=$DATA_FROM
 		else
-			DATA_FROM=$(find_data $SOURCE $MNT_DIR "")
-			DATA_FROM_DIR=$(find_data $(dirname $SOURCE) $MNT_DIR "")
+			DATA_FROM=$(find_data $SOURCE $MNT_DIR "$FPARS")
+			DATA_FROM_DIR=$(find_data $(dirname $SOURCE) $MNT_DIR "$FPARS")
 		fi
 
 		CHANGESMNT="$DATA_FROM"
@@ -1946,7 +1953,7 @@ find_modules() {
 	debug_log "find_modules" "$*"
 	local ARR_FILTER FIND_PARAMS filter
 	ARR_FILTER=$(echo $(getpar $UIRD_RO [[:digit:]] )" "$(getpar $UIRD_RW [[:digit:]])" "$(getpar $UIRD_RUN [[:digit:]])" "$(getpar $UIRD_CP [[:digit:]] ) )
-	FIND_PARAMS=$(echo $(getpar $UIRD_FIND_PARAMS [[:digit:]]) |sed 's/_/ /g')
+	FIND_PARAMS=$(echo $(getpar $UIRD_FIND_PARAMS 1 1) |sed 's/_/ /g')
 	#    echolog "======================"$FIND_PARAMS"================="
 	for filter in $ARR_FILTER; do
 		find "$1" -path "$filter" $FIND_PARAMS 2>/dev/null | sort
@@ -2435,32 +2442,45 @@ fi
 }
 
 mkimg() {
-	local a DIR newimg SIZE MKFS MNT_DIR
-		newimg=$1 #new img (or new dir) name
-		MNT_DIR=$2 #mount point
-		echo $newimg | grep -q "@" && newimag=$(uuid_label_to_dev $newimg)
+	local  DIR newimg SIZE FS MNT_DIR
+	newimg=$1 #new img (or new dir) name
+	MNT_DIR=$2 #mount point
+	SIZE='' ; FS=''
+	FPARS=$3
+	if [ "$FPARS" ] ; then
+		for str in  $(cat $FPARS |sed -n '2,$p')  ; do
+				local |grep -q "$(echo $str |cut  -f1 -d=)=" &&  eval $str 
+		done 
+	fi
+		log "mkimg: $FS $SIZE"
 		echo '' ; echo_green_star
-		echolog "Trying to create $SOURCE"
+		echolog "Trying to create $SOURCE $FS ${SIZE}"
 		if $(dirname $newimg |grep -q [[:alnum:]] ); then
 			if $(dirname $newimg |grep -q ^$SYSMNT ) ; then
 					DIR=$(dirname $newimg)
 					mkdir -p $DIR
-					MKFS=$(basename $newimg |cut -f1 -d ".")
-					SIZE=$(basename $newimg |cut -f2 -d ".")
+					SIZE=512 ; FS=btrfs
 			else
 				read -p  "$SOURCE was not found, create it? (Y/N): " ANS
 				if [ "$ANS" == "y" -o "$ANS" == "Y" ] ; then
 					DIR=$(find_data $(dirname $newimg) $MNT_DIR "")
-					maxsize=$(df -m $DIR |tail -n1 |awk '{print $4}')
-					read -p "enter new image size Mb (default: 1024, max: $maxsize): " SIZE  ;	[ "$SIZE" == "" ] && SIZE='1024'
-					read -p "enter FS type (default ext4): " MKFS ; 	[ "$MKFS" == "" ] && MKFS='ext4'
+					if ! [ "$FS" ] ; then
+						read -p "enter FS type (default ext4): " FS 
+						[ "$FS" == "" ] && FS='ext4'
+					fi
+					if ! [ "$SIZE" ] ; then
+						maxsize=$(df -m $DIR |tail -n1 |awk '{print $4}')
+						read -p "enter new image size Mb (default: 1024, max: $maxsize): " SIZE  
+						[ "$SIZE" == "" ] && SIZE='1024'
+					fi
 				fi
 			fi
 			if  basename $newimg |grep -q img$  ; then
-					dd if=/dev/zero of="$DIR/$(basename $newimg)" bs=1 count=0 seek=${SIZE}M >/dev/null 2>&1
-					mkfs.$MKFS  "$DIR/$(basename $newimg)" >/dev/null 2>&1 &&	DATA_FROM="$DIR/$(basename $newimg)" 
-			elif basename $newimg | grep -qv "\." ; then
-						mkdir "$DIR/$(basename $newimg)" && DATA_FROM="$DIR/$(basename $newimg)"
+					dd if=/dev/zero of="$DIR/$(basename $newimg)" bs=1 count=0 seek=${SIZE}M >/dev/null 
+					mkfs.$FS  "$DIR/$(basename $newimg)" >/dev/null  &&	DATA_FROM="$DIR/$(basename $newimg)" 
+			elif 
+					basename $newimg | grep -qv "\." ; then
+					mkdir "$DIR/$(basename $newimg)" && DATA_FROM="$DIR/$(basename $newimg)"
 			fi
 		else
 			echo "Add path to image filename and try again"
