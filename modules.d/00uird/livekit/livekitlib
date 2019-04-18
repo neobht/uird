@@ -827,6 +827,33 @@ mount_device() {
 			fi
 		done
 	fi
+	
+#LUKS####################################################
+if [ $ERR -ne 0 ] && [ -b "$DEV" ] && echo "$DEV" | grep -q ^/dev/ ; then
+	LUKS_DEV=$(echo $DEV |sed 's:/dev/::')
+	echolog "$MOUNT_DEVICE_ENC" "LUKS" $green"$DEV"$default
+	times=3
+	while [ $times -gt 0 ]; do
+			if ! [ -e "/dev/mapper/$LUKS_DEV" ] ; then
+				read -s -pPassword: >/dev/console </dev/console 2>/dev/console
+				echo $REPLY | cryptsetup luksOpen "$DEV" "$LUKS_DEV"
+			fi 
+			mount -n -o ro "/dev/mapper/$LUKS_DEV" "$2" >>/var/log/uird.dbg.log 2>&1
+			ERR=$?
+			REPLY=
+			if [ $ERR -eq 0 ]; then
+				echo accepted! >/dev/console
+				umount "$2"
+				getpar fsck && fsck_device "/dev/mapper/$LUKS_DEV"
+				mount -n -o $OPTIONS "/dev/mapper/$LUKS_DEV" "$2" >>/var/log/uird.dbg.log 2>&1
+				break
+			fi
+			echo incorrect! >/dev/console
+			cryptsetup luksClose "$LUKS_DEV"
+			times=$(expr $times - 1)
+	done
+fi
+#########################################################
 
 	# not enough loop devices? try to create one.
 	if [ $ERR -eq 2 ]; then
