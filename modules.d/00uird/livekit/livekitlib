@@ -757,7 +757,7 @@ fumount() {
 # $4 = optional filesystem name, in order to skip autodetection
 mount_device() {
 	debug_log "mount_device" "$*"
-	local FS DEV LOOPDEV OPTIONS FILESYSTEM ERR OPTIONS
+	local FS DEV LOOPDEV OPTIONS FILESYSTEM ERR OPTIONS LUKS_DEV
 
 	# make sure we have enough arguments
 	if [ "$2" = "" ]; then return 1; fi
@@ -829,12 +829,12 @@ mount_device() {
 	fi
 	
 #LUKS####################################################
-if [ $ERR -ne 0 ] && [ -b "$DEV" ] && echo "$DEV" | grep -q ^/dev/ ; then
+if [ $ERR -ne 0 ] && [ -b "$DEV" ] && $BIN_BLKID "$DEV" -s TYPE | grep -q crypto_LUKS ; then
 	LUKS_DEV=$(echo $DEV |sed 's:/dev/::')
-	echolog "$MOUNT_DEVICE_ENC" "LUKS" $green"$DEV"$default
 	times=3
 	while [ $times -gt 0 ]; do
 			if ! [ -e "/dev/mapper/$LUKS_DEV" ] ; then
+				echolog "$MOUNT_DEVICE_ENC" "LUKS" $green"$DEV"$default
 				read -s -pPassword: >/dev/console </dev/console 2>/dev/console
 				echo $REPLY | cryptsetup luksOpen "$DEV" "$LUKS_DEV"
 			fi 
