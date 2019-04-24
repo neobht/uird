@@ -125,6 +125,7 @@ else
 	--filesystems "$FS" \
 	-i initrd /  \
 	-i configs /  \
+	-i keys / \
 	$ADDLOCALES \
 	--kernel-cmdline "uird.basecfg=/uird_configs/$CFG" \
 	-c dracut.conf -v -M $uirdfile $KERNEL  >dracut_magos.log 2>&1

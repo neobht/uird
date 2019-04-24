@@ -755,15 +755,22 @@ fumount() {
 # $2 = mountpoint, eg. /mnt/hda1
 # $3 = optional mount options, for example "ro", or "remount,rw"
 # $4 = optional filesystem name, in order to skip autodetection
+# $5 = file with extended parameters
 mount_device() {
 	debug_log "mount_device" "$*"
-	local FS DEV LOOPDEV OPTIONS FILESYSTEM ERR OPTIONS LUKS_DEV
-
+	local FS DEV LOOPDEV OPTIONS FILESYSTEM ERR OPTIONS LUKS_DEV KEY
+	KEY=""
 	# make sure we have enough arguments
 	if [ "$2" = "" ]; then return 1; fi
 	if [ "$1" = "" ]; then
 		rmdir "$2" 2>/dev/null
 		return 1
+	fi
+	FPARS=$5
+	if [ "$FPARS" ] ; then
+		for str in  $(cat $FPARS |sed -n '2,$p')  ; do
+			local |grep -q "$(echo $str |cut  -f1 -d=)"   && 	eval $str 
+		done 
 	fi
 	# skipping MBR
 	echo $(basename $1) | grep -q [a-z]$ && grep -q $(basename $1)[0-9] /proc/partitions && return 1
@@ -832,11 +839,20 @@ mount_device() {
 if [ $ERR -ne 0 ] && [ -b "$DEV" ] && $BIN_BLKID "$DEV" -s TYPE | grep -q crypto_LUKS ; then
 	LUKS_DEV=$(echo $DEV |sed 's:/dev/::')
 	times=3
+	if [ "$KEY"_ != "_" ] ; then
+		if ! [ -f $KEY ] ; then
+		KEY=$(find_data "$KEY" "${DATAMNT}/keys/$(basename $KEY)")
+		fi
+	fi
 	while [ $times -gt 0 ]; do
 			if ! [ -e "/dev/mapper/$LUKS_DEV" ] ; then
 				echolog "$MOUNT_DEVICE_ENC" "LUKS" $green"$DEV"$default
-				read -s -pPassword: >/dev/console </dev/console 2>/dev/console
-				echo $REPLY | cryptsetup luksOpen "$DEV" "$LUKS_DEV"
+				if [ -f "$KEY" ] ; then 
+					cryptsetup -d $KEY luksOpen "$DEV" "$LUKS_DEV"
+				else
+					read -s -pPassword: >/dev/console </dev/console 2>/dev/console
+					echo $REPLY | cryptsetup luksOpen "$DEV" "$LUKS_DEV"
+				fi
 			fi 
 			mount -n -o ro "/dev/mapper/$LUKS_DEV" "$2" >>/var/log/uird.dbg.log 2>&1
 			ERR=$?
@@ -1049,19 +1065,25 @@ ismountpoint() {
 # $1 = device
 # $2 = path/filename
 # $3 = device mountpoint
-# $4 = check SGN
-# $5 = mount options
+# $4 = extended pars from file
 find_filepath() {
 	debug_log "find_filepath" "$*"
-	local DIR FOUND PRESERVE SGN_FILE SGN_FILES ARR_SGN_FILES
-
+	local DIR FOUND PRESERVE SGN=""  MNTOPTS=""
+	FPARS=$4
+	if [ "$FPARS" ] ; then
+			for str in  $(cat $FPARS |sed -n '2,$p')  ; do
+				local |grep -q "$(echo $str |cut  -f1 -d=)=" &&  eval $str 
+			done 
+	fi
+	MNT_OPTS="$(echo $MNT_OPTS |sed 's/+/,/')"
 	DIR=$(device_mountdir $1 $3)
 
 	ismountpoint $DIR
 	if [ $? -eq 0 ]; then
 		PRESERVE="true"
 	else
-		mount_device $1 $DIR ro
+		log "mount_device $1 $DIR ro "" $4"
+		mount_device $1 $DIR ro "" $4
 		if [ $? -ne 0 ]; then
 			rmdir $DIR 2>/dev/null
 			return 1
@@ -1071,15 +1093,12 @@ find_filepath() {
 
 	FOUND=$(ls -A1d $DIR/$2 2>/dev/null | head -n 1 | tr -s '/')
 
-	if [ "$(getpar $UIRD_SGNFILES)" -a "$4" != "nosgn" ]; then
-		SGN_FILE="$(getpar $UIRD_SGNFILES "$4" 1)"
-		if [ -f "$DIR/$2/$SGN_FILE" ]; then
+	if [ "$SGN"_ != "_" ]; then
+		if [ -f "$DIR/$2/$SGN" ]; then
 			FOUND=$FOUND
 		else
-			#echolog "=====>$SGN_FILE<==$4==$ARR_SGN_FILES===="
-			[ "$SGN_FILE" ] && FOUND=""
+			[ "$SGN" ] && FOUND=""
 		fi
-	#      grep -q "`head -1 /VERSION`" $DIR/$LIVECDNAME/[Vv][Ee][Rr][Ss][Ii][Oo][Nn] 2>/dev/null || FOUND=""
 	fi
 	if [ "$FOUND" = "" ]; then
 		if [ "$PRESERVE" != "true" ]; then
@@ -1092,7 +1111,7 @@ find_filepath() {
 		# Only in the case it was not mounted already before.
 		if [ "$PRESERVE" != "true" ]; then
 			fumount $DIR
-			mount_device $1 $DIR rw,$5
+			mount_device $1 $DIR rw,$MNT_OPTS "" $4
 			if [ $? -ne 0 ]; then
 				rmdir $DIR 2>/dev/null
 				return 2
@@ -1122,18 +1141,13 @@ uuid_label_to_dev() {
 # and searching for $1 in the mounted directory
 # $1 = filename or device-path or devicepath/filename
 # $2 = device mountpoint
-# $3 = check SGN
-# $4 = mount options
+# $3 = extended pars from file
 
 find_file() {
 	debug_log "find_file" "$*"
 	local FIND DEVICE DEVPART PATHPART
-
 	# allow using /mnt/... as well as /dev/...
 	FIND=$(echo "$1" | sed -r "s:^/mnt/:/dev/:")
-
-	echo $FIND | grep -q "@" && FIND=$(uuid_label_to_dev $FIND)
-	#echo $FIND | grep -q "@" && return
 
 	# if parameter is just a device, echo it and exit
 	#if [ -b "$FIND" -o -c "$FIND" -o "$FIND" = "" ]; then echo "$FIND"; return; fi
@@ -1141,7 +1155,6 @@ find_file() {
 		echo "$FIND"
 		return
 	fi
-
 	# If path doesn't start with /dev/, try to find the exact path on all devices
 	# First, split DEV/PATH parts
 	DEVPART=$(echo "$FIND" | egrep -o "^/dev/[^/]+")
@@ -1151,7 +1164,8 @@ find_file() {
 		PATHPART="$FIND"
 		for DEVICE in $(list_mounted_directories) $(list_block_devices); do
 			if ! grep -q ":$DEVICE@$PATHPART:" /tmp/_findfile 2>/dev/null; then
-				find_filepath "$DEVICE" "$PATHPART" "$2" "$3" "$4"
+				log "find_filepath "$DEVICE" "$PATHPART" "$2" "$3""
+				find_filepath "$DEVICE" "$PATHPART" "$2" "$3"
 				if [ $? -eq 0 ]; then return 0; fi
 				echo ":$DEVICE@$PATHPART:" >>/tmp/_findfile
 			fi
@@ -1160,7 +1174,8 @@ find_file() {
 		# try to find PATHPART only on the given device
 		PATHPART=$(echo "$FIND" | sed -r 's:^/dev/[^/]+(.*):\1:') #'
 		[ $PATHPART ] || PATHPART="/"
-		find_filepath "$DEVPART" "$PATHPART" "$2" "$3" "$4"
+		log "find_filepath "$DEVICE" "$PATHPART" "$2" "$3" "
+		find_filepath "$DEVPART" "$PATHPART" "$2" "$3" 
 	fi
 }
 
@@ -1170,29 +1185,27 @@ find_file() {
 # (is there any way to find out if there are devices queued through /sys?)
 # $1 = file or directory to find
 # $2 = device mountpoint
-# $3 = check SGN
-# $4 = mount options
+# $3 = extended pars in file
 find_data() {
 	debug_log "find_data" "$*"
-	local TIMEOUT RESULT MNT_OPTS FPARS
-	MNT_OPTS='' ; TIMEOUT=''
-	FPARS=$4
+	local RESULT FPARS TIMEOUT=''
+	FPARS=$3
 	if [ "$FPARS" ] ; then
 			for str in  $(cat $FPARS |sed -n '2,$p')  ; do
 				local |grep -q "$(echo $str |cut  -f1 -d=)=" &&  eval $str 
 			done 
 	fi
-	MNT_OPTS="$(echo $MNT_OPTS |sed 's/+/,/')"
 	[ "$TIMEOUT" ] || TIMEOUT=$(getpar scantimeout 1 1 | sed -r 's/[^0-9]*([0-9]+).*/\1/')
 	if [ "$TIMEOUT" = "" ]; then TIMEOUT=10; fi
-	log "find_file "$1" "$2" "$3" "$MNT_OPTS""
-	RESULT=$(find_file "$1" "$2" "$3" "$MNT_OPTS")
+	log "find_file "$1" "$2" "$3" "
+	RESULT=$(find_file "$1" "$2" "$3" )
 
 	while [ $TIMEOUT -gt 0 -a "$RESULT" = "" ]; do
 		echo -ne "." >&2
 		sleep 1
 		TIMEOUT=$((TIMEOUT - 1))
-		RESULT=$(find_file "$1" "$2" "$3" "$MNT_OPTS")
+		log "find_file "$1" "$2" "$3" "
+		RESULT=$(find_file "$1" "$2" "$3")
 	done
 	echo $RESULT
 }
@@ -1479,8 +1492,7 @@ init_nbd() {
 # $1 = source
 # $2 = destination directory
 # $3 = mount point directory
-# $4 = check SGN
-# $5 = file with ext parameters
+# $4 = file with ext parameters
 mount_data_source() {
 	local SOURCE DST_DIR MNT_DIR SGN_CHECK MNT_OPTS par iPARS FPARS SRC FORCE
 	debug_log "mount_data_source" "$*"
@@ -1488,8 +1500,7 @@ mount_data_source() {
 	SOURCE=$1
 	DST_DIR=$2
 	MNT_DIR=$3
-	SGN_CHECK=$4
-	FPARS=$5
+	FPARS=$4
 	if [ "$FPARS" ] ; then
 		for str in  $(cat $FPARS |sed -n '2,$p')  ; do
 			local |grep -q "$(echo $str |cut  -f1 -d=)"   && 	eval $str 
@@ -1510,15 +1521,15 @@ mount_data_source() {
 		echo $SOURCE | grep -iq ^"ftp://" && DATA_FROM=$(mount_curlftpfs $SOURCE $MNT_DIR $MNT_OPTS)
 		echo $SOURCE | grep -iq ^"rsync://" && mount_rsync $SOURCE $MNT_DIR && DATA_FROM=$MNT_DIR
 	else
-		log "find_data $SOURCE $MNT_DIR $SGN_CHECK $FPARS"
-		DATA_FROM=$(find_data "$SOURCE" "$MNT_DIR" "$SGN_CHECK"  "$FPARS" )
+		log "find_data $SOURCE $MNT_DIR  $FPARS"
+		DATA_FROM=$(find_data "$SOURCE" "$MNT_DIR" "$FPARS" )
 ##################################################################
 		if ! [ -e "$DATA_FROM" ] ; then 
 			echo $FPARS |egrep -q 'uird.home|uird.changes' && mkimg $SOURCE $MNT_DIR $FPARS
 			log "mkimg maked DATA_FROM - $DATA_FROM"
 		fi
 ##################################################################
-		[ -b "$DATA_FROM" ] && mount_device $DATA_FROM $DST_DIR $MNT_OPTS # mount block device
+		[ -b "$DATA_FROM" ] && mount_device $DATA_FROM $DST_DIR "$MNT_OPTS"  # mount block device
 	fi
 	if [ -r "$DATA_FROM" ]; then
 		log "mount_device $DATA_FROM $DST_DIR  $MNT_OPTS"
@@ -1593,7 +1604,6 @@ syscp() {
 # $1 = data directory
 # $2 = layer directory
 # $3 = cmdline param name
-# $4 = check SGN
 init_layer() {
 	debug_log "init_layer" "$*"
 	echo_green_star
@@ -1611,7 +1621,7 @@ init_layer() {
 		if [ "$DATAFROM" ]; then
 			DATA=$2/$NUM_SUBL
 			DATAMNTM=$1/$NUM_SUBL
-			mount_data_source "$DATAFROM" "$DATA" "$DATAMNTM" "$([ $4 ] && echo $(($NUM_SUBL + 1)) || echo 'nosgn')"  "$FPARS"
+			mount_data_source "$DATAFROM" "$DATA" "$DATAMNTM"  "$FPARS"
 			if [ "$MNT" ]; then
 				MOUNTBINDS="${MOUNTBINDS} ${DATA};$MNT"
 				log "MOUNTBINDS: $MOUNTBINDS"
