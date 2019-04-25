@@ -1802,9 +1802,8 @@ setup_changes() {
 	echolog "$SETUP_CHANGES" $brown"$2"$default
 
 	if ! echo "$CHANGESVAL" | grep -q [XxLl][Zz][Mm]$; then
-		log "mount_data_source $CHANGESVAL $2 $1  nosgn  "$FPARS""
-		mount_data_source $CHANGESVAL $2 $1 sgn  "$FPARS"
-		
+		log "mount_data_source $CHANGESVAL $2 $1  "$FPARS""
+		mount_data_source $CHANGESVAL $2 $1 "$FPARS"
 	else
 		echo_green_star
 		echolog $SETUP_MACHINES_MOD $yellow"$CHANGESVAL"$default # text is not correct here
