@@ -2,7 +2,7 @@
 #
 # UIRD Init script
 # Author: Anton Goroshkin <http://magos-linux.ru>
-#
+# Author: Alexander Betkher <http://magos-linux.ru>
 
 . /livekitlib
 
@@ -44,21 +44,11 @@ debug_shell
 
 mkdir -p $MEMORY /tmp
 
-#find uird parameters in basecfg and cmdline
-getcmdline >/tmp/cmdline
-eval echo $(cat /proc/cmdline /tmp/cmdline 2>/dev/null | tr -s ";" ",") >/tmp/cmdline
-ln -s /tmp/cmdline $MEMORY/cmdline
-BASECFG=$(cmdline_value $UIRD_BASECFG)
-[ -f "$BASECFG" -o "$BASECFG" == "help" ] || BASECFG=/uird_configs/$BASECFG
-if ! [ -f "$BASECFG" -o "$BASECFG" == "help" ]; then
-	echo "$BASECFG is not correct uird.basecfg value"
-	shell_cmd "help"
-fi
-echo -n " " >>/tmp/cmdline
-eval echo $(cat /tmp/cmdline $BASECFG 2>/dev/null | tr -s ";" ",") >/tmp/cmdline
+cfg_parser
+BREAKSTEP="$(getpar $UIRD_BREAK 1 1)"
 
 # print help
-if cat $MEMORY/cmdline | grep -q help; then
+if cat /tmp/basecfg | grep -q help; then
 	echo ""
 	header "$HELP_SYSTEM"
 	echo ""
@@ -71,7 +61,7 @@ if cat $MEMORY/cmdline | grep -q help; then
 	help_dir=/usr/share/uird.help
 	[ -d /usr/share/uird.help/${LANG} ] && help_dir=/usr/share/uird.help/${LANG}
 	for par in $param_list; do
-		if [ "help" == "$(cmdline_value $par)" ]; then
+		if [ "help" == "$(getpar $par 1 1)" ]; then
 			header "-=-=-=- $par -=-=-=-"
 			cat ${help_dir}/${par}.help
 			echo "ENTER --> next page"
@@ -85,7 +75,7 @@ if cat $MEMORY/cmdline | grep -q help; then
 			fi
 		fi
 	done
-	if [ "$(cmdline_parameter $UIRD_HELP)" ]; then
+	if getpar $UIRD_HELP >/dev/null ; then
 		for file in $(ls -1 ${help_dir}/*.help); do
 			echo "-=-=-=- $file -=-=-=-" # header do not work with less command
 			cat $file
@@ -116,16 +106,15 @@ resume_from_suspend
 debug_shell
 
 #init swap
-[ "$(cmdline_value $UIRD_BREAK)" = "init_swap" ] && shell_cmd "break"
-[ "$(cmdline_value $UIRD_SWAP)" ] && init_swap "$(cmdline_value $UIRD_SWAP)" 
+getpar $UIRD_SWAP >/dev/null && init_swap  
 
-RAMSIZE=$(cmdline_value $UIRD_RAMSIZE)
+RAMSIZE=$(getpar $UIRD_RAMSIZE 1 1)
 ram=$(free -m | grep -i "^mem.*: " | awk '{print $2}')
 swap=$(free -m | grep -i "^swap.*:" | awk '{print $2}')
 [ "_$swap" == "_" ] && swap="0"
 
 if [ "$RAMSIZE" == "auto" ]; then
-	[ "$(cmdline_parameter $UIRD_ZRAM)" ] || RAMSIZE="$(expr \( $ram + $swap \) \* 70 \/ $ram)%"
+	getpar $UIRD_ZRAM > /dev/null || RAMSIZE="$(expr \( $ram + $swap \) \* 70 \/ $ram)%"
 elif [ "_$RAMSIZE" == "_" ]; then
 	RAMSIZE=70%
 fi
@@ -133,12 +122,9 @@ echo_green_star
 echolog "RAM: $ram,  DISK SWAP: $swap, ${RAMDISK_SIZE}:  $RAMSIZE RAM"
 
 # init zram
-if [ $(cmdline_parameter $UIRD_ZRAM) ]; then
+if getpar $UIRD_ZRAM >/dev/null ; then
 	modprobe -q zram num_devices=2 2>/dev/null
 	mem_zram=$(expr $(grep MemTotal /proc/meminfo | awk ' { print $2 } ') \* ${RAMSIZE%%%} / 100 \* 1024)
-	#modprobe -q lz4
-	#echo lz4 >/sys/block/zram1/comp_algorithm
-	#echo $(grep -c processor /proc/cpuinfo) >/sys/block/zram1/max_comp_streams
 	echo $mem_zram >/sys/block/zram1/disksize
 	echo $mem_zram >/sys/block/zram1/mem_limit
 	mkfs.ext4 -O ^has_journal /dev/zram1 >/dev/null 2>&1
@@ -148,75 +134,64 @@ else
 fi
 
 mkdir -p $MOUNTDIR $CHANGES
-mv /tmp/cmdline $MEMORY/cmdline
 
 # init MOUNTS layer
-[ "$(cmdline_value $UIRD_BREAK)" = "init_mounts" ] && shell_cmd "break"
-[ "$(cmdline_value $UIRD_MOUNTS)" ] && init_layer $DATAMNT/mounts $LAYER_MOUNTS $UIRD_MOUNTS
+[ "$(getpar $UIRD_MOUNTS)" ] && init_layer $DATAMNT/mounts $LAYER_MOUNTS $UIRD_MOUNTS
 debug_shell
 
 #aria2 preDownload
-[ "$(cmdline_value $UIRD_BREAK)" = "init_aria2" ] && shell_cmd "break"
-[ "$(cmdline_value $UIRD_ARIA2RAM)" ] && aria2_preload $DATAMNT/aria2
+[ "$(getpar $UIRD_ARIA2RAM)" ] && aria2_preload $DATAMNT/aria2
 debug_shell
 
 #init BASE layer
-[ "$(cmdline_value $UIRD_BREAK)" = "init_base" ] && shell_cmd "break"
-[ "$(cmdline_value $UIRD_FROM)" ] && init_layer $DATAMNT/from $LAYER_BASE $UIRD_FROM "check_SGN"
+[ "$(getpar $UIRD_FROM)" ] && init_layer $DATAMNT/from $LAYER_BASE $UIRD_FROM "check_SGN"
 debug_shell
 
 # init CACHE layer
-[ "$(cmdline_value $UIRD_BREAK)" = "init_cache" ] && shell_cmd "break"
-[ "$(cmdline_value $UIRD_CACHE)" ] && init_layer $DATAMNT/cache $LAYER_CACHE $UIRD_CACHE
+[ "$(getpar $UIRD_CACHE)" ] && init_layer $DATAMNT/cache $LAYER_CACHE $UIRD_CACHE
 debug_shell
 
 # init HOMES layer
-[ "$(cmdline_value $UIRD_BREAK)" = "init_home" ] && shell_cmd "break"
-[ "$(cmdline_value $UIRD_HOMES)" ] && init_layer $DATAMNT/homes $LAYER_HOMES $UIRD_HOMES
-[ "$(cmdline_value $UIRD_HOME)" ] && init_layer $DATAMNT/homes $LAYER_HOMES $UIRD_HOME
+[ "$(getpar $UIRD_HOMES)" ] && init_layer $DATAMNT/homes $LAYER_HOMES $UIRD_HOMES
+[ "$(getpar $UIRD_HOME)" ] && init_layer $DATAMNT/homes $LAYER_HOMES $UIRD_HOME
 debug_shell
 
 #if some of uird.swap values are swap files 
 [ "$SWAPFILES" ] && init_swapfiles "$SWAPFILES" $DATAMNT/swapfiles
 
 #setting up config
-[ "$(cmdline_value $UIRD_BREAK)" = "config" ] && shell_cmd "break"
 setup_config
 debug_shell
 
 #setting up source for changes
-[ "$(cmdline_value $UIRD_BREAK)" = "changes" ] && shell_cmd "break"
 setup_changes $DATAMNT/changes $CHANGES
 
 #clear changes dir if CLEAN mode is enabled
-if [ "$(cmdline_value $UIRD_MODE)" = "clear" -o "$(cmdline_value $UIRD_MODE)" = "hybrid" ]; then
+if [ "$(getpar $UIRD_MODE 1 1 )" == "clear" -o  "$(getpar $UIRD_MODE 1 1 )" == "hybrid" ]; then
 	rm -rf ${CHANGES}/*
 	echo $(date) >${CHANGES}/cleared_by_uird
 fi
 
 debug_shell
 #setting up machines mode
-[ "$(cmdline_value $UIRD_BREAK)" = "machines" ] && shell_cmd "break"
 setup_machines $MACHINES $DATAMNT/machines $CHANGES $DATAMNT/changes
 debug_shell
 
 # sync data from BASE layer to CACHE layer
-[ "$(cmdline_value $UIRD_BREAK)" = "sync_to_cache" ] && shell_cmd "break"
-[ "$(cmdline_value $UIRD_FROM)" ] && copy_to_cache $LAYER_BASE "$LAYER_CACHE"
+copy_to_cache $LAYER_BASE "$LAYER_CACHE"
 debug_shell
 
 # sync data from BASE,CACHE layers to RAM
-[ "$(cmdline_value $UIRD_BREAK)" = "sync_to_ram" ] && shell_cmd "break"
-[ "$(cmdline_value $UIRD_FROM)" ] && copy_to_ram $LAYER_BASE "$COPY2RAM"
+copy_to_ram $LAYER_BASE "$COPY2RAM"
 debug_shell
-[ "$(cmdline_value $UIRD_CACHE)" ] && copy_to_ram $LAYER_CACHE "$COPY2RAM"
+getpar $UIRD_CACHE >/dev/null && copy_to_ram $LAYER_CACHE "$COPY2RAM"
 debug_shell
 
 # init aufs filesystem
 init_aufs
 
 # init aufs/overlay union
-[ "$(cmdline_value $UIRD_BREAK)" = "init_aufs" ] && shell_cmd "break"
+[ "$BREAKSTEP)" = "init_aufs" ] && shell_cmd "break"
 init_union "$CHANGES" "$UNION"
 debug_shell
 
@@ -224,12 +199,11 @@ debug_shell
 mount_binds
 
 # add data to union
-[ "$(cmdline_value $UIRD_BREAK)" = "append_bundles" ] && shell_cmd "break"
-[ "$(cmdline_value $UIRD_FROM)" ] && union_append_bundles $LAYER_BASE "$BUNDLES" "$UNION" "$COPY2RAM" "$LAYER_CACHE"
+union_append_bundles $LAYER_BASE "$BUNDLES" "$UNION" "$COPY2RAM" "$LAYER_CACHE"
 debug_shell
 
 #setup homes by using aufs
-[ "$(cmdline_value $UIRD_BREAK)" = "set_homes" ] && shell_cmd "break"
+[ "$BREAKSTEP" = "set_homes" ] && shell_cmd "break"
 setup_homes "$LAYER_HOMES" "$UNION/home"
 debug_shell
 
@@ -251,15 +225,14 @@ mkdir -p $UNION/mnt/live/memory
 debug_shell
 
 # copy some files to system
-syscp "$(cmdline_value $UIRD_SYSCP)" $UNION
+syscp  $UNION
 [ -f /etc/initvars ] && cat /etc/initvars | sort | uniq >$UNION/etc/initvars
 
 cd $UNION
 
-[ "$(cmdline_value $UIRD_BREAK)" = "rc.preinit" ] && shell_cmd "break"
 echo_green_star
 echolog "$INITIALIZE preinit actions"
-if [ "$(cmdline_parameter $UIRD_PREINIT)$(cmdline_value $UIRD_PREINIT)" ] ; then
+if getpar $UIRD_PREINIT >/dev/null ; then
 	setup_preinit
 else
 	[ -x "etc/rc.d/rc.preinit" ] && /bin/bash etc/rc.d/rc.preinit
@@ -271,8 +244,8 @@ mv /var/log/* $UNION/var/log/ 2>/dev/null
 mkdir -p $UNION/proc $UNION/sys $UNION/dev $UNION/$MEMORY
 #mkdir -p $UNION/initramfs
 
-[ "$(cmdline_parameter $UIRD_SHUTDOWN)$(cmdline_value $UIRD_SHUTDOWN)" ] && . /uird.shutdown && uird_shutdown
-[ "$(cmdline_parameter $UIRD_FREEMEDIA)" ] && . /uird.freemedia && uird_freemedia
+getpar $UIRD_SHUTDOWN >/dev/null && . /uird.shutdown && uird_shutdown
+getpar $UIRD_FREEMEDIA >/dev/null && . /uird.freemedia && uird_freemedia
 
 #need TODO
 mount --move $MEMORY $UNION/$MEMORY
@@ -288,4 +261,4 @@ fi
 header "$HEADER_END $LIVEKITNAME"
 debug_shell
 MEMORY=${UNION}/${MEMORY} # need to cmdline_parameter
-[ "$(cmdline_parameter qse)" ] && shell_cmd "shell"
+getpar qse >/dev/null && shell_cmd "shell"
