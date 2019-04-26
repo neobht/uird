@@ -614,7 +614,7 @@ list_partition_devices() {
 	MOUNTED=$(cat /proc/mounts | egrep '/dev/(sd|nbd).*[[:digit:]]' | cut -d " " -f 1 | sort -u)
 	#not mounted
 	for DEV in $MOUNTED $(egrep -v 'ram|loop|major|sr|^$| [0-9] [a-z]' /proc/partitions | grep [0-9] | sed -r "s:^[0-9 ]+:/dev/:"); do
-		echo $DEV
+		$BIN_BLKID -s TYPE "$DEV" |grep -q "crypto_LUKS" || echo $DEV
 	done | sort | uniq -u
 	if [ -e /dev/mapper/control ]; then # list LVM partitions if available
 		ls -1 /dev/mapper/ | grep -v "^control\$" | sed -r "s:^:/dev/mapper/:"
@@ -758,8 +758,7 @@ fumount() {
 # $5 = file with extended parameters
 mount_device() {
 	debug_log "mount_device" "$*"
-	local FS DEV LOOPDEV OPTIONS FILESYSTEM ERR OPTIONS LUKS_DEV KEY
-	KEY=""
+	local FS DEV LOOPDEV OPTIONS FILESYSTEM ERR OPTIONS LUKS_DEV  KEY=""
 	# make sure we have enough arguments
 	if [ "$2" = "" ]; then return 1; fi
 	if [ "$1" = "" ]; then
@@ -839,16 +838,17 @@ mount_device() {
 if [ $ERR -ne 0 ] && [ -b "$DEV" ] && $BIN_BLKID "$DEV" -s TYPE | grep -q crypto_LUKS ; then
 	LUKS_DEV=$(echo $DEV |sed 's:/dev/::')
 	times=3
-	if [ "$KEY"_ != "_" ] ; then
-		if ! [ -f $KEY ] ; then
-		KEY=$(find_data "$KEY" "${DATAMNT}/keys/$(basename $KEY)")
-		fi
-	fi
 	while [ $times -gt 0 ]; do
 			if ! [ -e "/dev/mapper/$LUKS_DEV" ] ; then
+				if [ "$KEY"_ != "_" ] ; then
+					if ! [ -f $KEY ] ; then
+						KEY=$(find_data "$KEY" "/tmp/lukskey")
+					fi
+				fi
 				echolog "$MOUNT_DEVICE_ENC" "LUKS" $green"$DEV"$default
 				if [ -f "$KEY" ] ; then 
 					cryptsetup -d $KEY luksOpen "$DEV" "$LUKS_DEV"
+					log "$(umount /tmp/lukskey 2>&1)"
 				else
 					read -s -pPassword: >/dev/console </dev/console 2>/dev/console
 					echo $REPLY | cryptsetup luksOpen "$DEV" "$LUKS_DEV"
