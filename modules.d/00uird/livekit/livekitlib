@@ -376,10 +376,7 @@ done
 }
 
 old_pars_compat() {
-	local sgn par
-	for sgn in $(getpar $UIRD_SGNFILES) ; do
-		echo "SGN=$(getpar $UIRD_SGNFILES $sgn 1)" >> /tmp/parameters/uird.from/$sgn
-	done
+	local sgn par str
 	for par in $UIRD_FROM $UIRD_HOME $UIRD_MOUNTS ; do
 		for file in $(getpar $par ) ; do
 			getpar $par $file "2,$" |while read str ; do
@@ -387,10 +384,13 @@ old_pars_compat() {
 				echo "MNT=$str" >> /tmp/parameters/$par/$file
 				continue
 			fi
-			echo $str |grep -q ^[[:alnum:]]*=[[:alnum:]]*$ && continue
+			echo $str |grep -q ^[[:alnum:]].*=.*$ && continue
 			echo "MNT_OPTS=$str" >> /tmp/parameters/$par/$file
 			 done
 		done
+	done
+	for sgn in $(getpar $UIRD_SGNFILES) ; do
+		echo "SGN=$(getpar $UIRD_SGNFILES $sgn 1)" >> /tmp/parameters/uird.from/$sgn
 	done
 }
 
