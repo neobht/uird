@@ -45,6 +45,7 @@ debug_shell
 mkdir -p $MEMORY /tmp
 
 cfg_parser
+old_pars_compat
 BREAKSTEP="$(getpar $UIRD_BREAK 1 1)"
 
 # print help

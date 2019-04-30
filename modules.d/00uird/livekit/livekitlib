@@ -375,6 +375,25 @@ done
 #tar -czf $SYSMNT/parameters.tar.gz /tmp/parameters &
 }
 
+old_pars_compat() {
+	local sgn par
+	for sgn in $(getpar $UIRD_SGNFILES) ; do
+		echo "SGN=$(getpar $UIRD_SGNFILES $sgn 1)" >> /tmp/parameters/uird.from/$sgn
+	done
+	for par in $UIRD_FROM $UIRD_HOME $UIRD_MOUNTS ; do
+		for file in $(getpar $par ) ; do
+			getpar $par $file "2,$" |while read str ; do
+			if echo $str |grep -q ^/[[:alnum:]]?*.*$ ; then 
+				echo "MNT=$str" >> /tmp/parameters/$par/$file
+				continue
+			fi
+			echo $str |grep -q ^[[:alnum:]]*=[[:alnum:]]*$ && continue
+			echo "MNT_OPTS=$str" >> /tmp/parameters/$par/$file
+			 done
+		done
+	done
+}
+
 #$1 - uird.par
 #$2 - number of value
 #$3 - number of subvalue 
