@@ -19,9 +19,12 @@ Unification means:
 
 UIRD boot params:
 
-    - uird.par=value       - set value to uird.par
-    - uird.par+=value      - add value to uird.par default values list 
-
+    - uird.par=value                - set value to uird.par
+    - uird.par=value1,value2        - a list of values
+    - uird.par+=value               - add value to uird.par default values list 
+    - uird.par=value::SUBVALUE1=yes::SUBVALUE2=no - subvalues for value
+                             
+    
     - uird.basecfg=        - parameter sets layout of the basecfg.ini file
     - uird.config=         - parameter sets layout of system ini file (MagOS.ini)
     - uird.sgnfiles[+]=    - the list of files of markers for specification of a choice of sources directories 
