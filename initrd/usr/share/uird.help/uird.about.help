@@ -51,7 +51,16 @@ UIRD boot params:
     - uird.break=STAGE     - stop the boot in STAGE and swith to debug mode
     - uird.swap            - setting up swap
     - uird.scan            - uird scanner
-    - uird.find_params[+]= - the additional parameters for the "find" command, 
+    - uird.find_params[+]= - the additional parameters for the "find" command
+    - uird.aria2ram=       - a list of sources to copy from the network to RAM before starting the search "uird.from="
+    - uird.freemedia       - release (unmount) sources, it is used in conjunction with "uird.copy2ram"
+    - uird.force           - to continue of downloading, no questions asked, if the source is not found
+    - uird.parallel        - load modules in parallel mode
+    - uird.run[+]=         - running external executables
+    - uird.zram            - use zram instead of tmpfs
+    - uird.union=overlay   - use overlayfs instead of aufs
+    - uird.shutdown        - to make directory /run/initramfs, it is used by systemd in shut down and then switch control
+    - uird.preinit         - enable processing of the INI file specified in the "uird.config="
     - quickshell, qs       - a simple linux command line mode in initial stage of uird-init
     - qse                  - a simple linux command line mode in final stage of uird-init
     - debug                - debug, it is and in Africa debug too :)
