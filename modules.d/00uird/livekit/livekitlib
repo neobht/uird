@@ -361,15 +361,15 @@ for par in $(cat  /tmp/basecfg) ; do
 		for val in $(echo $par |sed "s/${parDir}${separ}//" | tr -s ";," " ") ; do
 			echo "$val" |grep -q ^\{.*}$  &&  val="$(echo "$val" |sed 's/[\{,\}]//g')::FORCE=yes"
 			for value in $(echo $val | sed 's/::/ /g') ; do
-				[ $NUM_PAR -eq 1 ] && value=$(uuid_label_to_dev $value) 
-				echo $value >> /tmp/parameters/$parDir/$NUM_PAR
+				[ $NUM_PAR -eq 1 ] && 	value=$(uuid_label_to_dev $value)
+	            echo $value >> /tmp/parameters/$parDir/$NUM_PAR
 			done
 		NUM_PAR=$((NUM_PAR + 1))
 		done
 	echo "$par" | sed -r 's/^(.*)\.(.*\=.*)$/\1_\2/'  >> /etc/initvars
 	else
 		: > /tmp/parameters/$parDir/enabled
-		echo "${par}=enabled" >> /etc/initvars
+		echo "${par}=enabled" | sed -r 's/^(.*)\.(.*\=.*)$/\1_\2/' >> /etc/initvars
 	fi
 done
 #tar -czf $SYSMNT/parameters.tar.gz /tmp/parameters &
@@ -1143,14 +1143,26 @@ find_filepath() {
 
 #convert UUID@/path and LABEL@/path to /dev/sd??/path
 # $1 = LABEL@/path/to/file
-# if function can't find label or uuid - echo $1
 uuid_label_to_dev() {
-	local DEV DEVPATH
+	local DEV DEVPATH TIMEOUT=""
+	if ! echo $1 |grep -q ^.*@[\ ,/] ;then
+		echo $1 ;	return
+	fi
 	DEV=$($BIN_BLKID | grep -m1 $(echo $1 | sed 's:@.*$::') 2>/dev/null | awk -F: '{print $1}')
-	if [ -z $DEV ]; then
-		DEVPATH="$1"
+	if [ -z $DEV ] ; then
+		[ "$TIMEOUT" ] || TIMEOUT=$(getpar scantimeout 1 1 | sed -r 's/[^0-9]*([0-9]+).*/\1/')
+		[ "$TIMEOUT" = "" ] && TIMEOUT=10
+		while [ $TIMEOUT -gt 0  ] ; do
+			echo -ne "." >&2
+			sleep 1
+			TIMEOUT=$((TIMEOUT - 1))
+			DEV=$($BIN_BLKID | grep -m1 $(echo $1 | sed 's:@.*$::') 2>/dev/null | awk -F: '{print $1}')
+			[ -z $DEV ] || break 
+		done
+	fi	
+	if [ -z $DEV ] ; then
+		DEVPATH=$1
 	else
-		#DEVPATH=$(echo $1 | sed "s:^.*@:${DEV}:")
 		DEVPATH=$(echo $1 | sed "s:^.*@/\|^.*@$:${DEV}/:")
 	fi
 	echo $DEVPATH | tail -n1

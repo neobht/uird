@@ -1,5 +1,5 @@
 #!/bin/sh
-nosave="no" ; shell="no" ; ask="no"
+nosave="no" ; shell="no" ; ask="no" ; ERROR=no
 
 . /oldroot/etc/initvars
 . /shutdown.cfg
@@ -83,8 +83,13 @@ if [ -f ${SYSMNT}/changes/.savetomodule -a -x /remount -a "$nosave" == "no" ] ; 
 			[ -f "$SAVETOMODULENAME" ] && mv -f "$SAVETOMODULENAME" "${SAVETOMODULENAME}.bak"
 			echo "Please wait. Saving changes to module $SAVETOMODULENAME....."
 			mksquashfs $SRC "$SAVETOMODULENAME" -ef /tmp/excludedfiles $SAVETOMODULEOPTIONS -noappend > /dev/null || mksquashfs $SRC "$SAVETOMODULENAME" -ef /tmp/excludedfiles  -noappend > /dev/null
-			[ $? == 0 ] && echo -e "[  ${green}OK${default}  ]  $SAVETOMODULENAME  -- complete."
-			chmod 444 "$SAVETOMODULENAME"
+			if [ $? == 0 ] ; then 
+				echo -e "[  ${green}OK${default}  ]  $SAVETOMODULENAME  -- complete."
+				chmod 444 "$SAVETOMODULENAME"
+			else
+				mv -f  "${SAVETOMODULENAME}.bak" "$SAVETOMODULENAME" 2>/dev/null
+				ERROR="yes"
+			fi
 		fi
 	fi
 fi
@@ -96,6 +101,10 @@ else
 	mount -o remount,ro $mntp && echo -e "[  ${green}OK${default}  ] Remount RO: $mntp"
 fi
 done 
+if  [ "$ERROR" == "yes" ] ; then
+	echo -e  "[  ${red}FALSE!${default}  ]  System changes was not saved to $SAVETOMODULENAME"
+	sleep 60
+fi
 echo "#####################################"
 echo "##### ### ## ##     ##     ##########"
 echo "##### ### ## ## ### ## #### #########"

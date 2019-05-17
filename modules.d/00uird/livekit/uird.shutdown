@@ -4,11 +4,10 @@ uird_shutdown() {
 	move_run
 	nosave="no"
 	: > "${UNION}/run/initramfs/shutdown.cfg"
-	if [ "$(cmdline_value $UIRD_SHUTDOWN)" ] ; then
-	ARR_CFG=$(echo "$(cmdline_value $UIRD_SHUTDOWN)"  | tr -s ";," "\n" | uniq)
-	for a in $ARR_CFG ; do 
-		eval $a=yes
-		echo "$a=yes" >> "${UNION}/run/initramfs/shutdown.cfg"
+	if [ "$(getpar $UIRD_SHUTDOWN 1 1)" ] ; then
+	for a in $(getpar $UIRD_SHUTDOWN ) ; do 
+		eval $(getpar $UIRD_SHUTDOWN $a 1)=yes
+		echo "$(getpar $UIRD_SHUTDOWN $a 1)=yes" >> "${UNION}/run/initramfs/shutdown.cfg"
 	done
 	fi
 	[ -f $CHANGES/.savetomodule -o "$nosave" == "yes" ] || return
