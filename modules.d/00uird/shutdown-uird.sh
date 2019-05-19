@@ -1,5 +1,5 @@
 #!/bin/sh
-nosave="no" ; shell="no" ; ask="no" ; ERROR=no
+nosave="no" ; shell="no" ; ask="no" ; ERROR=yes
 
 . /oldroot/etc/initvars
 . /shutdown.cfg
@@ -86,11 +86,15 @@ if [ -f ${SYSMNT}/changes/.savetomodule -a -x /remount -a "$nosave" == "no" ] ; 
 			if [ $? == 0 ] ; then 
 				echo -e "[  ${green}OK${default}  ]  $SAVETOMODULENAME  -- complete."
 				chmod 444 "$SAVETOMODULENAME"
+				ERROR="no"
 			else
 				mv -f  "${SAVETOMODULENAME}.bak" "$SAVETOMODULENAME" 2>/dev/null
-				ERROR="yes"
 			fi
 		fi
+	fi
+	if  [ "$ERROR" == "yes" ] ; then
+		echo -e  "[  ${red}FALSE!${default}  ]  System changes was not saved to $SAVETOMODULENAME"
+		sleep 60
 	fi
 fi
 for mntp in $(mount | egrep -v "tmpfs|proc|sysfs" | awk  '{print $3}' | sort -r) ; do
@@ -101,10 +105,6 @@ else
 	mount -o remount,ro $mntp && echo -e "[  ${green}OK${default}  ] Remount RO: $mntp"
 fi
 done 
-if  [ "$ERROR" == "yes" ] ; then
-	echo -e  "[  ${red}FALSE!${default}  ]  System changes was not saved to $SAVETOMODULENAME"
-	sleep 60
-fi
 echo "#####################################"
 echo "##### ### ## ##     ##     ##########"
 echo "##### ### ## ## ### ## #### #########"
