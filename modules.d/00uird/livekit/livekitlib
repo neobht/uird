@@ -347,22 +347,23 @@ fi
 echo $(cat  $BASECFG |grep -v "^[[:space:]]*\#"  2>/dev/null | tr -s ";" ",") >/tmp/basecfg
 echo $(cat  /tmp/cmdline  | tr -s ";" "," |sed 's/ /\n/g' | sort -u ) >>/tmp/basecfg
 for par in $(cat  /tmp/basecfg) ; do
-	if echo $par |grep -q "+=" ; then
-		parDir=$(echo $par |cut -d "+" -f1)
+	if echo "$par" |grep -q "+=" ; then
+		parDir=$(echo "$par" |cut -d "+" -f1)
 		separ="+="
 	else 
-		parDir=$(echo $par |cut -d "=" -f1)
+		parDir=$(echo "$par" |cut -d "=" -f1)
 		rm -rf /tmp/parameters/$parDir 2>/dev/null
 		separ="="
 	fi
 	mkdir -p /tmp/parameters/$parDir
 	NUM_PAR=$(( $(ls -1 /tmp/parameters/$parDir |wc -l) +1 ))
+	set -f
 	if echo $par |grep -q "=" ; then
-		for val in $(echo $par |sed "s/${parDir}${separ}//" | tr -s ";," " ") ; do
+		for val in $(echo "$par" |sed "s/${parDir}${separ}//" | tr -s ";," " ") ; do
 			echo "$val" |grep -q ^\{.*}$  &&  val="$(echo "$val" |sed 's/[\{,\}]//g')::FORCE=yes"
-			for value in $(echo $val | sed 's/::/ /g') ; do
-				[ $NUM_PAR -eq 1 ] && 	value=$(uuid_label_to_dev $value)
-	            echo $value >> /tmp/parameters/$parDir/$NUM_PAR
+			for value in $(echo "$val" | sed 's/::/ /g') ; do
+				[ $NUM_PAR -eq 1 ] && 	value=$(uuid_label_to_dev "$value")
+	            echo "$value" >> /tmp/parameters/$parDir/$NUM_PAR
 			done
 		NUM_PAR=$((NUM_PAR + 1))
 		done
@@ -371,8 +372,10 @@ for par in $(cat  /tmp/basecfg) ; do
 		: > /tmp/parameters/$parDir/enabled
 		echo "${par}=enabled" | sed -r 's/^(.*)\.(.*\=.*)$/\1_\2/' >> /etc/initvars
 	fi
+	set +f
 done
 #tar -czf $SYSMNT/parameters.tar.gz /tmp/parameters &
+
 }
 
 old_pars_compat() {
@@ -712,6 +715,7 @@ is_supported_filesystem() {
 # $1 = /dev device, eg. /dev/hda1, or loop file
 # $2 = optional filesystem name, in order to skip autodetection
 fsck_device() {
+	local FS 
 	debug_log "fsck_device" "$*"
 	echo $FSCHECKED | grep -q "$1" && return
 	[ -b "$1" -o -f "$1" ] || return
@@ -728,7 +732,8 @@ fsck_device() {
 	else
 		$BIN_FSCK -a $([ "$2" ] && echo "-t $2") $1 </dev/console >/dev/console 2>/dev/console
 	fi
-	log "FSCHECKED: $1 exitcode  - $?"
+	echo_green_star
+	echolog "FS $1 was checked,  exitcode  - $?"
 	FSCHECKED="$FSCHECKED $1"
 }
 
@@ -777,17 +782,18 @@ fumount() {
 # $5 = file with extended parameters
 mount_device() {
 	debug_log "mount_device" "$*"
-	local FS DEV LOOPDEV OPTIONS FILESYSTEM ERR OPTIONS LUKS_DEV  KEY=""
+	local FS DEV LOOPDEV OPTIONS FILESYSTEM ERR OPTIONS LUKS_DEV KEY="" FSCK="no"
 	# make sure we have enough arguments
 	if [ "$2" = "" ]; then return 1; fi
 	if [ "$1" = "" ]; then
 		rmdir "$2" 2>/dev/null
 		return 1
 	fi
+	getpar fsck >/dev/null && FSCK="yes"
 	FPARS=$5
 	if [ "$FPARS" ] ; then
 		for str in  $(cat $FPARS |sed -n '2,$p')  ; do
-			local |grep -q "$(echo $str |cut  -f1 -d=)"   && 	eval $str 
+			local |grep -q "$(echo $str |cut  -f1 -d=)"   &&  eval $str 
 		done 
 	fi
 	# skipping MBR
@@ -805,16 +811,12 @@ mount_device() {
 	if [ "$3" ]; then OPTIONS="$OPTIONS,$(echo $3 | tr -s "+" ",")"; fi
 	OPTIONS=$(echo "$OPTIONS" | sed -r "s/^,+//")
 	if [ "$FS" = "-t ntfs-3g" ]; then
-		getpar fsck >/dev/null && fsck_device "$DEV" ntfs
+		[ $FSCK == "yes" ] && fsck_device "$DEV" ntfs
 		ntfsmount "$DEV" "$2" -o $OPTIONS >>/var/log/uird.dbg.log 2>&1
 		ERR=$?
-		#elif [ -f $DEV ] ; then
-		#	echo $DEV |grep -q "\.torrent$" && (  init_ifcfg ; mount_btfs $DEV $2 )
-		#	ERR=$?
 	else
-		if getpar fsck >/dev/null; then
+		if [ $FSCK == "yes" ] ; then
 			FS_T=$(echo $FS | sed "s/-t //" | tr -d " ")
-			#if [ "$(echo 'ext2 ext3 ext4 btrfs vfat exfat xfs'| ([ "$FS_T" ] && grep '$FS_T') || echo '')" != "" ] ;then
 			if [ "$FS_T" == "ext2" -o "$FS_T" == "ext3" -o "$FS_T" == "ext4" -o "$FS_T" == "btrfs" -o "$FS_T" == "vfat" -o "$FS_T" == "exfat" -o "$FS_T" == "xfs" ]; then
 				fsck_device "$DEV" $FS_T
 			fi
@@ -2218,17 +2220,17 @@ copy_to() {
 			cp -fr $MODULE $2/${TARGET}
 		fi
 	}
-	C2PARAM="$(echo $4 | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')"
+	C2PARAM="$(echo "$4" | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')"
 	fullist=$(list_modules "$1")
 	for aaa in $fullist; do
-		[ "$C2PARAM" ] && ! [ "$(echo $aaa | egrep -i $C2PARAM)" ] && continue
+		[ "$C2PARAM" ] && ! [ "$(echo $aaa | egrep -i "$C2PARAM")" ] && continue
 		echolog $yellow"  $3 $blue<- $purple$(basename "$aaa")"$green
 	done
 
 	for SOURCE in $(find "$1" -maxdepth 1 -mindepth 1); do
 		LAYER_LIST=$(echo $fullist | grep "$SOURCE")
 		(for BUNDLE in $LAYER_LIST; do
-			c2 "$1" "$2" "$3" "$C2PARAM" $BUNDLE
+			c2 "$1" "$2" "$3" "$C2PARAM" "$BUNDLE"
 		done) &
 		PIDSS="$PIDSS /proc/$!"
 	done
@@ -2249,7 +2251,8 @@ copy_to_ram() {
 		echolog "$COPY_TO_RAM"
 		log "$(getpar $UIRD_COPY2RAM)$(getpar toram)"
 		TORAM="$(getpar $UIRD_COPY2RAM 1 1)$(getpar toram 1 1)"
-		[ "${TORAM}_" == "_" ] &&  TORAM="*"
+		[ "$(getpar $UIRD_COPY2RAM)" == "enabled" -o "$TORAM" == '*' ] && TORAM='.'
+		log "copy_to $1 $2 RAM "$TORAM""
 		copy_to $1 $2 RAM "$TORAM"
 	fi
 }
