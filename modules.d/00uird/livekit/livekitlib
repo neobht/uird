@@ -2119,14 +2119,16 @@ union_append_bundles() {
 		fi
 	}
 
-	for BUNDLE in $(list_modules "$1"); do
-		if getpar $UIRD_PARALLEL >/dev/null; then
+	if getpar $UIRD_PARALLEL >/dev/null; then
+		for BUNDLE in $(list_modules "$1"); do	
 			(add_bundle $BUNDLE $@) &
-		else
+		done
+		wait
+	else
+		for BUNDLE in $(list_modules "$1"); do
 			add_bundle $BUNDLE $@
-		fi
-	done
-	wait
+		done
+	fi
 	
 	if [ "$UNION_FS" = "overlay" ]; then
 		# OverlayFS
@@ -2235,8 +2237,7 @@ copy_to() {
 		PIDSS="$PIDSS /proc/$!"
 	done
 	Copy_timer $2 $PIDSS
-	wait
-	# if [ $? -ne 0 ]; then fatal "$NOT_ENOUGH_MEMORY"; fi
+	#wait
 }
 
 # Copy modules to RAM directory
