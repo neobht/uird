@@ -362,7 +362,7 @@ for par in $(cat  /tmp/basecfg) ; do
 		for val in $(echo "$par" |sed "s/${parDir}${separ}//" | tr -s ";," " ") ; do
 			echo "$val" |grep -q ^\{.*}$  &&  val="$(echo "$val" |sed 's/[\{,\}]//g')::FORCE=yes"
 			for value in $(echo "$val" | sed 's/::/ /g') ; do
-				[ $NUM_PAR -eq 1 ] && 	value=$(uuid_label_to_dev "$value")
+				[ ! -e /tmp/parameters/$parDir/$NUM_PAR ] && 	value=$(uuid_label_to_dev "$value")
 	            echo "$value" >> /tmp/parameters/$parDir/$NUM_PAR
 			done
 		NUM_PAR=$((NUM_PAR + 1))
