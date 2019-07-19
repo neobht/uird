@@ -1756,8 +1756,8 @@ init_swap() {
 		FSWAP=""
 		for NSWAP in $(getpar $UIRD_SWAP ); do
 			DSWAP=$(getpar $UIRD_SWAP $NSWAP 1)
-			if [ -b  ]; then
-				swapon $DSWAP
+			if [ -b "$DSWAP" ]; then
+				swapon "$DSWAP"
 			else
 				FSWAP="$DSWAP $FSWAP"
 			fi
