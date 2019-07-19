@@ -1798,6 +1798,7 @@ init_swapfiles() {
 			SWAP_FROM=$(find_data $SOURCE $MNT_DIR "")
 		fi
 		if [ -f "$SWAP_FROM" ]; then
+			[ $(basename "$SWAP_FROM") == "pagefile.sys" ] && mkswap "$SWAP_FROM"
 			if swapon "$SWAP_FROM" >/dev/null 2>&1; then
 				echo_green_star
 				echolog "swap file $SOURCE enabled"
