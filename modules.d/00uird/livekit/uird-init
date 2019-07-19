@@ -115,7 +115,11 @@ swap=$(free -m | grep -i "^swap.*:" | awk '{print $2}')
 [ "_$swap" == "_" ] && swap="0"
 
 if [ "$RAMSIZE" == "auto" ]; then
-	getpar $UIRD_ZRAM > /dev/null || RAMSIZE="$(expr \( $ram + $swap \) \* 70 \/ $ram)%"
+	if 	getpar $UIRD_ZRAM > /dev/null ; then
+		RAMSIZE=90% 
+	else
+		RAMSIZE="$(expr \( $ram + $swap \) \* 70 \/ $ram)%"
+	fi
 elif [ "_$RAMSIZE" == "_" ]; then
 	RAMSIZE=70%
 fi
