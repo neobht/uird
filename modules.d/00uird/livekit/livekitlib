@@ -954,7 +954,7 @@ mount_curlftpfs() {
 	local OPTIONS
 	debug_log "mount_curlftpfs" "$*"
 	OPTIONS=
-	getcpar $UIRD_NETFSOPT >/dev/null && OPTIONS="-o $(getpar $UIRD_NETFSOPT 1 1)"
+	getpar $UIRD_NETFSOPT >/dev/null && OPTIONS="-o $(getpar $UIRD_NETFSOPT 1 1)"
 
 	mkdir -p $2
 	$BIN_CURLFTPFS $OPTIONS $1 $2 </dev/console >/dev/console 2>/dev/console || return
