@@ -481,22 +481,23 @@ init_devs() {
 
 # Activate zram (auto-compression of RAM)
 init_zram_swap() {
-	if expr ${1%%%} / 2  >/dev/null 2>&1 ;then
-		ZramSize=${1%%%} ; ZramAlg=$2
-	else
-		ZramSize=${2%%%} ; ZramAlg=$1
+	local ALG='none' SIZE='0'
+	if [ "$1" != "yes" ] ; then
+			for str in  $(getpar $UIRD_SWAP $1 '2,$p')  ; do
+				local |grep -q "$(echo $str |cut  -f1 -d=)=" &&  eval $str 
+			done 
 	fi
-	expr $ZramSize / 2 >/dev/null 2>&1 || ZramSize=70 
-	modprobe -q $ZramAlg 2>/dev/null
+	[ $SIZE == 0 ] && SIZE=70
+	[ $ALG != 'none' ] && 	modprobe -q $ALG 2>/dev/null
 	memtotal=$(grep MemTotal /proc/meminfo | awk ' { print $2 } ')
-	memzram=$(($memtotal * ${ZramSize} / 100 * 1024))
+	memzram=$(($memtotal * ${SIZE} / 100 * 1024))
 	modprobe -q zram num_devices=2 2>/dev/null
-	[ "$ZramAlg" ] || ZramAlg=$(cat /sys/block/zram0/comp_algorithm |sed -e 's/^.*\[//' -e 's/\].*$//')
-	echo $ZramAlg > /sys/block/zram0/comp_algorithm 2>/dev/null
+	[ $ALG == 'none' ] && ALG=$(cat /sys/block/zram0/comp_algorithm |sed -e 's/^.*\[//' -e 's/\].*$//')
+	echo $ALG > /sys/block/zram0/comp_algorithm 2>/dev/null
 	echo $memzram >/sys/block/zram0/disksize
 	mkswap /dev/zram0 > /dev/null
 	swapon -p 100 /dev/zram0 
-	[ $? == 0 ] && echo_green_star && echolog "$INITIALIZE zram swap. Alg: $ZramAlg, size: ${ZramSize}%"
+	[ $? == 0 ] && echo_green_star && echolog "$INITIALIZE zram swap. Alg: $ALG, size: ${SIZE}%"
 }
 
 init_zswap() {
@@ -1735,50 +1736,40 @@ setup_config() {
 	chmod 400 $MEMORY/$LIVEKITNAME.ini.gz $MEMORY/cmdline 2>/dev/null
 }
 
-# Init swap and resize tmpfs
+# Init swap
 init_swap() {
 	local newsize total FSWAP ASWAP DSWAP SOURCE SWAP_FROM NEEDZRAM NEEDZSWAP
 	NEEDZSWAP=no ;	NEEDZRAM=no
 	debug_log "setting up swap"
 	echo_green_star
 	echolog "$SETUP_SWAP"
-	if [ "$(getpar $UIRD_SWAP 1 1)" == "auto" ]; then
-		ASWAP=$(list_swap_devices | head -n 1)
-		[ -b "$ASWAP" ] && swapon $ASWAP
-		if [ $(cat /proc/swaps | wc -l) -gt 1 ]; then
-			NEEDZSWAP=yes
-		else
-			NEEDZRAM=yes
-			ZRAMPARS="70"
-		fi
-		echo "90" > /proc/sys/vm/swappiness
-	else
-		FSWAP=""
-		for NSWAP in $(getpar $UIRD_SWAP ); do
-			DSWAP=$(getpar $UIRD_SWAP $NSWAP 1)
-			if [ -b "$DSWAP" ]; then
-				swapon "$DSWAP"
-			else
-				FSWAP="$DSWAP $FSWAP"
-			fi
-		done
-	fi
-	if [ "${FSWAP}_" != "_" ]; then
-		for SOURCE in $(echo $FSWAP); do
-			if echo "$SOURCE"  |grep -q "^zram.*"  ; then
-				NEEDZRAM=yes
-				ZRAMPARS=$(echo $SOURCE | sed -e 's/::/ /g' -e 's/zram//g' -e 's/^ *//')
-				continue
-			elif [ "$SOURCE" == "zswap" ]; then
+	FSWAP=""
+	for NSWAP in $(getpar $UIRD_SWAP ); do
+		DSWAP=$(getpar $UIRD_SWAP $NSWAP 1)
+		if [ -b "$DSWAP" ]; then
+			swapon "$DSWAP"
+		elif [ "$DSWAP" == "auto" ]; then
+			ASWAP=$(list_swap_devices | head -n 1)
+			[ -b "$ASWAP" ] && swapon $ASWAP
+			if [ $(cat /proc/swaps | wc -l) -gt 1 ]; then
 				NEEDZSWAP=yes
-				continue
+			else
+				NEEDZRAM=yes
+				ZRAMPARS="70"
 			fi
-			SWAPFILES="$SWAPFILES $SOURCE"
-		done
-	fi
-	if [ $NEEDZRAM == "yes" ] ; then 
-		init_zram_swap $ZRAMPARS 
-	elif [ $NEEDZSWAP == "yes" ] ; then
+		echo "90" > /proc/sys/vm/swappiness
+		elif [ "$DSWAP" == "zram" ]  ; then
+				NEEDZRAM=$NSWAP
+		elif [ "$DSWAP" == "zswap" ]; then
+				NEEDZSWAP=yes
+		else
+			FSWAP="$DSWAP $FSWAP"
+		fi
+	done
+	SWAPFILES="$FSWAP"
+	if [ $NEEDZRAM != "no" ] ; then 
+		init_zram_swap $NEEDZRAM 
+	elif [ $NEEDZSWAP != "no" ] ; then
 		init_zswap 
 	fi
 }
@@ -1798,7 +1789,7 @@ init_swapfiles() {
 			SWAP_FROM=$(find_data $SOURCE $MNT_DIR "")
 		fi
 		if [ -f "$SWAP_FROM" ]; then
-			[ $(basename "$SWAP_FROM") == "pagefile.sys" ] && mkswap "$SWAP_FROM"
+			file  "$SWAP_FROM" | grep -iq "linux.*swap file" || mkswap "$SWAP_FROM"
 			if swapon "$SWAP_FROM" >/dev/null 2>&1; then
 				echo_green_star
 				echolog "swap file $SOURCE enabled"
