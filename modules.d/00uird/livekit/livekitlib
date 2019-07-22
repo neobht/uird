@@ -118,7 +118,7 @@ INITIALIZE=$($GETTEXT "initializing")
 # uird.cp[+]=                - фильтр для модулей, содержимое которых копируется в корень
 # uird.copy2ram[+]=          - фильтр для модулей, которые копируются в RAM
 # uird.copy2cache[+]=        - фильтр для модулей, которые копируются в КЭШ
-# uird.ramsize=              - размер RAM
+# устаревший: uird.ramsize=  - размер RAM
 # uird.ip=                   - IP:GW:MASK , если не указан, то используется DHCP
 # uird.netfsopt[+]=          - дополнительные опции монтирования сетевых ФС: sshfs,nfs,curlftpfs,cifs
 # uird.load[+]=              - фильтр для модулей, которые необходимо подключить на этапе загрузки
@@ -136,7 +136,8 @@ INITIALIZE=$($GETTEXT "initializing")
 # uird.syscp[+]=             - список файлов (каталогов) для копирования из UIRD в систему /путь/файл::/путь/каталог
 # uird.parallel				 - параллельное монтирование модулей
 # uird.run[+]=               - запуск внешних исполняемых файлов
-# uird.zram                  - использовать zram вместо tmpfs
+# устаревший: uird.zram      - использовать zram вместо tmpfs
+# uird.rootfs=               - zram/tmpfs тип фс для /memory
 # uird.preinit               - обработка ини файла задданного в uird.config
 # uird.shutdown          - создание /run/initramfs
 # quickshell, qs 	     	 - консоль на начальном этапе работы uird-init
@@ -180,6 +181,7 @@ INITIALIZE=$($GETTEXT "initializing")
 [ -z $UIRD_UNION ] && UIRD_UNION=uird.union
 [ -z $UIRD_SHUTDOWN ] && UIRD_SHUTDOWN=uird.shutdown
 [ -z $UIRD_PREINIT ] && UIRD_PREINIT=uird.preinit
+[ -z $UIRD_ROOTFS ] && UIRD_ROOTFS=uird.rootfs
 
 # =================================================================
 # debug and output functions
@@ -395,6 +397,15 @@ old_pars_compat() {
 	for sgn in $(getpar $UIRD_SGNFILES) ; do
 		echo "SGN=$(getpar $UIRD_SGNFILES $sgn 1)" >> /tmp/parameters/uird.from/$sgn
 	done
+	if ! getpar $UIRD_ROOTFS >/dev/null ; then
+	mkdir -p /tmp/parameters/uird.rootfs
+		if getpar $UIRD_ZRAM >/dev/null ; then
+			echo zram > /tmp/parameters/uird.rootfs/1
+		else
+			echo tmpfs > /tmp/parameters/uird.rootfs/1
+		fi
+		echo $(getpar UIRD_RAMSIZE 1 1) >> /tmp/parameters/uird.rootfs/1
+	fi
 }
 
 #$1 - uird.par
@@ -2548,4 +2559,43 @@ mkimg() {
 		else
 			echo "Add path to image filename and try again"
 		fi
+}
+
+setup_rootfs() {
+	local SIZE='70%' ALG='' FSTYPE RAM SWAP
+	if [ "$1" != "yes" ] ; then
+			for str in  $(getpar $UIRD_ROOTFS 1 '2,$p')  ; do
+				local |grep -q "$(echo $str |cut  -f1 -d=)=" &&  eval $str 
+			done 
+	fi
+	FSTYPE=$(getpar $UIRD_ROOTFS 1 1)
+	
+	[ -z "$FSTYPE" ] && FSTYPE=tmpfs
+	RAM=$(free -m | grep -i "^mem.*: " | awk '{print $2}')
+	SWAP=$(free -m | grep -i "^swap.*:" | awk '{print $2}')
+	[ "_$swap" == "_" ] && swap="0"
+	if [ "$FSTYPE" == 'tmpfs' ] ; then
+		[ "$SIZE" == 'auto' ] && SIZE="$(expr \( $ram + $swap \) \* 70 \/ $ram)%"
+		mount -t tmpfs -o "size=${SIZE%%%}%" tmpfs $MEMORY
+	elif [ "$FSTYPE" == 'zram' ] ; then
+		[ $SIZE == 'auto' ] && SIZE=90%
+		[ -z "$ALG" ] || modprobe -q $ALG 2>/dev/null
+		modprobe -q zram num_devices=2 2>/dev/null
+		mem_zram=$(expr $(grep MemTotal /proc/meminfo | awk ' { print $2 } ') \* ${SIZE%%%} / 100 \* 1024)
+		[ -z "$ALG" ] && ALG=$(cat /sys/block/zram1/comp_algorithm |sed -e 's/^.*\[//' -e 's/\].*$//')
+		echo $mem_zram >/sys/block/zram1/disksize
+		echo $mem_zram >/sys/block/zram1/mem_limit
+		echo $ALG > /sys/block/zram1/comp_algorithm 2>/dev/null
+		mkfs.ext4 -O ^has_journal /dev/zram1 >/dev/null 2>&1
+		mount -o discard,rw /dev/zram1 $MEMORY
+	else
+		echolog "unknown rootfs type: $FSTYPE"
+		debug_shell 
+	fi
+
+echo_green_star
+echolog "RAM: $RAM,  SWAP: $SWAP"
+echo_green_star
+echolog "ROOTFS TYPE: ${FSTYPE} ${ALG}, ${RAMDISK_SIZE}:  $SIZE RAM"
+
 }

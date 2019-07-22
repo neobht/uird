@@ -108,35 +108,10 @@ debug_shell
 
 #init swap
 getpar $UIRD_SWAP >/dev/null && init_swap  
+debug_shell
 
-RAMSIZE=$(getpar $UIRD_RAMSIZE 1 1)
-ram=$(free -m | grep -i "^mem.*: " | awk '{print $2}')
-swap=$(free -m | grep -i "^swap.*:" | awk '{print $2}')
-[ "_$swap" == "_" ] && swap="0"
-
-if [ "$RAMSIZE" == "auto" ]; then
-	if 	getpar $UIRD_ZRAM > /dev/null ; then
-		RAMSIZE=90% 
-	else
-		RAMSIZE="$(expr \( $ram + $swap \) \* 70 \/ $ram)%"
-	fi
-elif [ "_$RAMSIZE" == "_" ]; then
-	RAMSIZE=70%
-fi
-echo_green_star
-echolog "RAM: $ram,  DISK SWAP: $swap, ${RAMDISK_SIZE}:  $RAMSIZE RAM"
-
-# init zram
-if getpar $UIRD_ZRAM >/dev/null ; then
-	modprobe -q zram num_devices=2 2>/dev/null
-	mem_zram=$(expr $(grep MemTotal /proc/meminfo | awk ' { print $2 } ') \* ${RAMSIZE%%%} / 100 \* 1024)
-	echo $mem_zram >/sys/block/zram1/disksize
-	echo $mem_zram >/sys/block/zram1/mem_limit
-	mkfs.ext4 -O ^has_journal /dev/zram1 >/dev/null 2>&1
-	mount -o discard,rw /dev/zram1 $MEMORY
-else
-	mount -t tmpfs -o "size=${RAMSIZE%%%}%" tmpfs $MEMORY
-fi
+setup_rootfs
+debug_shell
 
 mkdir -p $MOUNTDIR $CHANGES
 
