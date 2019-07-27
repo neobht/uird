@@ -408,6 +408,25 @@ old_pars_compat() {
 	fi
 }
 
+short_pars_compat() {
+	local par
+	for par in $(cat /proc/cmdline | sed 's/^.* -//' |cut -d " " -f 1 |fold -w 1) ; do
+		case $par in 
+		q) 	mkdir -p /tmp/parameters/qs && : > /tmp/parameters/qs/enabled;;
+		Q) 	mkdir -p /tmp/parameters/qse && : > /tmp/parameters/qse/enabled;;
+		p)	mkdir -p /tmp/parameters/uird.preinit && : > /tmp/parameters/uird.preinit/enabled;;
+		s)	mkdir -p /tmp/parameters/uird.shutdown && : > /tmp/parameters/uird.shutdown/enabled;;
+		c)	mkdir -p /tmp/parameters/uird.copy2ram && : > /tmp/parameters/uird.copy2ram/enabled;;
+		f) 	mkdir -p /tmp/parameters/uird.freemedia && : > /tmp/parameters/uird.freemedia/enabled;;
+		F) 	mkdir -p /tmp/parameters/uird.force && : > /tmp/parameters/uird.force/enabled;;
+		z)	mkdir -p /tmp/parameters/uird.rootfs && echo zram > /tmp/parameters/uird.rootfs/1;;
+		S)	mkdir -p /tmp/parameters/uird.swap && echo auto > /tmp/parameters/uird.swap/1;;
+		o)  mkdir -p /tmp/parameters/uird.union && echo overlay > /tmp/parameters/uird.union/1;;
+		C)	mkdir -p /tmp/parameters/uird.mode && echo clean > /tmp/parameters/uird.mode/1;;
+		esac
+	done
+}
+
 #$1 - uird.par
 #$2 - number of value
 #$3 - number of subvalue 
@@ -1762,11 +1781,10 @@ init_swap() {
 		elif [ "$DSWAP" == "auto" ]; then
 			ASWAP=$(list_swap_devices | head -n 1)
 			[ -b "$ASWAP" ] && swapon $ASWAP
-			if [ $(cat /proc/swaps | wc -l) -gt 1 ]; then
-				NEEDZSWAP=yes
+			if [ $(cat /proc/swaps | wc -l) -gt 1  ]; then
+				[ $(getpar $UIRD_SWAP |wc -l) -eq 1 ] && NEEDZSWAP=yes
 			else
-				NEEDZRAM=yes
-				ZRAMPARS="70"
+				[ $(getpar $UIRD_SWAP |wc -l) -eq 1 ] && NEEDZRAM=yes
 			fi
 		echo "90" > /proc/sys/vm/swappiness
 		elif [ "$DSWAP" == "zram" ]  ; then
@@ -1800,7 +1818,7 @@ init_swapfiles() {
 			SWAP_FROM=$(find_data $SOURCE $MNT_DIR "")
 		fi
 		if [ -f "$SWAP_FROM" ]; then
-			file  "$SWAP_FROM" | grep -iq "linux.*swap file" || mkswap "$SWAP_FROM"
+			file  "$SWAP_FROM" | grep -iq "linux.*swap file" || mkswap "$SWAP_FROM" >/dev/null
 			if swapon "$SWAP_FROM" >/dev/null 2>&1; then
 				echo_green_star
 				echolog "swap file $SOURCE enabled"
