@@ -1782,9 +1782,9 @@ init_swap() {
 			ASWAP=$(list_swap_devices | head -n 1)
 			[ -b "$ASWAP" ] && swapon $ASWAP
 			if [ $(cat /proc/swaps | wc -l) -gt 1  ]; then
-				[ $(getpar $UIRD_SWAP |wc -l) -eq 1 ] && NEEDZSWAP=yes
+				[ $(getpar $UIRD_SWAP |wc -l) -eq 1 -a -z "$(getpar $UIRD_SWAP $NSWAP |grep nozswap)" ] && NEEDZSWAP=yes
 			else
-				[ $(getpar $UIRD_SWAP |wc -l) -eq 1 ] && NEEDZRAM=yes
+				[ $(getpar $UIRD_SWAP |wc -l) -eq 1 -a -z "$(getpar $UIRD_SWAP $NSWAP |grep nozram)" ] && NEEDZRAM=yes
 			fi
 		echo "90" > /proc/sys/vm/swappiness
 		elif [ "$DSWAP" == "zram" ]  ; then
