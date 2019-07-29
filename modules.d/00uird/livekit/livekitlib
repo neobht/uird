@@ -337,6 +337,7 @@ echodebug() {
 	fi
 }
 
+
 cfg_parser() {
 getcmdline >/tmp/cmdline
 eval echo $(cat /proc/cmdline /tmp/cmdline 2>/dev/null | tr -s ";" ",") >/tmp/cmdline
@@ -1821,7 +1822,7 @@ init_swapfiles() {
 			SWAP_FROM=$(find_data $SOURCE $MNT_DIR "")
 		fi
 		if [ -f "$SWAP_FROM" ]; then
-			file  "$SWAP_FROM" | grep -iq "linux.*swap file" || mkswap "$SWAP_FROM" >/dev/null
+			file  "$SWAP_FROM" 2>/dev/null | grep -iq "linux.*swap file" || mkswap "$SWAP_FROM" >/dev/null
 			if swapon "$SWAP_FROM" >/dev/null 2>&1; then
 				echo_green_star
 				echolog "swap file $SOURCE enabled"
