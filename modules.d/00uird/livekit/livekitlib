@@ -410,6 +410,7 @@ old_pars_compat() {
 
 short_pars_compat() {
 	local par
+	cat /proc/cmdline | egrep -q " -|^-" || return 
 	for par in $(cat /proc/cmdline | sed 's/^.* -//' |cut -d " " -f 1 |fold -w 1) ; do
 		case $par in 
 		q) 	mkdir -p /tmp/parameters/qs && : > /tmp/parameters/qs/enabled;;
