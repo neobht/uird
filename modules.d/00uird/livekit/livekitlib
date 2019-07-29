@@ -347,8 +347,10 @@ if ! [ -f "$BASECFG" -o "$BASECFG" == "help" ]; then
 	shell_cmd "help"
 fi
 echo $(cat  $BASECFG |grep -v "^[[:space:]]*\#"  2>/dev/null | tr -s ";" ",") >/tmp/basecfg
+echo '' >>/tmp/basecfg
 echo $(cat  /tmp/cmdline  | tr -s ";" "," |sed 's/ /\n/g' | sort -u ) >>/tmp/basecfg
 for par in $(cat  /tmp/basecfg) ; do
+	echo $par |grep -q "^-" && continue
 	if echo "$par" |grep -q "+=" ; then
 		parDir=$(echo "$par" |cut -d "+" -f1)
 		separ="+="
@@ -416,14 +418,14 @@ short_pars_compat() {
 		q) 	mkdir -p /tmp/parameters/qs && : > /tmp/parameters/qs/enabled;;
 		Q) 	mkdir -p /tmp/parameters/qse && : > /tmp/parameters/qse/enabled;;
 		p)	mkdir -p /tmp/parameters/uird.preinit && : > /tmp/parameters/uird.preinit/enabled;;
-		s)	mkdir -p /tmp/parameters/uird.shutdown && : > /tmp/parameters/uird.shutdown/enabled;;
-		c)	mkdir -p /tmp/parameters/uird.copy2ram && : > /tmp/parameters/uird.copy2ram/enabled;;
-		f) 	mkdir -p /tmp/parameters/uird.freemedia && : > /tmp/parameters/uird.freemedia/enabled;;
-		F) 	mkdir -p /tmp/parameters/uird.force && : > /tmp/parameters/uird.force/enabled;;
+		S)	mkdir -p /tmp/parameters/uird.shutdown && : > /tmp/parameters/uird.shutdown/enabled;;
+		C)	mkdir -p /tmp/parameters/uird.copy2ram && : > /tmp/parameters/uird.copy2ram/enabled;;
+		F) 	mkdir -p /tmp/parameters/uird.freemedia && : > /tmp/parameters/uird.freemedia/enabled;;
+		f) 	mkdir -p /tmp/parameters/uird.force && : > /tmp/parameters/uird.force/enabled;;
 		z)	mkdir -p /tmp/parameters/uird.rootfs && echo zram > /tmp/parameters/uird.rootfs/1;;
-		S)	mkdir -p /tmp/parameters/uird.swap && echo auto > /tmp/parameters/uird.swap/1;;
+		s)	mkdir -p /tmp/parameters/uird.swap && rm -f /tmp/parameters/uird.swap/* && echo auto > /tmp/parameters/uird.swap/1;;
 		o)  mkdir -p /tmp/parameters/uird.union && echo overlay > /tmp/parameters/uird.union/1;;
-		C)	mkdir -p /tmp/parameters/uird.mode && echo clean > /tmp/parameters/uird.mode/1;;
+		c)	mkdir -p /tmp/parameters/uird.mode && echo clean > /tmp/parameters/uird.mode/1;;
 		esac
 	done
 }
@@ -2615,6 +2617,6 @@ setup_rootfs() {
 echo_green_star
 echolog "RAM: $RAM,  SWAP: $SWAP"
 echo_green_star
-echolog "ROOTFS TYPE: ${FSTYPE} ${ALG}, ${RAMDISK_SIZE}:  $SIZE RAM"
+echolog "ROOTFS TYPE: ${FSTYPE} ${ALG}, ${RAMDISK_SIZE}: ${SIZE%%%}% RAM"
 
 }
