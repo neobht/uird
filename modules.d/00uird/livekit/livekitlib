@@ -338,7 +338,7 @@ echodebug() {
 }
 
 
-cfg_parser() {
+cfg_parser_pre() {
 getcmdline >/tmp/cmdline
 eval echo $(cat /proc/cmdline /tmp/cmdline 2>/dev/null | tr -s ";" ",") >/tmp/cmdline
 BASECFG=$(echo -n " " | cat - /tmp/cmdline 2>/dev/null | egrep -m1 -o "(^|[[:space:]])uird.basecfg=[^[:space:]]+" | cut -d "=" -f 2- | head -n1)
@@ -350,6 +350,10 @@ fi
 echo $(cat  $BASECFG |grep -v "^[[:space:]]*\#"  2>/dev/null | tr -s ";" ",") >/tmp/basecfg
 echo '' >>/tmp/basecfg
 echo $(cat  /tmp/cmdline  | tr -s ";" "," |sed 's/ /\n/g' | sort -u ) >>/tmp/basecfg
+cfg_parser
+}
+
+cfg_parser() {
 for par in $(cat  /tmp/basecfg) ; do
 	echo $par |grep -q "^-" && continue
 	if echo "$par" |grep -q "+=" ; then
@@ -380,7 +384,6 @@ for par in $(cat  /tmp/basecfg) ; do
 	set +f
 done
 #tar -czf $SYSMNT/parameters.tar.gz /tmp/parameters &
-
 }
 
 old_pars_compat() {
@@ -1766,7 +1769,11 @@ setup_config() {
 	[ -z "$PATHINI" ] && PATHINI=/dev/null
 	echo "PATHINI=$PATHINI" >>/etc/initvars
 	egrep -v '^#|^$' "$PATHINI" | sed s-\\\\r-- | gzip >$MEMORY/$LIVEKITNAME.ini.gz
-	grep '^CMDLINE=' "$PATHINI" | sed s/^CMDLINE=// | tr -d [:cntrl:]\'\" >>$MEMORY/cmdline
+	if grep -q '^CMDLINE=' "$PATHINI" ; then
+		echo '' >>/tmp/basecfg  
+		grep '^CMDLINE=' "$PATHINI"| sed s/^CMDLINE=// | tr -d [:cntrl:]\'\" >> /tmp/basecfg
+		cfg_parser
+	fi
 	chmod 400 $MEMORY/$LIVEKITNAME.ini.gz $MEMORY/cmdline 2>/dev/null
 }
 
