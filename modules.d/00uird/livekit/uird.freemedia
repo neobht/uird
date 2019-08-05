@@ -15,16 +15,22 @@ uird_freemedia() {
 	RULESDIR="${UNION}/run/udev/rules.d"
 	mkdir -p $RULESDIR
 	for dev in $devs; do
+		unset LOSETUP ; unset LOOP ; unset  LOOP_FILE
 		UUID=$($BIN_BLKID -s UUID | grep $dev | cut -d " " -f 2 | cut -d "\"" -f2)
 		SERIAL_ID=$(udevadm info -a -n $dev | grep "ATTRS{device}" | head -n1)
 		MNTOPTS=$(grep $dev /proc/mounts | head -n1 | cut -d " " -f 4)
 		RBIND=$(grep $dev /proc/self/mountinfo | awk '{print $4 "," $5}' | grep -v ^/,)
 		for mountstr in $RBIND; do
 			unmnt=$(echo $mountstr | cut -d "," -f2)
-			$BIN_LOSETUP -d $($BIN_LOSETUP | grep $unmnt | cut -d " " -f 1) 2>/dev/null && LOSETUP=$unmnt
+			LOOP=$($BIN_LOSETUP | grep $unmnt | cut -d " " -f 1)
+			LOOP_FILE=$($BIN_LOSETUP | grep $unmnt | awk '{print $6}')
+			[ $LOOP ] && $BIN_LOSETUP -d  $LOOP 2>/dev/null && LOSETUP=$LOOP_FILE
 			umount $unmnt 2>/dev/null || echolog "$CANT_UNMOUNT $unmnt"
 		done
 		MPOINT=$(grep $dev /proc/self/mountinfo | grep ".* / .*$dev" | cut -d " " -f 5)
+		LOOP=$($BIN_LOSETUP | grep $MPOINT | cut -d " " -f 1) 2>/dev/null
+		LOOP_FILE=$($BIN_LOSETUP | grep $MPOINT | awk '{print $6}')
+		[ $LOOP ] && $BIN_LOSETUP -d $LOOP && LOSETUP=$LOOP_FILE 
 		umount $dev 2>/dev/null
 		if [ $? -eq 0 ]; then
 			eject $dev 2>/dev/null #may be cdrom
@@ -38,8 +44,8 @@ uird_freemedia() {
 				mpoint=$(echo $mountstr | cut -d "," -f2)
 				echo "mkdir -p $mpoint" >>$BINDIR/$UUID
 				echo "mount --rbind $MPOINT$(echo $mountstr | cut -d "," -f1) " $mpoint >>$BINDIR/$UUID
-				[ "$LOSETUP" == "$mpoint" ] && echo 'losetup $(losetup -f)  '"$mpoint/.lock" >>$BINDIR/$UUID
 			done
+			[ $LOSETUP ] && echo 'losetup $(losetup -f)'"  $LOSETUP" >>$BINDIR/$UUID
 			echo '' >>$BINDIR/$UUID
 			chmod +x $BINDIR/$UUID
 			echo "KERNEL==\"sd?\",  $SERIAL_ID,  ACTION==\"add\", RUN+=\"/run/bin/$UUID \"" >${RULESDIR}/00-${UUID}.rules
