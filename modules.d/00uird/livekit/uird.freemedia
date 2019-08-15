@@ -1,25 +1,42 @@
 #!/bin/sh
 uird_freemedia() {
-	local  UUID MPOINT MNTOPTS RBIND
+	local  UUID MPOINT MNTOPTS RBIND part PARS devices devs swaps
 	FREEMEDIA_BEGIN=$($GETTEXT "Starting freemedia....")
 	MEDIA=$($GETTEXT "Media")
 	NOTFREE=$($GETTEXT "is not free")
 	RULES=$($GETTEXT "add the udev rules to remount sources")
 	CANT_UNMOUNT=$($GETTEXT "Can't unmount")
+	PARS="$(getpar $UIRD_FREEMEDIA)"
 	move_run
 	echo_green_star && echolog "$FREEMEDIA_BEGIN"
 	LOSETUP=""
-	devs=$(egrep "${DATAMNT}/from|$MOUNTDIR" /proc/mounts | cut -d " " -f 1 | sort | uniq -d)
 	BINDIR="${UNION}/run/bin"
 	mkdir -p $BINDIR
 	RULESDIR="${UNION}/run/udev/rules.d"
 	mkdir -p $RULESDIR
-	for dev in $devs; do
+	devs='' ; swaps=''
+	if [ "$PARS" == "enabled" ] ; then
+		devs=$(egrep '/dev/sd.*[[:digit:]]' /proc/mounts | cut -d " " -f 1 | sort -u)
+		swaps=$(egrep '/dev/sd.*[[:digit:]]' /proc/swaps | cut -d " " -f 1)
+	else 
+		for a in $PARS ; do
+			par=$(getpar $UIRD_FREEMEDIA $a 1 |sed 's/[[:digit:]].*//')
+			part=$(grep "$par" /proc/mounts | cut -d " " -f 1 |sort -u) 
+			devs="${devs}\n${part}"
+			swap=$(grep "$par" /proc/swaps | cut -d " " -f 1 |sort -u)
+			swaps="${swaps}\n${swap}"
+		done
+	fi
+	swapparts=$(echo -e $swaps |sort -u)
+	for s in $swapparts ; do swapoff $s ; done
+	devices=$(echo -e $devs |sort -u)
+	echo "freemedia_devices="$(echo "$devices" |sed -e 's/\\n/ /g' -e 's/ /,/g' -e 's/^,//') >> $UNION/etc/initvars
+	for dev in $devices; do
 		unset LOSETUP ; unset LOOP ; unset  LOOP_FILE
 		UUID=$($BIN_BLKID -s UUID | grep $dev | cut -d " " -f 2 | cut -d "\"" -f2)
 		SERIAL_ID=$(udevadm info -a -n $dev | grep "ATTRS{device}" | head -n1)
 		MNTOPTS=$(grep $dev /proc/mounts | head -n1 | cut -d " " -f 4)
-		RBIND=$(grep $dev /proc/self/mountinfo | awk '{print $4 "," $5}' | grep -v ^/,)
+		RBIND=$(grep $dev /proc/self/mountinfo | sed 1d |awk '{print $4 "," $5}')
 		for mountstr in $RBIND; do
 			unmnt=$(echo $mountstr | cut -d "," -f2)
 			LOOP=$($BIN_LOSETUP | grep $unmnt | cut -d " " -f 1)
@@ -27,7 +44,7 @@ uird_freemedia() {
 			[ $LOOP ] && $BIN_LOSETUP -d  $LOOP 2>/dev/null && LOSETUP=$LOOP_FILE
 			umount $unmnt 2>/dev/null || echolog "$CANT_UNMOUNT $unmnt"
 		done
-		MPOINT=$(grep $dev /proc/self/mountinfo | grep ".* / .*$dev" | cut -d " " -f 5)
+		MPOINT=$(grep $dev /proc/self/mountinfo | head -n1 | grep ".* / .*$dev" | cut -d " " -f 5)
 		LOOP=$($BIN_LOSETUP | grep $MPOINT | cut -d " " -f 1) 2>/dev/null
 		LOOP_FILE=$($BIN_LOSETUP | grep $MPOINT | awk '{print $6}')
 		[ $LOOP ] && $BIN_LOSETUP -d $LOOP && LOSETUP=$LOOP_FILE 
@@ -41,11 +58,11 @@ uird_freemedia() {
 			echo "mkdir -p $MPOINT" >>$BINDIR/$UUID
 			echo "mount  -o $MNTOPTS  --uuid $UUID  $MPOINT" >>$BINDIR/$UUID
 			for mountstr in $RBIND; do
-				mpoint=$(echo $mountstr | cut -d "," -f2)
+				mpoint=$(echo $mountstr | cut -d "," -f2 |sed 's:^/sysroot::')
 				echo "mkdir -p $mpoint" >>$BINDIR/$UUID
 				echo "mount --rbind $MPOINT$(echo $mountstr | cut -d "," -f1) " $mpoint >>$BINDIR/$UUID
 			done
-			[ $LOSETUP ] && echo 'losetup $(losetup -f)'"  $LOSETUP" >>$BINDIR/$UUID
+			[ $LOSETUP ] && echo "losetup '$(losetup -f)'  $(echo "$LOSETUP" |sed 's:^/sysroot::')" >>$BINDIR/$UUID
 			echo '' >>$BINDIR/$UUID
 			chmod +x $BINDIR/$UUID
 			echo "KERNEL==\"sd?\",  $SERIAL_ID,  ACTION==\"add\", RUN+=\"/run/bin/$UUID \"" >${RULESDIR}/00-${UUID}.rules
