@@ -59,6 +59,21 @@ https://github.com/neobht/uird/
     - quickshell, qs - консоль на начальном этапе работы uird-init
     - qse - консоль в конце работы uird-init
     - debug - подробный вывод и приостановка uird-init на нескольких этапах работы
+    
+    Однобуквенные параметры:
+    Сделаны для сокращения записи, работают только из cmdline (т.е. не из конфига uird)
+    Имеют приоритет над аналогичным "длинным" параметром, даже если он тоже в cmdline.
+    Записываются в одно слово начиная с символа "-". Например -Qsfo.
+    -q = qs
+    -Q = qse
+    -f = uird.force
+    -S = uird.shutdown
+    -p = uird.preinit
+    -z = uird.rootfs=zram
+    -s = uird.swap=auto
+    -c = uird.mode=clean
+    -o = uird.union=overlay
+    -F = uird.freemedia
 
 Параметры по-умолчанию и справочная система:
 
