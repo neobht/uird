@@ -27,14 +27,13 @@ https://github.com/neobht/uird/
 
     - uird.basecfg= - расположение базового конфигурационного файла basecfg.ini
     - uird.config= - расположение конфигурационного файла системы MagOS.ini
-    - uird.sgnfiles[+]= - перечисление файлов-маркеров для поиска источников указанных в uird.from= 
-      в соответсвии с их порядком перечисления
     - uird.ro[+]= - фильтр для модулей/директорий, которые монтируются в режиме RO
     - uird.rw[+]= - фильтр для модулей/директорий, которые монтируются в режиме RW
     - uird.cp[+]= - фильтр для модулей/директорий, содержимое которых копируется в корень
     - uird.copy2ram[+]= - фильтр для модулей/директорий, которые копируются в RAM
     - uird.copy2cache[+]= - фильтр для модулей/директорий, которые копируются в КЭШ
-    - uird.ramsize= - размер RAM
+    - uird.rootfs= - тип rootfs (tmpfs, zram) и ее параметры (размер, алгоритм сжатия)
+    - uird.union= - тип слоеной фс (aufs, overlay)
     - uird.ip= - IP:GW:MASK , если не указан, то используется DHCP
     - uird.netfsopt[+]= - дополнительные опции монтирования сетевых ФС: sshfs,nfs,curlftpfs,cifs
     - uird.load[+]= - фильтр для модулей/директорий, которые необходимо подключить на этапе загрузки
@@ -55,7 +54,6 @@ https://github.com/neobht/uird/
       для монтироавния uird.from, uird.mounts)
     - uird.force - продолжить загрузку, игнорируя ненайденные источники
     - uird.freemedia - освободить (размонтировать) носители с источниками, работает только совместно с uird.copy2ram
-    - uird.zram - использовать zram вместо tmpfs
     - uird.shutdown - создать каталог /run/initramfs, который использует системд при выключении системы, передавая туда управление
     - uird.preinit - включить обработку ini файла, заданного в uird.config
     - quickshell, qs - консоль на начальном этапе работы uird-init
@@ -113,9 +111,6 @@ squashfs с использованием aufs. Модули, которые не
 
     - uird.from=/MagOS;/MagOS-Data - найти два источника MagOS и MagOS-Data на всех доступных носителях;
 
-    - uird.sgnfiles=MagOS.sgn;MagOS-Data.sgn - при поиске источников MagOS и MagOS-Data проверять наличие 
-      файлов-маркеров; MagOS.sgn в источнике MagOS и MagOS-Data.sgn в MagOS-Data
-
     - uird.load=/base/,/modules/,rootcopy - подключать модули и каталоги, если в путях к ним содержится 
       сочетание символов: «/base/», «/modules/» или «rootcopy» (описанию соответствуют: /MagOS/base/, 
       /MagOS/modules, /MagOS-Data/modules/, плюс /MagOS/rootcopy/ и /MagOS-Data/rootcopy/)
@@ -166,5 +161,6 @@ squashfs с использованием aufs. Модули, которые не
 источник MagOS-Data подключается только по выходным дням
 
     "$(automount && mkdir /mnt/sda1/MagOS-Data/MYDIR && umount /mnt/sd*)" uird.changes=MYDIR
-создать каталог /MagOS-Data/MYDIR на диске sda1 и подключить для хранения изменений.
+создать каталог /MagOS-Data/MYDIR на диске sda1 и подключить для хранения изменений. Приведено
+исключительно как пример, так как uird.changes=/MagOS-Data/MYDIR тоже создаст папку.
 **************************************************************************************************
