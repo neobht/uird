@@ -1093,8 +1093,10 @@ device_mountdir() {
 	if ! [ -b "$1" ]; then
 		echo "$1" | tr -s /
 	else
-		if grep -q "^$1 " /proc/mounts; then
+		if grep "^$1 " /proc/mounts |grep -qv subvol ; then
 			grep "^$1 " /proc/mounts | awk '{print $2}' | head -1 | tr -s /
+		elif grep -q "^${a}.*,subvol=/ " /proc/mounts ; then
+			grep "^${a}.*,subvol=/ " /proc/mounts | awk '{print $2}' |  tr -s /
 		else
 			if [ "$2" = "" ]; then
 				echo "/$MOUNTDIR/$(basename "$1")" | tr -s /
