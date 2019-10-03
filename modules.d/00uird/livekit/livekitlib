@@ -2070,8 +2070,8 @@ find_modules() {
 list_modules() {
 	debug_log "list_modules" "$*"
 	local LOAD NOLOAD MODNAME LINE
-	LOAD=$(getpar $UIRD_LOAD [[:digit:]] |sed 's/ /|/g')
-	NOLOAD=$(getpar $UIRD_NOLOAD [[:digit:]] |sed 's/ /|/g')
+	LOAD=$(echo $(getpar $UIRD_LOAD [[:digit:]]) |sed 's/ /|/g')
+	NOLOAD=$(echo $(getpar $UIRD_NOLOAD [[:digit:]]) |sed 's/ /|/g')
 	find_modules "$1" | sort | uniq | while read LINE; do
 		MODNAME=$(echo $LINE | cut -b ${#1}- | cut -b 2-)
 		if [ "$LOAD" -a "$(echo $MODNAME | egrep -i "$LOAD")" ]; then
