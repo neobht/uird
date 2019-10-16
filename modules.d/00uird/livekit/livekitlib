@@ -350,6 +350,7 @@ fi
 echo $(cat  $BASECFG |grep -v "^[[:space:]]*\#"  2>/dev/null | tr -s ";" ",") >/tmp/basecfg
 echo '' >>/tmp/basecfg
 echo $(cat  /tmp/cmdline  | tr -s ";" "," |sed 's/ /\n/g' | sort -u ) >>/tmp/basecfg
+echo '' >>/tmp/basecfg
 cfg_parser
 }
 
@@ -376,10 +377,11 @@ for par in $(cat  /tmp/basecfg) ; do
 			done
 		NUM_PAR=$((NUM_PAR + 1))
 		done
-	echo "$par" | sed -r 's/^(.*)\.(.*\=.*)$/\1_\2/'  >> /etc/initvars
+		
+	echo "$par" | sed -re 's/^(.*)\.(.*\=.*)$/\1_\2/' -e 's/^([[:digit:]].*)$/_&/'  >> /etc/initvars
 	else
 		: > /tmp/parameters/$parDir/enabled
-		echo "${par}=enabled" | sed -r 's/^(.*)\.(.*\=.*)$/\1_\2/' >> /etc/initvars
+		echo "${par}=enabled" | sed -re 's/^(.*)\.(.*\=.*)$/\1_\2/' -e 's/^([[:digit:]].*)$/_&/' >> /etc/initvars
 	fi
 	set +f
 done
