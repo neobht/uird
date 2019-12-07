@@ -143,7 +143,7 @@ INITIALIZE=$($GETTEXT "initializing")
 # quickshell, qs 	     	 - консоль на начальном этапе работы uird-init
 # qse 			     		 - консоль в конце работы uird-init
 # debug 		     		 - подробный вывод и приостановка uird-init на нескольких этапах работы
-
+# uird.silent                 - no output
 [ -f "/uird_configs/uird_aliases" ] && . /uird_configs/uird_aliases
 
 [ -z $UIRD_BASECFG ] && UIRD_BASECFG=uird.basecfg
@@ -182,6 +182,7 @@ INITIALIZE=$($GETTEXT "initializing")
 [ -z $UIRD_SHUTDOWN ] && UIRD_SHUTDOWN=uird.shutdown
 [ -z $UIRD_PREINIT ] && UIRD_PREINIT=uird.preinit
 [ -z $UIRD_ROOTFS ] && UIRD_ROOTFS=uird.rootfs
+[ -z $UIRD_SILENT ] && UIRD_SILENT=uird.silent
 
 # =================================================================
 # debug and output functions
@@ -202,26 +203,39 @@ debug_log() {
 # $1 = text to show
 #
 header() {
-	echo -e "\\033[0;1m""$@""\\033[0;0m"
+if ! getpar silent >/dev/null ; then
+        echo -e "\\033[0;1m""$@""\\033[0;0m"
+fi
 }
 
 # echo green star
 #
 echo_green_star() {
+if ! getpar silent > /dev/null ; then
 	echo -ne $green"* "$default >/dev/console 2>/dev/console
+fi
+}
+echo_blue_star() {
+if ! getpar silent > /dev/null ; then
+        echo -ne $blue"* "$default >/dev/console 2>/dev/console
+fi
 }
 
 # log - store given text in /var/log/uird.dbg.log
 log() {
-	echo "$@" 2>/dev/null >>/var/log/uird.dbg.log
+if ! getpar silent> /dev/null; then
+        echo "$@" 2>/dev/null >>/var/log/uird.dbg.log
+fi
 }
 
 echolog() {
+if ! getpar silent >/dev/null ; then
 	local key
 	log "$@"
 	key="$1"
 	shift
 	echo -e "$key" $@ >/dev/console 2>/dev/console
+fi
 }
 
 # show information about the debug shell
@@ -283,7 +297,7 @@ start_quickshell() {
 
 # Resume from swsuspend
 resume_from_suspend() {
-	if ! getpar noresume; then
+        if ! getpar noresume > /dev/null ; then
 		RESUME_DEV=$($BIN_BLKID | grep -m1 swsuspend | awk -F: '{print $1}')
 		[ -z "$RESUME_DEV" ] || resume $RESUME_DEV
 	fi
@@ -430,8 +444,9 @@ short_pars_compat() {
 		f) 	mkdir -p /tmp/parameters/uird.force && : > /tmp/parameters/uird.force/enabled;;
 		z)	mkdir -p /tmp/parameters/uird.rootfs && echo zram > /tmp/parameters/uird.rootfs/1;;
 		s)	mkdir -p /tmp/parameters/uird.swap && rm -f /tmp/parameters/uird.swap/* && echo auto > /tmp/parameters/uird.swap/1;;
-		o)  mkdir -p /tmp/parameters/uird.union && echo overlay > /tmp/parameters/uird.union/1;;
+                o)      mkdir -p /tmp/parameters/uird.union && echo overlay > /tmp/parameters/uird.union/1;;
 		c)	mkdir -p /tmp/parameters/uird.mode && echo clean > /tmp/parameters/uird.mode/1;;
+                L)  	mkdir -p /tmp/parameters/uird.silent && : > /tmp/parameters/uird.silent/1;;
 		esac
 	done
 }
@@ -1582,7 +1597,7 @@ mount_data_source() {
 		done 
 	fi
 	MNT_OPTS="$(echo $MNT_OPTS |sed 's/+/,/')" 
-	echo -ne $blue"  * "$default
+        echo -ne $blue"  * "$default
 	echolog "$MOUNT_DATA_SOURCE" $yellow"$SOURCE"$default
 
 	mkdir -p $DST_DIR
@@ -1670,7 +1685,7 @@ syscp() {
 		FILETO=$(getpar $UIRD_SYSCP $NUMPAR 2)
 		mkdir -p ${1}${FILETO}
 		cp -fr ${FILEFROM} ${1}${FILETO}/
-		echo -ne $blue"  * "$default
+                echo -ne $blue"  * "$default
 		echo "${FILEFROM} -->  ${FILETO}"
 	done
 }
@@ -1724,7 +1739,7 @@ posix_test() {
 	# if changes can't be mounted or the filesystem is not writable,
 	# fallback to the default: tmpfs
 	if [ $? -ne 0 ]; then
-		echo -ne $blue"  * "$default
+                echo -ne $blue"  * "$default
 		echolog "$POSIX_TEST"
 		fumount $2
 		fumount $1
@@ -1734,7 +1749,7 @@ posix_test() {
 		# So it is writable, we will keep the filesystem mounted.
 		# Check if it supports links and chmod.
 		# If not, overmount CHANGES using posixovl
-		echo -ne $blue"  * "$default
+                echo -ne $blue"  * "$default
 		echolog "$TESTING_FOR_POSIX"
 		touch $2/.empty1 &&
 			ln -sf $2/.empty1 $2/.empty2 2>/dev/null &&
@@ -2127,20 +2142,20 @@ union_append_bundles() {
 			[ "$OPTIONS" = "bind" -a -f "$BUNDLE" ] && continue
 
 			if [ "$CP" -a "$(echo $BUNDLE | egrep -i "$CP")" ]; then
-				echolog "  $blue-->" $purple"$BUNDLE"$green" [CP mode] "$default
-				mount -o $OPTIONS $FS "$BUNDLE" "$2/$BUN"
+                                echolog "  $blue-->" $purple"$BUNDLE"$green" [CP mode] "$default
+                                mount -o $OPTIONS $FS "$BUNDLE" "$2/$BUN"
 				cp -a "$2/$BUN"/. $3 2>/dev/null
 				return
 			elif [ "$RUN" -a "$(echo $BUNDLE | egrep -i "$RUN")" ]; then
-				echolog "  $blue-->" $purple"$BUNDLE"$yellow" [RUN mode] "$default
-				[ -x $BUNDLE ] && $BUNDLE
+                                echolog "  $blue-->" $purple"$BUNDLE"$yellow" [RUN mode] "$default
+                                [ -x $BUNDLE ] && $BUNDLE
 				return
 			elif [ "$RW" -a "$(echo $BUNDLE | egrep -i "$RW")" ]; then
 				MOD=rw+wh
 			else
 				MOD=ro+wh
 			fi
-			echolog "  $blue-->" $purple"$BUNDLE"$default
+                        echolog "  $blue-->" $purple"$BUNDLE"$default
 			mount -o $OPTIONS $FS "$BUNDLE" "$2/$BUN"
 			
 			if [ "$UNION_FS" = "overlay" ]; then
@@ -2632,3 +2647,4 @@ echo_green_star
 echolog "ROOTFS TYPE: ${FSTYPE} ${ALG}, ${RAMDISK_SIZE}: ${SIZE%%%}% RAM"
 
 }
+
