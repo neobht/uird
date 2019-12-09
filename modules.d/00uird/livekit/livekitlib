@@ -203,7 +203,7 @@ debug_log() {
 # $1 = text to show
 #
 header() {
-if ! getpar silent >/dev/null ; then
+if ! getpar $UIRD_SILENT >/dev/null ; then
         echo -e "\\033[0;1m""$@""\\033[0;0m"
 fi
 }
@@ -211,27 +211,26 @@ fi
 # echo green star
 #
 echo_green_star() {
-if ! getpar silent > /dev/null ; then
+if ! getpar $UIRD_SILENT > /dev/null ; then
 	echo -ne $green"* "$default >/dev/console 2>/dev/console
 fi
 }
+
 echo_blue_star() {
-if ! getpar silent > /dev/null ; then
-        echo -ne $blue"* "$default >/dev/console 2>/dev/console
+if ! getpar $UIRD_SILENT > /dev/null ; then
+	echo -ne $blue"  * "$default >/dev/console 2>/dev/console
 fi
 }
 
 # log - store given text in /var/log/uird.dbg.log
 log() {
-if ! getpar silent> /dev/null; then
-        echo "$@" 2>/dev/null >>/var/log/uird.dbg.log
-fi
+	echo "$@" 2>/dev/null >>/var/log/uird.dbg.log
 }
 
 echolog() {
-if ! getpar silent >/dev/null ; then
+log "$@"
+if ! getpar $UIRD_SILENT >/dev/null ; then
 	local key
-	log "$@"
 	key="$1"
 	shift
 	echo -e "$key" $@ >/dev/console 2>/dev/console
@@ -446,7 +445,7 @@ short_pars_compat() {
 		s)	mkdir -p /tmp/parameters/uird.swap && rm -f /tmp/parameters/uird.swap/* && echo auto > /tmp/parameters/uird.swap/1;;
                 o)      mkdir -p /tmp/parameters/uird.union && echo overlay > /tmp/parameters/uird.union/1;;
 		c)	mkdir -p /tmp/parameters/uird.mode && echo clean > /tmp/parameters/uird.mode/1;;
-                L)  	mkdir -p /tmp/parameters/uird.silent && : > /tmp/parameters/uird.silent/1;;
+        L)  mkdir -p /tmp/parameters/uird.silent && : > /tmp/parameters/uird.silent/enabled;;
 		esac
 	done
 }
@@ -1486,7 +1485,7 @@ init_ifcfg() {
 	debug_log "init_ifcfg" "$*"
 	local CLIENT GW MASK ETH
 
-	echo -ne $blue"  * "$default
+	echo_blue_star
 	echolog "$INIT_IFCFG"
 
 	modprobe af_packet 2>/dev/null
@@ -1597,7 +1596,7 @@ mount_data_source() {
 		done 
 	fi
 	MNT_OPTS="$(echo $MNT_OPTS |sed 's/+/,/')" 
-        echo -ne $blue"  * "$default
+        echo_blue_star
 	echolog "$MOUNT_DATA_SOURCE" $yellow"$SOURCE"$default
 
 	mkdir -p $DST_DIR
@@ -1685,8 +1684,8 @@ syscp() {
 		FILETO=$(getpar $UIRD_SYSCP $NUMPAR 2)
 		mkdir -p ${1}${FILETO}
 		cp -fr ${FILEFROM} ${1}${FILETO}/
-                echo -ne $blue"  * "$default
-		echo "${FILEFROM} -->  ${FILETO}"
+        echo_blue_star
+		echolog "${FILEFROM} -->  ${FILETO}"
 	done
 }
 
@@ -1739,7 +1738,7 @@ posix_test() {
 	# if changes can't be mounted or the filesystem is not writable,
 	# fallback to the default: tmpfs
 	if [ $? -ne 0 ]; then
-                echo -ne $blue"  * "$default
+        echo_blue_star
 		echolog "$POSIX_TEST"
 		fumount $2
 		fumount $1
@@ -1749,7 +1748,7 @@ posix_test() {
 		# So it is writable, we will keep the filesystem mounted.
 		# Check if it supports links and chmod.
 		# If not, overmount CHANGES using posixovl
-                echo -ne $blue"  * "$default
+        echo_blue_star
 		echolog "$TESTING_FOR_POSIX"
 		touch $2/.empty1 &&
 			ln -sf $2/.empty1 $2/.empty2 2>/dev/null &&
