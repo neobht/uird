@@ -434,18 +434,18 @@ short_pars_compat() {
 	cat /proc/cmdline | egrep -q " -|^-" || return 
 	for par in $(cat /proc/cmdline | sed 's/^.* -//' |cut -d " " -f 1 |fold -w 1) ; do
 		case $par in 
-		q) 	mkdir -p /tmp/parameters/qs && : > /tmp/parameters/qs/enabled;;
-		Q) 	mkdir -p /tmp/parameters/qse && : > /tmp/parameters/qse/enabled;;
+		q)	mkdir -p /tmp/parameters/qs && : > /tmp/parameters/qs/enabled;;
+		Q)	mkdir -p /tmp/parameters/qse && : > /tmp/parameters/qse/enabled;;
 		p)	mkdir -p /tmp/parameters/uird.preinit && : > /tmp/parameters/uird.preinit/enabled;;
 		S)	mkdir -p /tmp/parameters/uird.shutdown && : > /tmp/parameters/uird.shutdown/enabled;;
 		C)	mkdir -p /tmp/parameters/uird.copy2ram && : > /tmp/parameters/uird.copy2ram/enabled;;
-		F) 	mkdir -p /tmp/parameters/uird.freemedia && : > /tmp/parameters/uird.freemedia/enabled;;
-		f) 	mkdir -p /tmp/parameters/uird.force && : > /tmp/parameters/uird.force/enabled;;
+		F)	mkdir -p /tmp/parameters/uird.freemedia && : > /tmp/parameters/uird.freemedia/enabled;;
+		f)	mkdir -p /tmp/parameters/uird.force && : > /tmp/parameters/uird.force/enabled;;
 		z)	mkdir -p /tmp/parameters/uird.rootfs && echo zram > /tmp/parameters/uird.rootfs/1;;
 		s)	mkdir -p /tmp/parameters/uird.swap && rm -f /tmp/parameters/uird.swap/* && echo auto > /tmp/parameters/uird.swap/1;;
-                o)      mkdir -p /tmp/parameters/uird.union && echo overlay > /tmp/parameters/uird.union/1;;
+		o)	mkdir -p /tmp/parameters/uird.union && echo overlay > /tmp/parameters/uird.union/1;;
 		c)	mkdir -p /tmp/parameters/uird.mode && echo clean > /tmp/parameters/uird.mode/1;;
-        L)  mkdir -p /tmp/parameters/uird.silent && : > /tmp/parameters/uird.silent/enabled;;
+        L)	mkdir -p /tmp/parameters/uird.silent && : > /tmp/parameters/uird.silent/enabled;;
 		esac
 	done
 }
@@ -1952,7 +1952,7 @@ setup_machines() {
 		# if module wasn't found try to use firstly layer/1
 		[ -z "$MACHINES" -a -w $LAYER_BASE/1/machines ] && MACHINES=$LAYER_BASE/1/machines
 		# if layer/1 is absent or not writeable then system layer/0 is a last point
-		[ -z "$MACHINES" ] && $MACHINES=$LAYER_BASE/0/machines
+		[ -z "$MACHINES" ] && MACHINES=$LAYER_BASE/0/machines
 		# mount folder
 		echo_green_star
 		echolog "$SETUP_MACHINES" $yellow"$1"$default
