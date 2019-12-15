@@ -1932,7 +1932,7 @@ setup_changes() {
 setup_machines() {
 	debug_log "setup_machines" "$*"
 	local CHANGESMNT MACHINES SOURCE MNT_DIR MUID
-	[ $(getpar $UIRD_MODE 1 1) != "machines" ] && return
+	[ $(getpar $UIRD_MODE 1 1) == "machines" ] || return
 
 	# calculate machine UID
 	MUID=mac-$(cat /sys/class/net/e*/address 2>/dev/null | head -1 | tr -d :)
