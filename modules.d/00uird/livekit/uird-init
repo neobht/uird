@@ -215,7 +215,11 @@ echolog "$INITIALIZE preinit actions"
 if getpar $UIRD_PREINIT >/dev/null ; then
 	setup_preinit
 else
-	[ -x "etc/rc.d/rc.preinit" ] && /bin/bash etc/rc.d/rc.preinit
+    if [ -x "usr/lib/magos/rc.d/rc.preinit" ] ;then
+        /bin/bash usr/lib/magos/rc.d/rc.preinit
+    elif [ -x "etc/rc.d/rc.preinit" ] ; then
+        /bin/bash etc/rc.d/rc.preinit
+    fi
 fi
 debug_shell
 mv /var/log/* $UNION/var/log/ 2>/dev/null

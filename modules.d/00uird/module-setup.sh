@@ -58,7 +58,7 @@ install() {
 
 	for _i in $_progs; do
 		_path=$(find_binary "$_i")
-		[ -z "$_path" ] && _path=/bin/$_i
+		[ -z "$_path" -o "$_path" = "$_i" ] && _path=/bin/$_i
 		[[ -x $initdir/$_path ]] && continue
 		ln_r /usr/bin/busybox "$_path"
 	done
