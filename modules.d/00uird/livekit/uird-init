@@ -182,6 +182,9 @@ mount_binds
 union_append_bundles $LAYER_BASE "$BUNDLES" "$UNION" "$COPY2RAM" "$LAYER_CACHE"
 debug_shell
 
+#toxzm mode
+setup_toxzm_mode "$DATAMNT/xzmchanges" "$CHANGES" "$BUNDLES" "$UNION"
+
 #setup homes by using aufs
 [ "$BREAKSTEP" = "set_homes" ] && shell_cmd "break"
 setup_homes "$LAYER_HOMES" "$UNION/home"

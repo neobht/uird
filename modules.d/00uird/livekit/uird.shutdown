@@ -2,7 +2,7 @@
 uird_shutdown() {
 	local  UUID MPOINT MNTOPTS RBIND savesdir savesname savesdev ARR_CFG
 	move_run
-	nosave="no"
+	#nosave="no"
 	: > "${UNION}/run/initramfs/shutdown.cfg"
 	if [ "$(getpar $UIRD_SHUTDOWN 1 1)" ] ; then
 	for a in $(getpar $UIRD_SHUTDOWN ) ; do 
@@ -10,8 +10,10 @@ uird_shutdown() {
 		echo "$(getpar $UIRD_SHUTDOWN $a 1)=yes" >> "${UNION}/run/initramfs/shutdown.cfg"
 	done
 	fi
-	[ -f $CHANGES/.savetomodule -o "$nosave" == "yes" ] || return
-	savesname=$(cat $CHANGES/.savetomodule)
+	[ -f  /tmp/toxzm.state ] || return
+	cat /tmp/toxzm.state >> "${UNION}/run/initramfs/shutdown.cfg"
+	. /tmp/toxzm.state
+	savesname=$CHANGESMNT
 	savesdir=$(dirname $savesname)
 	savesdev=$(df $savesdir |grep /dev |awk '{print $1}')
 	UUID=$($BIN_BLKID -s UUID | grep $savesdev | cut -d " " -f 2 | cut -d "\"" -f2)
