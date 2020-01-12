@@ -1943,6 +1943,17 @@ setup_toxzm_mode() {
 	echolog "Seting up CHANGES to XZM mode" $brown"$2"$default
 
 	DATA_FROM=$(find_data $CHANGESVAL $MNT_DIR "$FPARS")
+	add_section() {
+		SECTION=$1
+		XZMNAME=$2
+		echo "XZM${SECTION}=$XZMNAME" >> $CHANGESMNT
+		echo "MODE${SECTION}=copy" >> $CHANGESMNT
+		echo "REBUILD${SECTION}=yes" >> $CHANGESMNT
+		echo "ADDFILTER${SECTION}=''" >> $CHANGESMNT
+		echo "DROPFILTER${SECTION}=''" >> $CHANGESMNT
+		echo "SQFSOPT${SECTION}=''" >> $CHANGESMNT
+		echo "MAXCOPYSIZE${SECTION}=''" >> $CHANGESMNT
+	}
 	
 	if [ -d "$DATA_FROM" ] ; then
 		# calculate machine UID
@@ -1955,7 +1966,8 @@ setup_toxzm_mode() {
 	else
 		if dirname  $CHANGESVAL |egrep -q "^\.$|^\/$" ; then
 			echolog "File or dir for toxzm mode not found"
-			sleep 3
+			echolog "Toxzm  mode disabled!!!"
+			sleep 5
 			return
 		fi
 		DATA_FROM_DIR=$(find_data $(dirname $CHANGESVAL) $MNT_DIR "$FPARS")
@@ -1966,36 +1978,44 @@ setup_toxzm_mode() {
 		echolog "Parsing $CHANGESMNT"
 		source  "$CHANGESMNT"
 		n=0
-		for a in $(cat "$CHANGESMNT" |grep XZM) ; do
+		end=$(( $(cat "$CHANGESMNT" |grep XZM[[:digit:]] |wc -l) - 1 ))
+		for a in $(seq 0 $end); do
 			eval XZM=\$XZM$n
-			eval MODE=\$MODE$n
 			MODNAME="$(dirname $CHANGESMNT)/$XZM"
 			[ -f $MODNAME ] || continue
+			eval MODE=\$MODE$n
+			eval MAXCOPYSIZE=\$MAXCOPYSIZE$n
+			[ -z $MAXCOPYSIZE ] && MAXCOPYSIZE=$(df -m $MEMORY |tail -n1 |awk '{print $4}')
 			if [ "$MODE" = "copy" ] ; then
-				unsquashfs -f -d "$2" "$MODNAME" # >/dev/null 2>&1
-				[ $? -eq 0 ] && echo_blue_star && echolog "copy mode"
-			elif [ "$MODE" = "mount" ] ; then
+				if [ $(du -m $MODNAME |cut -f1) -lt "$MAXCOPYSIZE" ] ; then
+					unsquashfs -f -d "$2" "$MODNAME" # >/dev/null 2>&1
+					[ $? -eq 0 ] && echolog "  $blue-->" $purple"$MODNAME"$green" [Copy mode] "$default
+				else
+					MODE=mount
+					echo XZM$(($end + 1))=$(echo $XZM |sed "s/.xzm/_next.xzm/") >> "$CHANGESMNT"
+					for str in MODE REBUILD ADDFILTER DROPFILTER SQFSOPT MAXCOPYSIZE ; do
+						eval echo "${str}$(($end + 1))=\$$str$a" >> "$CHANGESMNT"
+					done
+					sed -i "s/MODE$a\=copy/MODE$a\=mount/" "$CHANGESMNT"
+					sed -i "s/REBUILD$a\=yes/REBUILD$a\=no/" "$CHANGESMNT"
+				fi
+			fi
+			if [ "$MODE" = "mount" ] ; then
 				BUN="$(basename "$MODNAME")"
 				mkdir -p "$3/$BUN"
 				FS="$(device_bestfs "$MODNAME")"
 				OPTIONS="$(fs_options $FS mount)"
 				mount -o $OPTIONS $FS "$MODNAME" "$3/$BUN"
 				mount -o remount,add:1:"$3/$BUN"=ro+wh aufs "$4"
-				[ $? -eq 0 ] && echo_blue_star && echolog "mount mode"
+				[ $? -eq 0 ] && echolog "  $blue-->" $purple"$MODNAME"$green" [Mount mode] "$default
 			else
-				echolog "wrong value - $MODE"
+				[ "$MODE" = "copy" ] || echolog "wrong value - $MODE"
 			fi
 			echo MODE$n=$MODE >> /tmp/toxzm.state
 			n=$(expr $n + 1)
 		done
 	else 	
-			echo "XZM0=$(basename $CHANGESMNT |sed 's/.cfg/.xzm/')" > $CHANGESMNT
-			echo "MODE0=copy" >> $CHANGESMNT
-			echo "REBUILD0=yes" >> $CHANGESMNT
-			echo "ADDFILTER0=''" >> $CHANGESMNT
-			echo "DROPFILTER0=''" >> $CHANGESMNT
-			echo "SQFSOPT0=''" >> $CHANGESMNT
-			#echo "MAXSIZE0=''" >> $CHANGESMNT
+		add_section 0 $(basename $CHANGESMNT |sed 's/.cfg/.xzm/')
 	fi		
 echo CHANGESMNT=\"$CHANGESMNT\" >> /tmp/toxzm.state
 }

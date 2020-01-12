@@ -39,17 +39,17 @@ if 	[ $CHANGESMNT ] ; then
 	umount $(mount | egrep -v "tmpfs|zram|proc|sysfs" | awk  '{print $3}' | sort -r)
 	/remount
 	. $CHANGESMNT
-	. /shutdown.cfg # need to MODE
+	. /shutdown.cfg # need to hot changed MODE in config file
 	n=0
 	for a in $(cat "$CHANGESMNT" |grep XZM) ; do
 		eval REBUILD=\$REBUILD$n
-		[ "$REBUILD" != "yes"  ] && continue
 		eval XZM=\$XZM$n
 		eval MODE=\$MODE$n
 		eval ADDFILTER="\$ADDFILTER$n"
 		eval DROPFILTER="\$DROPFILTER$n"
 		eval SQFSOPT="\$XZMOPT$n"
 		n=$(expr $n + 1)
+		[ "$REBUILD" != "yes"  ] && continue
 		SAVETOMODULEDIR="$(dirname $CHANGESMNT)"
 		if [ -w $SAVETOMODULEDIR  ] ;then
 			mkdir -p /tmp
@@ -131,7 +131,6 @@ echo "##### ### ## ## ### ## #### #########"
 echo "##### ### ## ## ## ### #### #########"
 echo "#####     ## ## ### ##     ##########"
 echo "#####################################"
-sleep 3
 grep /dev/sd /proc/mounts && exit 1
 exit 0
 
