@@ -24,6 +24,7 @@ uird_shutdown() {
 	echo "mkdir -p $MPOINT" >> "${UNION}/run/initramfs/remount"
 	echo 'SAVESDEV=$(/sbin/blkid.real | grep -m1 $(echo ' " $UUID " ' ) | awk -F: '\'{print \$1}\'')' >> "${UNION}/run/initramfs/remount"
 	echo "mount  -o $MNTOPTS  "'$SAVESDEV'"  $MPOINT" >> "${UNION}/run/initramfs/remount"
+	echo '[ $? != 0 ] && ntfs-3g'"  -o $MNTOPTS  "'$SAVESDEV'"  $MPOINT" >> "${UNION}/run/initramfs/remount"
 	for mountstr in $RBIND; do
 		mpoint=$(echo $mountstr | cut -d "," -f2 |sed 's:^/sysroot::')
 		echo "mkdir -p $mpoint" >> "${UNION}/run/initramfs/remount"

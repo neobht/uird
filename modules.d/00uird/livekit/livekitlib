@@ -1971,7 +1971,7 @@ setup_toxzm_mode() {
 			return
 		fi
 		DATA_FROM_DIR=$(find_data $(dirname $CHANGESVAL) $MNT_DIR "$FPARS")
-		CHANGESMNT="$DATA_FROM_DIR/$(basename $CHANGESMNT)"
+		CHANGESMNT="$DATA_FROM_DIR/$(basename $CHANGESVAL)"
 	fi
 	if [ -f "$CHANGESMNT" ]; then
 		echo_blue_star

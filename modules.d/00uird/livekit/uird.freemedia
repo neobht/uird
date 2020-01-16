@@ -41,7 +41,7 @@ uird_freemedia() {
 			unmnt=$(echo $mountstr | cut -d "," -f2)
 			LOOP=$($BIN_LOSETUP | grep $unmnt | cut -d " " -f 1)
 			LOOP_FILE=$($BIN_LOSETUP | grep $unmnt | awk '{print $6}')
-			[ $LOOP ] && $BIN_LOSETUP -d  $LOOP 2>/dev/null && LOSETUP=$LOOP_FILE
+			[ "$LOOP" ] && $BIN_LOSETUP -d  "$LOOP" 2>/dev/null && LOSETUP=$LOOP_FILE
 			umount $unmnt 2>/dev/null || echolog "$CANT_UNMOUNT $unmnt"
 		done
 		MPOINT=$(grep $dev /proc/self/mountinfo | head -n1 | grep ".* / .*$dev" | cut -d " " -f 5)
