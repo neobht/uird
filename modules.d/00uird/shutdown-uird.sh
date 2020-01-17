@@ -7,16 +7,26 @@ DEFSQFSOPT="-b 512K -comp lz4"
 . /oldroot/etc/initvars
 . /shutdown.cfg
 
-[ "$silent" != "no" ] && DEVNULL=">/dev/null" 
+[ "$silent" = "no" ] || DEVNULL=">/dev/null" 
 echolog() {
 mkdir -p $SRC/var/log/
-echo "$@" 2>/dev/null >> $SRC/var/log/uird.shutdown.log
+	echo "$@" 2>/dev/null >> $SRC/var/log/uird.shutdown.log
 	if 	[ "$silent" == no ] >/dev/null ; then
 		local key
 		key="$1"
 	shift
 		echo -e "$key" $@ >/dev/console 2>/dev/console
 	fi
+}
+
+banner() {
+	echo "#####################################"
+	echo "##### ### ## ##     ##     ##########"
+	echo "##### ### ## ## ### ## #### #########"
+	echo "##### ### ## ## ## ### #### #########"
+	echo "#####     ## ## ### ##     ##########"
+	echo "#####################################"
+	sleep 1
 }
 
 
@@ -34,15 +44,15 @@ default='\033[0m'
  
 IMAGES=/oldroot${SYSMNT}/bundles 
 egrep "$IMAGES" /proc/mounts | awk '{print $2}' | while read a ; do
-   mount -t aufs -o remount,del:"$a" aufs /oldroot 
+    mount -t aufs -o remount,del:"$a" aufs /oldroot 
 	if umount $a  ; then
 		echolog "[  ${green}OK${default}  ] Umount: $a"
 	else
 		echolog "[${red}FALSE!${default}] Umount: $a"	
 	fi
 done
-mkdir ${SYSMNT}
-eval mount -o move /oldroot${SYSMNT}  ${SYSMNT} $DEVNULL
+mkdir -p ${SYSMNT}
+mount -o move /oldroot${SYSMNT}  ${SYSMNT} 
 #savetomodule
 if 	[ $CHANGESMNT ] ; then
 	SRC=${SYSMNT}/changes
@@ -139,13 +149,7 @@ for mntp in $(mount | egrep -v "tmpfs|proc|sysfs" | awk  '{print $3}' | sort -r)
 		mount -o remount,ro $mntp && echolog "[  ${green}OK${default}  ] Remount RO: $mntp"
 	fi
 done
-
-echolog "#####################################"
-echolog "##### ### ## ##     ##     ##########"
-echolog "##### ### ## ## ### ## #### #########"
-echolog "##### ### ## ## ## ### #### #########"
-echolog "#####     ## ## ### ##     ##########"
-echolog "#####################################"
+[ "$silent" = "no" ] && banner
 grep /dev/sd /proc/mounts && exit 1
 exit 0
 

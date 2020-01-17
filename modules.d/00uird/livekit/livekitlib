@@ -1947,8 +1947,8 @@ setup_toxzm_mode() {
 		SECTION=$1
 		XZMNAME=$2
 		echo "XZM${SECTION}=$XZMNAME" >> $CHANGESMNT
-		echo "MODE${SECTION}=copy" >> $CHANGESMNT
-		echo "REBUILD${SECTION}=yes" >> $CHANGESMNT
+		echo "MODE${SECTION}='copy'" >> $CHANGESMNT
+		echo "REBUILD${SECTION}='yes'" >> $CHANGESMNT
 		echo "ADDFILTER${SECTION}=''" >> $CHANGESMNT
 		echo "DROPFILTER${SECTION}=''" >> $CHANGESMNT
 		echo "SQFSOPT${SECTION}=''" >> $CHANGESMNT
