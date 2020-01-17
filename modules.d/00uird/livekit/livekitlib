@@ -1992,9 +1992,14 @@ setup_toxzm_mode() {
 					[ $? -eq 0 ] && echolog "  $blue-->" $purple"$MODNAME"$green" [Copy mode] "$default
 				else
 					MODE=mount
-					echo XZM$(($end + 1))=$(echo $XZM |sed "s/.xzm/_next.xzm/") >> "$CHANGESMNT"
+					if echo $XZM |grep -q '_20' ; then
+						NEWNAME=$(echo $XZM |sed "s/_20.*xzm/_$(date +%F-%H-%M).xzm/")
+					else 
+						NEWNAME=$(echo $XZM |sed "s/.xzm/_$(date +%F-%H-%M).xzm/")
+					fi
+					echo XZM$(($end + 1))=$NEWNAME    >> "$CHANGESMNT"
 					for str in MODE REBUILD ADDFILTER DROPFILTER SQFSOPT MAXCOPYSIZE ; do
-						eval echo "${str}$(($end + 1))=\$$str$a" >> "$CHANGESMNT"
+						eval echo "${str}$(($end + 1))=\'\$$str$a\'" >> "$CHANGESMNT"
 					done
 					sed -i "s/MODE$a\=copy/MODE$a\=mount/" "$CHANGESMNT"
 					sed -i "s/REBUILD$a\=yes/REBUILD$a\=no/" "$CHANGESMNT"

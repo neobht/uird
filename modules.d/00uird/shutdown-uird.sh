@@ -1,9 +1,24 @@
 #!/bin/sh
-nosave="no" ; shell="no" ; ask="no" ; ERROR=yes
+shell="no" ; ask="no" ; silent="no" 
+ERROR=yes
+DEVNULL=''
 DEFSQFSOPT="-b 512K -comp lz4"
 
 . /oldroot/etc/initvars
 . /shutdown.cfg
+
+[ "$silent" != "no" ] && DEVNULL=">/dev/null" 
+echolog() {
+mkdir -p $SRC/var/log/
+echo "$@" 2>/dev/null >> $SRC/var/log/uird.shutdown.log
+	if 	[ "$silent" == no ] >/dev/null ; then
+		local key
+		key="$1"
+	shift
+		echo -e "$key" $@ >/dev/console 2>/dev/console
+	fi
+}
+
 
 red='\033[0;31m'
 green='\033[0;32m'
@@ -21,23 +36,23 @@ IMAGES=/oldroot${SYSMNT}/bundles
 egrep "$IMAGES" /proc/mounts | awk '{print $2}' | while read a ; do
    mount -t aufs -o remount,del:"$a" aufs /oldroot 
 	if umount $a  ; then
-		echo -e "[  ${green}OK${default}  ] Umount: $a"
+		echolog "[  ${green}OK${default}  ] Umount: $a"
 	else
-		echo -e "[${red}FALSE!${default}] Umount: $a"	
+		echolog "[${red}FALSE!${default}] Umount: $a"	
 	fi
 done
 mkdir ${SYSMNT}
-mount -o move /oldroot${SYSMNT}  ${SYSMNT}
+eval mount -o move /oldroot${SYSMNT}  ${SYSMNT} $DEVNULL
 #savetomodule
 if 	[ $CHANGESMNT ] ; then
 	SRC=${SYSMNT}/changes
 	if umount /oldroot  ; then
-		echo -e "[  ${green}OK${default}  ] Umount: ROOT AUFS"
+		echolog "[  ${green}OK${default}  ] Umount: ROOT AUFS"
 	else
-		echo -e "[${red}FALSE!${default}] Umount: ROOT AUFS"	
+		echolog "[${red}FALSE!${default}] Umount: ROOT AUFS"	
 	fi
 	umount $(mount | egrep -v "tmpfs|zram|proc|sysfs" | awk  '{print $3}' | sort -r)
-	/remount
+	echolog $(/remount)
 	. $CHANGESMNT
 	. /shutdown.cfg # need to hot changed MODE in config file
 	n=0
@@ -82,7 +97,7 @@ if 	[ $CHANGESMNT ] ; then
 			read ASK
 		case "$ASK" in
 			"A" | "a") REBUILD="no" ;;
-			*) echo "Saving changes..." ;;
+			*) echolog "Saving changes..." ;;
 		esac
 		fi
 	if [ "$REBUILD" == "yes"  ] ; then
@@ -90,17 +105,17 @@ if 	[ $CHANGESMNT ] ; then
 		[ -z "$SQFSOPT" ] && SQFSOPT="$DEFSQFSOPT"
 		# if old module exists we have to concatenate it
 		if [ -f "$SAVETOMODULENAME" -a "$MODE" = "mount" ]; then
-			echo "Old module exists, we have to concatenate it"
+			echolog "Old module exists, we have to concatenate it"
 			AUFS=/tmp/aufs
 			mkdir -p $AUFS ${AUFS}-bundle
 			mount -o loop "$SAVETOMODULENAME" ${AUFS}-bundle
 			mount -t aufs -o br:$SRC=rw:${AUFS}-bundle=ro+wh aufs $AUFS 
 			[ $? == 0 ] && SRC=$AUFS
 		fi
-		echo "Please wait. Saving changes to module ${SAVETOMODULENAME}....."
-		mksquashfs $SRC "${SAVETOMODULENAME}.new" -ef /tmp/excludedfiles $SQFSOPT -wildcards > /dev/null
+		echolog "Please wait. Saving changes to module ${SAVETOMODULENAME}....."
+		eval mksquashfs $SRC "${SAVETOMODULENAME}.new" -ef /tmp/excludedfiles $SQFSOPT -wildcards $DEVNULL 
 		if [ $? == 0 ] ; then
-			echo -e "[  ${green}OK${default}  ]  $SAVETOMODULENAME  -- complete."
+			echolog "[  ${green}OK${default}  ]  $SAVETOMODULENAME  -- complete."
 			[ -f "$SAVETOMODULENAME" ] && mv -f "$SAVETOMODULENAME" "${SAVETOMODULENAME}.bak" 
 			mv -f "${SAVETOMODULENAME}.new" "$SAVETOMODULENAME" 
 			chmod 444 "$SAVETOMODULENAME"
@@ -110,7 +125,7 @@ if 	[ $CHANGESMNT ] ; then
 			umount ${AUFS}-bundle 2> /dev/null 
 	fi
 	if  [ "$ERROR" == "yes" ] ; then
-		echo -e  "[  ${red}FALSE!${default}  ]  System changes was not saved to $SAVETOMODULENAME"
+		echo -e "[  ${red}FALSE!${default}  ]  System changes was not saved to $SAVETOMODULENAME"
 		sleep 60
 	fi
 	done
@@ -118,19 +133,19 @@ fi
 
 for mntp in $(mount | egrep -v "tmpfs|proc|sysfs" | awk  '{print $3}' | sort -r) ; do
 	if umount $mntp ; then 
-		echo -e "[  ${green}OK${default}  ] Umount: $mntp"
+		echolog "[  ${green}OK${default}  ] Umount: $mntp"
 	else
-		"[${red}FALSE!${default}] Umount: $mntp"
-		mount -o remount,ro $mntp && echo -e "[  ${green}OK${default}  ] Remount RO: $mntp"
+		echo -e "[${red}FALSE!${default}] Umount: $mntp"
+		mount -o remount,ro $mntp && echolog "[  ${green}OK${default}  ] Remount RO: $mntp"
 	fi
 done
 
-echo "#####################################"
-echo "##### ### ## ##     ##     ##########"
-echo "##### ### ## ## ### ## #### #########"
-echo "##### ### ## ## ## ### #### #########"
-echo "#####     ## ## ### ##     ##########"
-echo "#####################################"
+echolog "#####################################"
+echolog "##### ### ## ##     ##     ##########"
+echolog "##### ### ## ## ### ## #### #########"
+echolog "##### ### ## ## ## ### #### #########"
+echolog "#####     ## ## ### ##     ##########"
+echolog "#####################################"
 grep /dev/sd /proc/mounts && exit 1
 exit 0
 
