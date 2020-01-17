@@ -53,7 +53,7 @@ if 	[ $CHANGESMNT ] ; then
 		SAVETOMODULEDIR="$(dirname $CHANGESMNT)"
 		if [ -w $SAVETOMODULEDIR  ] ;then
 			mkdir -p /tmp
-			echo -e "/tmp/includedfiles\n/tmp/excludedfiles" > /tmp/excludedfiles
+			> /tmp/excludedfiles
 			if [ -n "$ADDFILTER" -o -n "$DROPFILTER" ] ;then 
 				>/tmp/savelist.black
 				for item in $DROPFILTER ; do echo "$item" >> /tmp/savelist.black ; done
@@ -98,7 +98,7 @@ if 	[ $CHANGESMNT ] ; then
 			[ $? == 0 ] && SRC=$AUFS
 		fi
 		echo "Please wait. Saving changes to module ${SAVETOMODULENAME}....."
-		mksquashfs $SRC "${SAVETOMODULENAME}.new" -ef /tmp/excludedfiles $SQFSOPT -progress -noappend > /dev/null
+		mksquashfs $SRC "${SAVETOMODULENAME}.new" -ef /tmp/excludedfiles $SQFSOPT -wildcards > /dev/null
 		if [ $? == 0 ] ; then
 			echo -e "[  ${green}OK${default}  ]  $SAVETOMODULENAME  -- complete."
 			[ -f "$SAVETOMODULENAME" ] && mv -f "$SAVETOMODULENAME" "${SAVETOMODULENAME}.bak" 
