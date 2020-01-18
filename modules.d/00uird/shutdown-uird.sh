@@ -42,9 +42,14 @@ white='\033[0;37m'
 purple='\033[0;35m'
 default='\033[0m'
  
+SRC=/oldroot${SYSMNT}/changes
+mkdir -p $SRC/var/log/
+echo "Shutdown started!" > $SRC/var/log/uird.shutdown.log 
+ 
 IMAGES=/oldroot${SYSMNT}/bundles 
 egrep "$IMAGES" /proc/mounts | awk '{print $2}' | while read a ; do
-    mount -t aufs -o remount,del:"$a" aufs /oldroot 
+
+    mount -t aufs -o remount,del:"$a" aufs /oldroot
 	if umount $a  ; then
 		echolog "[  ${green}OK${default}  ] Umount: $a"
 	else
@@ -53,16 +58,16 @@ egrep "$IMAGES" /proc/mounts | awk '{print $2}' | while read a ; do
 done
 mkdir -p ${SYSMNT}
 mount -o move /oldroot${SYSMNT}  ${SYSMNT} 
+SRC=${SYSMNT}/changes
 #savetomodule
 if 	[ $CHANGESMNT ] ; then
-	SRC=${SYSMNT}/changes
 	if umount /oldroot  ; then
 		echolog "[  ${green}OK${default}  ] Umount: ROOT AUFS"
 	else
 		echolog "[${red}FALSE!${default}] Umount: ROOT AUFS"	
 	fi
-	umount $(mount | egrep -v "tmpfs|zram|proc|sysfs" | awk  '{print $3}' | sort -r)
-	echolog $(/remount)
+	echolog $(umount $(mount | egrep -v "tmpfs|zram|proc|sysfs" | awk  '{print $3}' | sort -r) 2>&1)
+	echolog $(/remount 2>&1)
 	. $CHANGESMNT
 	. /shutdown.cfg # need to hot changed MODE in config file
 	n=0
@@ -102,7 +107,7 @@ if 	[ $CHANGESMNT ] ; then
 		sed -i 's|^/||' /tmp/excludedfiles
 		[ "$shell" == "yes" ] && /bin/ash
 		if [ "$ask" == "yes" ] ; then
-			echo -e "${brown}The system is ready to save changes to the $SAVETOMODULENAME ${default} "
+			echo -e "${brown}The system is ready to save changes to the $XZM ${default} "
 			echo -ne $yellow"(C)ontinue(default), (A)bort: $default"
 			read ASK
 		case "$ASK" in
@@ -150,6 +155,7 @@ for mntp in $(mount | egrep -v "tmpfs|proc|sysfs" | awk  '{print $3}' | sort -r)
 	fi
 done
 [ "$silent" = "no" ] && banner
+[ "$shell" = "yes" ] && /bin/ash
 grep /dev/sd /proc/mounts && exit 1
 exit 0
 
