@@ -167,6 +167,8 @@ debug_shell
 getpar $UIRD_CACHE >/dev/null && copy_to_ram $LAYER_CACHE "$COPY2RAM"
 debug_shell
 
+
+
 # init aufs filesystem
 init_aufs
 
@@ -183,7 +185,7 @@ union_append_bundles $LAYER_BASE "$BUNDLES" "$UNION" "$COPY2RAM" "$LAYER_CACHE"
 debug_shell
 
 #toxzm mode
-setup_toxzm_mode "$DATAMNT/xzmchanges" "$CHANGES" "$BUNDLES" "$UNION"
+setup_toxzm_mode "$DATAMNT/xzmchanges" "$CHANGES" "$BUNDLES" "$UNION" "$COPY2RAM"
 
 #setup homes by using aufs
 [ "$BREAKSTEP" = "set_homes" ] && shell_cmd "break"

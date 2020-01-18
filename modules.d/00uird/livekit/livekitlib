@@ -1930,6 +1930,7 @@ setup_changes() {
 # $2 = changes directory
 # $3 = bundles dir
 # $4 = union dir
+# $5 = toram dir
 setup_toxzm_mode() {
 	local OPTIONS FS BUNDLE DATA_FROM DATA_FROM_DIR n 
 	MNT_DIR=$1
@@ -2001,12 +2002,18 @@ setup_toxzm_mode() {
 					for str in MODE REBUILD ADDFILTER DROPFILTER SQFSOPT MAXCOPYSIZE ; do
 						eval echo "${str}$(($end + 1))=\'\$$str$a\'" >> "$CHANGESMNT"
 					done
-					sed -i "s/MODE$a\=copy/MODE$a\=mount/" "$CHANGESMNT"
-					sed -i "s/REBUILD$a\=yes/REBUILD$a\=no/" "$CHANGESMNT"
+					sed -i "s/MODE$a\=.*/MODE$a\=\'mount\'/" "$CHANGESMNT"
+					sed -i "s/REBUILD$a\=.*/REBUILD$a\=\'no\'/" "$CHANGESMNT"
 				fi
 			fi
 			if [ "$MODE" = "mount" ] ; then
 				BUN="$(basename "$MODNAME")"
+				if [ "$(getpar toram)$(getpar $UIRD_COPY2RAM)" ] ; then
+					mkdir -p "$5"
+					cp "$MODNAME" "$5"
+					echolog $yellow"  RAM $blue<- $purple$BUN"$green
+					MODNAME="$5/$BUN"
+				fi
 				mkdir -p "$3/$BUN"
 				FS="$(device_bestfs "$MODNAME")"
 				OPTIONS="$(fs_options $FS mount)"
@@ -2024,6 +2031,7 @@ setup_toxzm_mode() {
 	fi		
 echo CHANGESMNT=\"$CHANGESMNT\" >> /tmp/toxzm.state
 }
+
 
 # $1 = machines directory
 # $2 = machines mount directory

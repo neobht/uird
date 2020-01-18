@@ -7,7 +7,7 @@ DEFSQFSOPT="-b 512K -comp lz4"
 . /oldroot/etc/initvars
 . /shutdown.cfg
 
-[ "$silent" = "no" ] || DEVNULL=">/dev/null" 
+[ "$silent" = "yes" ] && DEVNULL=">/dev/null" 
 echolog() {
 mkdir -p $SRC/var/log/
 	echo "$@" 2>/dev/null >> $SRC/var/log/uird.shutdown.log
