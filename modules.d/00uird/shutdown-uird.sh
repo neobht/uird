@@ -20,18 +20,18 @@ mkdir -p $SRC/var/log/
 }
 
 shell_() {
-	echolog "Please, Ctrl+c, to continue shutdown"
+	echo -e  ${red}"Please, enter \"exit\", to continue shutdown"${default}
 	/bin/ash
 	echo ''
 }
 
 banner() {
-	echo "#####################################"
-	echo "##### ### ## ##     ##     ##########"
-	echo "##### ### ## ## ### ## #### #########"
-	echo "##### ### ## ## ## ### #### #########"
-	echo "#####     ## ## ### ##     ##########"
-	echo "#####################################"
+	echo -e ${yellow}"#####################################"
+	echo -e ${yellow}"#"${magenta}"#### ### ## ##     ##     #########"${yellow}"#"
+	echo -e ${yellow}"#"${magenta}"#### ### ## ## ### ## #### ########"${yellow}"#"
+	echo -e ${yellow}"#"${magenta}"#### ### ## ## ## ### #### ########"${yellow}"#"
+	echo -e ${yellow}"#"${magenta}"####     ## ## ### ##     #########"${yellow}"#"
+	echo -e ${yellow}"#####################################"
 	sleep 1
 }
 
@@ -143,7 +143,7 @@ if 	[ $CHANGESMNT ] ; then
 		[ "$shell" = "yes" ] && shell_
 		eval mksquashfs $SRC "${SAVETOMODULENAME}.new" -ef /tmp/excludedfiles $SQFSOPT -wildcards $DEVNULL 
 		if [ $? == 0 ] ; then
-			echo "[  ${green}OK${default}  ]  $SAVETOMODULENAME  -- complete."
+			echo -e "[  ${green}OK${default}  ]  $SAVETOMODULENAME  -- complete."
 			[ -f "$SAVETOMODULENAME" ] && mv -f "$SAVETOMODULENAME" "${SAVETOMODULENAME}.bak" 
 			mv -f "${SAVETOMODULENAME}.new" "$SAVETOMODULENAME" 
 			chmod 444 "$SAVETOMODULENAME"
