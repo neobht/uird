@@ -726,14 +726,14 @@ uird_scan() {
 	if [ "$(getpar $UIRD_SCAN)" == "enabled" ]; then
 		/uird.scan
 		shell_cmd help
-	elif getpar $UIRD_SCAN >/dev/null ; then
-		getpar $UIRD_SCAN 1 1 || return
-		if [ "getpar $UIRD_SCAN 1 1"  == "legacy" ] ; then
-			export BASECFG
+	else
+		if [ "$(getpar $UIRD_SCAN 1 1)"  == "legacy" ] ; then
 			/uird.scan --legacy $(getpar $UIRD_SCAN 1 '2,$') || shell_cmd "help"
-		elif [ "getpar $UIRD_SCAN 1 1"  == "modules" ]; then
-			export BASECFG
+		elif [ "$(getpar $UIRD_SCAN 1 1)"  == "modules" ]; then
 			/uird.scan --modules || shell_cmd "help"
+		else
+			echolog "$(getpar $UIRD_SCAN 1 1)"
+			return
 		fi
 	fi
 }

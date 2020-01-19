@@ -5,18 +5,11 @@
 [ -f $BIN_BLKID ] || BIN_BLKID=/sbin/blkid
 . /etc/initvars 2>/dev/null
 
-#test block
-#+++++++++++++++++
-# . ./livekitlib 2>/dev/null
-#BASECFG=./testcfg
-#[ -f $BASECFG ] || > $BASECFG
-#+++++++++++++++++
-
-FIND_PARAMS=$(getpar $UIRD_FIND_PARAMS 1  | tr ";,_" " ")
-[ -d /sysroot ] && FIND_PARAMS=""
+FIND_PARAMS=$(echo $(getpar $UIRD_FIND_PARAMS [[:digit:]] |tr '_' ' '))
 
 >/tmp/uird_sources
 >/tmp/uird_homes
+
 
 mount_cycle() {
 	local DIR FOUND PRESERVE
@@ -45,7 +38,7 @@ mount_cycle() {
 find_markers() {
 	local a b
 	[ -f $DIR/sbin/init ] && LEGACY="$LEGACY $SCANDEVICE"
-	for a in $(find $DIR $FIND_PARAMS -type f \( -name $(cmdline_value uird.ro | sed 's/,/ -or -name /g') \) -exec dirname {} \;); do
+	for a in $(find $DIR $FIND_PARAMS -type f \( -name $(echo $(getpar $UIRD_RO [[:digit:]]) | sed 's/ / -or -name /g') \) -exec dirname {} \;); do
 		echo $a | sed "s:$DIR:$SCANDEVICE:" >>/tmp/uird_sources
 	done
 	for b in $(find $DIR $FIND_PARAMS -type f -name "*.bashrc" -exec dirname {} \;); do
@@ -91,13 +84,13 @@ legacy() {
 }
 
 find_legacy() {
-	if [ -f $DIR/sbin/init ]; then
+	if [ -e $DIR/sbin/init ]; then
 		if [ $int -eq 1 ]; then
 			echo $SCANDEVICE
-			break
+			return
 		fi
 		int=$(($int - 1))
-		[ $int -le 1 ] && break
+		[ $int -le 1 ] && return
 	fi
 }
 
@@ -111,39 +104,39 @@ legacy_cfg() {
 		echo "can't find legacy linux installation"
 		exit 2
 	fi
-	if grep -q uird.from $BASECFG; then
-		sed -i "s:^uird\.from=.*:uird\.from=$LEGACY:" $BASECFG
-	else
-		echo "uird.from=$LEGACY" >>$BASECFG
-	fi
-	if grep -q uird.ro $BASECFG; then
-		sed -i 's:^uird\.ro=.*:uird\.ro=\*layer-base/0:' $BASECFG
-	else
-		echo "uird.ro=*layer-base/0" >>$BASECFG
-	fi
-	if grep -q uird.load $BASECFG; then
-		sed -i 's:^uird\.load=.*:uird\.load=\*:' $BASECFG
-	else
-		echo "uird.load=*" >>$BASECFG
-	fi
+	rm -rf /tmp/parameters/uird.from/*
+	echo "$LEGACY" > /tmp/parameters/uird.from/1
+	rm -rf /tmp/parameters/uird.ro/*
+	echo "*layer-base/0" >/tmp/parameters/uird.ro/1
+	rm -rf /tmp/parameters/uird.load/*
+	echo "/" >/tmp/parameters/uird.load/1
 }
 
 modules() {
-	[ -d /sysroot ] || exit 1
-	SOURCES=$(for a in $(cat /tmp/uird_sources | sort | uniq | grep -E "base|modules"); do dirname $a; done | sort | uniq)
-	if [ -z $SOURCES ]; then
+	mount_cycle find_markers
+	SOURCES=$(for a in $(cat /tmp/uird_sources | sort | uniq | grep -E "base|modules" |grep -v ".bak"); do dirname $a; done | sort | uniq)
+	if [ -z "$SOURCES" ]; then
 		echo "can't find modules"
 		exit 3
 	fi
-	if grep -q uird.from $BASECFG; then
-		sed -i "s:^uird\.from=.*:uird\.from=$(echo $SOURCES | sed 's: :,:g'):" $BASECFG
-	else
-		echo "uird.from=$(echo $SOURCES | sed 's: :,:g')" >>$BASECFG
-	fi
-
-	grep -q uird.ro $BASECFG || echo "uird.ro=*.xzm,*.pfs" >>$BASECFG
-	grep -q uird.load $BASECFG || echo "uird.load=/base/,/modules/" >>$BASECFG
-
+	rm -rf /tmp/parameters/uird.from/*
+	n=1
+	for a in $SOURCES ; do
+		echo "$a" >/tmp/parameters/uird.from/$n
+		n=$(( $n + 1 ))
+	done
+	rm -rf /tmp/parameters/uird.ro/*
+	n=1
+	for a in '*.xzm' '*.pfs' ; do
+		echo "$a" >/tmp/parameters/uird.ro/$n
+		n=$(( $n + 1 ))
+	done
+	rm -rf /tmp/parameters/uird.load/*
+	n=1
+	for a in '/base/' '/modules' ; do
+		echo "$a" >/tmp/parameters/uird.load/$n
+		n=$(( $n + 1 ))
+	done
 }
 
 echo "Please wait, disks are scanning....."

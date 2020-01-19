@@ -1,7 +1,7 @@
 uird.config=""
 uird.ramsize=70%
 uird.ro=*layer-base/0
-uird.load=*
+uird.load=/
 uird.from=/dev/sda1
 uird.find_params=-maxdepth_3
 uird.mode=clean 
