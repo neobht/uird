@@ -2011,7 +2011,8 @@ setup_toxzm_mode() {
 				if [ "$(getpar toram)$(getpar $UIRD_COPY2RAM)" ] ; then
 					mkdir -p "$5"
 					cp "$MODNAME" "$5"
-					echolog $yellow"  RAM $blue<- $purple$BUN"$green
+					log "$BUN to RAM"
+					echo -ne $yellow"  RAM"$default
 					MODNAME="$5/$BUN"
 				fi
 				mkdir -p "$3/$BUN"

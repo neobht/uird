@@ -12,7 +12,7 @@
 #[ -f $BASECFG ] || > $BASECFG
 #+++++++++++++++++
 
-FIND_PARAMS=$(echo $(cmdline_value $UIRD_FIND_PARAMS) | tr ";,_" " ")
+FIND_PARAMS=$(getpar $UIRD_FIND_PARAMS 1  | tr ";,_" " ")
 [ -d /sysroot ] && FIND_PARAMS=""
 
 >/tmp/uird_sources

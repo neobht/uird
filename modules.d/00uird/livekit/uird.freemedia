@@ -30,7 +30,7 @@ uird_freemedia() {
 	swapparts=$(echo -e $swaps |sort -u)
 	for s in $swapparts ; do swapoff $s ; done
 	devices=$(echo -e $devs |sort -u)
-	echo "freemedia_devices="$(echo "$devices" |sed -e 's/\\n/ /g' -e 's/ /,/g' -e 's/^,//') >> $UNION/etc/initvars
+	echo "freemedia_devices="$(echo "$devices" |tr '\n' ' ' |sed -e 's/ /,/g' -e 's/^,//' -e 's/,$//') >> $UNION/etc/initvars
 	for dev in $devices; do
 		unset LOSETUP ; unset LOOP ; unset  LOOP_FILE
 		UUID=$($BIN_BLKID -s UUID | grep $dev | cut -d " " -f 2 | cut -d "\"" -f2)

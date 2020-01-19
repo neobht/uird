@@ -19,6 +19,12 @@ mkdir -p $SRC/var/log/
 	fi
 }
 
+shell_() {
+	echolog "Please, Ctrl+c, to continue shutdown"
+	/bin/ash
+	echo ''
+}
+
 banner() {
 	echo "#####################################"
 	echo "##### ### ## ##     ##     ##########"
@@ -67,7 +73,7 @@ if 	[ $CHANGESMNT ] ; then
 		echolog "[${red}FALSE!${default}] Umount: ROOT AUFS"	
 	fi
 	echolog $(umount $(mount | egrep -v "tmpfs|zram|proc|sysfs" | awk  '{print $3}' | sort -r) 2>&1)
-	echolog $(/remount 2>&1)
+	echolog $(/remount 2>&1 && echo "Remount complete")
 	. $CHANGESMNT
 	. /shutdown.cfg # need to hot changed MODE in config file
 	n=0
@@ -81,31 +87,8 @@ if 	[ $CHANGESMNT ] ; then
 		n=$(expr $n + 1)
 		[ "$REBUILD" != "yes"  ] && continue
 		SAVETOMODULEDIR="$(dirname $CHANGESMNT)"
-		if [ -w $SAVETOMODULEDIR  ] ;then
-			mkdir -p /tmp
-			> /tmp/excludedfiles
-			if [ -n "$ADDFILTER" -o -n "$DROPFILTER" ] ;then 
-				>/tmp/savelist.black
-				for item in $DROPFILTER ; do echo "$item" >> /tmp/savelist.black ; done
-				>/tmp/savelist.white
-				for item in $ADDFILTER ; do echo "$item" >> /tmp/savelist.white ; done
-				grep -q . /tmp/savelist.white || echo '.' > /tmp/savelist.white
-				find $SRC/ -type l >/tmp/allfiles
-				find $SRC/ -type f >>/tmp/allfiles
-				sed -i 's|'$SRC'||' /tmp/allfiles
-				grep -f /tmp/savelist.white /tmp/allfiles | grep -vf /tmp/savelist.black > /tmp/includedfiles
-				grep -q . /tmp/savelist.black && grep -f /tmp/savelist.black /tmp/allfiles >> /tmp/excludedfiles
-				grep -vf /tmp/savelist.white /tmp/allfiles >> /tmp/excludedfiles
-				find $SRC/ -type d | sed 's|'$SRC'||' | while read a ;do
-				grep -q "^$a" /tmp/includedfiles && continue
-				echo "$a" | grep -vf /tmp/savelist.black | grep -qf /tmp/savelist.white && continue
-				echo "$a" >> /tmp/excludedfiles
-				done
-				rm -f /tmp/savelist* /tmp/allfiles /tmp/includedfiles
-			fi
-		fi
-		sed -i 's|^/||' /tmp/excludedfiles
-		[ "$shell" == "yes" ] && /bin/ash
+		[ -w $SAVETOMODULEDIR  ] || continue
+		[ "$shell" == "yes" ] && shell_
 		if [ "$ask" == "yes" ] ; then
 			echo -e "${brown}The system is ready to save changes to the $XZM ${default} "
 			echo -ne $yellow"(C)ontinue(default), (A)bort: $default"
@@ -127,10 +110,40 @@ if 	[ $CHANGESMNT ] ; then
 			mount -t aufs -o br:$SRC=rw:${AUFS}-bundle=ro+wh aufs $AUFS 
 			[ $? == 0 ] && SRC=$AUFS
 		fi
+			mkdir -p /tmp
+			#cut aufs arefacts
+			echo "/.wh..*" > /tmp/excludedfiles
+			#cut garbage 
+			echo "/.cache" >> /tmp/excludedfiles
+			echo "/.dbus" >> /tmp/excludedfiles
+			echo "/run" >> /tmp/excludedfiles
+			echo "/tmp" >> /tmp/excludedfiles
+			echo "/memory" >> /tmp/excludedfiles
+			if [ -n "$ADDFILTER" -o -n "$DROPFILTER" ] ;then
+				echolog "Please wait. Preparing excludes for module ${SAVETOMODULENAME}....." 
+				>/tmp/savelist.black
+				for item in $DROPFILTER ; do echo "$item" >> /tmp/savelist.black ; done
+				>/tmp/savelist.white
+				for item in $ADDFILTER ; do echo "$item" >> /tmp/savelist.white ; done
+				grep -q . /tmp/savelist.white || echo '.' > /tmp/savelist.white
+				find $SRC/ -type l >/tmp/allfiles
+				find $SRC/ -type f >>/tmp/allfiles
+				sed -i 's|'$SRC'||' /tmp/allfiles
+				grep -f /tmp/savelist.white /tmp/allfiles | grep -vf /tmp/savelist.black > /tmp/includedfiles
+				grep -q . /tmp/savelist.black && grep -f /tmp/savelist.black /tmp/allfiles >> /tmp/excludedfiles
+				grep -vf /tmp/savelist.white /tmp/allfiles >> /tmp/excludedfiles
+				find $SRC/ -type d | sed 's|'$SRC'||' | while read a ;do
+				grep -q "^$a" /tmp/includedfiles && continue
+				echo "$a" | grep -vf /tmp/savelist.black | grep -qf /tmp/savelist.white && continue
+				echo "$a" >> /tmp/excludedfiles
+				done
+			fi
+		sed -i 's|^/||' /tmp/excludedfiles
 		echolog "Please wait. Saving changes to module ${SAVETOMODULENAME}....."
+		[ "$shell" = "yes" ] && shell_
 		eval mksquashfs $SRC "${SAVETOMODULENAME}.new" -ef /tmp/excludedfiles $SQFSOPT -wildcards $DEVNULL 
 		if [ $? == 0 ] ; then
-			echolog "[  ${green}OK${default}  ]  $SAVETOMODULENAME  -- complete."
+			echo "[  ${green}OK${default}  ]  $SAVETOMODULENAME  -- complete."
 			[ -f "$SAVETOMODULENAME" ] && mv -f "$SAVETOMODULENAME" "${SAVETOMODULENAME}.bak" 
 			mv -f "${SAVETOMODULENAME}.new" "$SAVETOMODULENAME" 
 			chmod 444 "$SAVETOMODULENAME"
@@ -141,7 +154,8 @@ if 	[ $CHANGESMNT ] ; then
 	fi
 	if  [ "$ERROR" == "yes" ] ; then
 		echo -e "[  ${red}FALSE!${default}  ]  System changes was not saved to $SAVETOMODULENAME"
-		sleep 60
+		echo "          Changes dir is /memory/changes, you may try to save it manualy"
+		[ "$shell" = "yes" ] && shell_
 	fi
 	done
 fi
@@ -155,7 +169,7 @@ for mntp in $(mount | egrep -v "tmpfs|proc|sysfs" | awk  '{print $3}' | sort -r)
 	fi
 done
 [ "$silent" = "no" ] && banner
-[ "$shell" = "yes" ] && /bin/ash
+[ "$shell" = "yes" ] && shell_
 grep /dev/sd /proc/mounts && exit 1
 exit 0
 
