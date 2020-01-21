@@ -7,7 +7,18 @@ DEFSQFSOPT="-b 512K -comp lz4"
 . /oldroot/etc/initvars
 . /shutdown.cfg
 
+
+
 [ "$silent" = "yes" ] && DEVNULL=">/dev/null" 
+
+get_MUID() {
+		# calculate machine UID
+		MUID=mac-$(cat /sys/class/net/e*/address 2>/dev/null | head -1 | tr -d :)
+		[ "$MUID" = "mac-" ] && MUID=mac-$(cat /sys/class/net/*/address 2>/dev/null | head -1 | tr -d :)
+		[ "$MUID" = "mac-" ] && MUID=vga-$(lspci -mm | grep -i vga | md5sum | cut -c 1-12)
+		echo "$MUID"
+	}
+
 echolog() {
 mkdir -p $SRC/var/log/
 	echo "$@" 2>/dev/null >> $SRC/var/log/uird.shutdown.log
@@ -80,6 +91,7 @@ if 	[ $CHANGESMNT ] ; then
 	for a in $(cat "$CHANGESMNT" |grep XZM) ; do
 		eval REBUILD=\$REBUILD$n
 		eval XZM=\$XZM$n
+		[ -z "$XZM" ] && XZM=$(get_MUID).xzm
 		eval MODE=\$MODE$n
 		eval ADDFILTER="\$ADDFILTER$n"
 		eval DROPFILTER="\$DROPFILTER$n"
