@@ -84,6 +84,7 @@ if 	[ $CHANGESMNT ] ; then
 		echolog "[${red}FALSE!${default}] Umount: ROOT AUFS"	
 	fi
 	echolog $(umount $(mount | egrep -v "tmpfs|zram|proc|sysfs" | awk  '{print $3}' | sort -r) 2>&1)
+	echolog "Remounting media for saves..."
 	echolog $(/remount 2>&1 && echo "Remount complete")
 	. $CHANGESMNT
 	. /shutdown.cfg # need to hot changed MODE in config file
