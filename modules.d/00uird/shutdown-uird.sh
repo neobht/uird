@@ -7,8 +7,6 @@ DEFSQFSOPT="-b 512K -comp lz4"
 . /oldroot/etc/initvars
 . /shutdown.cfg
 
-
-
 [ "$silent" = "yes" ] && DEVNULL=">/dev/null" 
 
 get_MUID() {
@@ -138,11 +136,11 @@ if 	[ $CHANGESMNT ] ; then
 	fi
 	echolog $(umount $(mount | egrep -v "tmpfs|zram|proc|sysfs" | awk  '{print $3}' | sort -r) 2>&1)
 	echolog "Remounting media for saves..."
-	echolog $(/remount 2>&1 && echo "Remount complete")
+	echolog $(/remount 2>&1 && echo -e "[  ${green}OK${default}  ] Remount complete")
 	. $CHANGESMNT
 	. /shutdown.cfg # need to hot changed MODE in config file
 	n=0
-	for a in $(cat "$CHANGESMNT" |grep XZM) ; do
+	for a in $(cat "$CHANGESMNT" |egrep '^[[:space:]]*XZM[[:digit:]]{,2}=') ; do
 		eval REBUILD=\$REBUILD$n
 		eval XZM=\$XZM$n
 		[ -z "$XZM" ] && XZM=$(get_MUID).xzm
@@ -209,7 +207,7 @@ if 	[ $CHANGESMNT ] ; then
 		[ "$shell" = "yes" ] && shell_
 		eval mksquashfs $SRC "${SAVETOMODULENAME}.new" -ef /tmp/excludedfiles $SQFSOPT -wildcards $DEVNULL 
 		if [ $? == 0 ] ; then
-			echo -e "[  ${green}OK${default}  ]  $SAVETOMODULENAME  -- complete."
+			echolog "[  ${green}OK${default}  ]  $SAVETOMODULENAME  -- complete."
 			[ -f "$SAVETOMODULENAME" ] && mv -f "$SAVETOMODULENAME" "${SAVETOMODULENAME}.bak" 
 			mv -f "${SAVETOMODULENAME}.new" "$SAVETOMODULENAME" 
 			chmod 444 "$SAVETOMODULENAME"

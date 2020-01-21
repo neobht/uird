@@ -1984,7 +1984,7 @@ setup_toxzm_mode() {
 		echo_blue_star
 		echolog "Parsing $CHANGESMNT"
 		source  "$CHANGESMNT"
-		end=$(( $(cat "$CHANGESMNT" |grep XZM[[:digit:]] |wc -l) - 1 ))
+		end=$(( $(cat "$CHANGESMNT" |egrep '^[[:space:]]*XZM[[:digit:]]{,2}=' |wc -l) - 1 ))
 		for n in $(seq 0 $end); do
 			eval XZM=\$XZM$n
 			[ -z "$XZM" ] && XZM=${MUID}.xzm
