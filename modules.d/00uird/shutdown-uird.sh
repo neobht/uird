@@ -37,15 +37,68 @@ shell_() {
 }
 
 banner() {
-	echo -e ${yellow}"#####################################"
-	echo -e ${yellow}"#"${magenta}"#### ### ## ##     ##     #########"${yellow}"#"
-	echo -e ${yellow}"#"${magenta}"#### ### ## ## ### ## #### ########"${yellow}"#"
-	echo -e ${yellow}"#"${magenta}"#### ### ## ## ## ### #### ########"${yellow}"#"
-	echo -e ${yellow}"#"${magenta}"####     ## ## ### ##     #########"${yellow}"#"
-	echo -e ${yellow}"#####################################"
-	sleep 1
+t=0.03
+echo -e $magenta
+printf "%*s\n" $[$(($COLUMNS + 6))/2]  "######"
+sleep $t
+printf "%*s\n" $[$(($COLUMNS + 16))/2] "################"
+sleep $t
+printf "%*s\n" $[$(($COLUMNS + 24))/2] "########################"
+sleep $t
+printf "%*s\n" $[$(($COLUMNS + 30))/2] "##############################"
+sleep $t
+printf "%*s\n" $[$(($COLUMNS + 34))/2] "##################################"
+sleep $t
+printf "%*s\n" $[$(($COLUMNS + 36))/2] "####################################"
+sleep $t
+printf "%*s\n" $[$(($COLUMNS + 38))/2] "####### ### ## ##     ##     #########"
+sleep $t
+printf "%*s\n" $[$(($COLUMNS + 40))/2] "######## ### ## ## ### ## #### #########"
+sleep $t
+printf "%*s\n" $[$(($COLUMNS + 40))/2] "######## ### ## ## ## ### #### #########"
+sleep $t
+printf "%*s\n" $[$(($COLUMNS + 38))/2] "#######     ## ## ### ##     #########"
+sleep $t
+printf "%*s\n" $[$(($COLUMNS + 36))/2] "####################################"
+sleep $t
+printf "%*s\n" $[$(($COLUMNS + 34))/2] "##################################"
+sleep $t
+printf "%*s\n" $[$(($COLUMNS + 28))/2] "############################"
+sleep $t
+printf "%*s\n" $[$(($COLUMNS + 24))/2] "########################"
+sleep $t
+printf "%*s\n" $[$(($COLUMNS + 20))/2] "####################"
+sleep $t
+printf "%*s\n" $[$(($COLUMNS + 16))/2] "################"
+sleep $t
+printf "%*s\n" $[$(($COLUMNS + 12))/2] "############"
+sleep $t
+printf "%*s\n" $[$(($COLUMNS + 4))/2]  "####"
+sleep $t
+printf "%*s\n" $[$(($COLUMNS + 6))/2]  "######"
+sleep $t
+printf "%*s\n" $[$(($COLUMNS + 2))/2]  "| "
+sleep $t
+printf "%*s\n" $[$(($COLUMNS + 2))/2]  "| "
+sleep $t
+printf "%*s\n" $[$(($COLUMNS + 2))/2]  "\ "
+sleep $t
+printf "%*s\n" $[$(($COLUMNS + 6))/2]  "   \  "
+sleep $t
+printf "%*s\n" $[$(($COLUMNS + 6))/2]  "    \ "
+sleep $t
+printf "%*s\n" $[$(($COLUMNS + 6))/2]  "     |"
+sleep $t
+printf "%*s\n" $[$(($COLUMNS + 8))/2]  "      \ "
+sleep $t
+printf "%*s\n" $[$(($COLUMNS + 8))/2]  "       \\"
+sleep $t
+printf "%*s\n" $[$(($COLUMNS + 8))/2]  "       |"
+for a in $(seq 50) ; do 
+echo ``
+sleep $t
+done
 }
-
 
 red='\033[0;31m'
 green='\033[0;32m'
@@ -181,9 +234,9 @@ for mntp in $(mount | egrep -v "tmpfs|proc|sysfs" | awk  '{print $3}' | sort -r)
 		mount -o remount,ro $mntp && echolog "[  ${green}OK${default}  ] Remount RO: $mntp"
 	fi
 done
-[ "$silent" = "no" ] && banner
 [ "$shell" = "yes" ] && shell_
-grep /dev/sd /proc/mounts && exit 1
+[ "$silent" = "no" ] && banner
+grep -q /dev/sd /proc/mounts && exit 1
 exit 0
 
  

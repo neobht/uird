@@ -1984,9 +1984,8 @@ setup_toxzm_mode() {
 		echo_blue_star
 		echolog "Parsing $CHANGESMNT"
 		source  "$CHANGESMNT"
-		n=0
 		end=$(( $(cat "$CHANGESMNT" |grep XZM[[:digit:]] |wc -l) - 1 ))
-		for a in $(seq 0 $end); do
+		for n in $(seq 0 $end); do
 			eval XZM=\$XZM$n
 			[ -z "$XZM" ] && XZM=${MUID}.xzm
 			[ "$XZM" == ".xzm" ] && XZM=$(get_MUID).xzm
@@ -2036,7 +2035,7 @@ setup_toxzm_mode() {
 				[ "$MODE" = "copy" ] || echolog "wrong value - $MODE"
 			fi
 			echo MODE$n=$MODE >> /tmp/toxzm.state
-			n=$(expr $n + 1)
+			#n=$(expr $n + 1)
 		done
 	else 	
 		add_section 0 $(basename $CHANGESMNT |sed 's/.cfg/.xzm/')
