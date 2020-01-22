@@ -4,6 +4,19 @@ ERROR=yes
 DEVNULL=''
 DEFSQFSOPT="-b 512K -comp lz4"
 
+red='\033[0;31m'
+green='\033[0;32m'
+yellow='\033[1;33m'
+brown='\033[0;33m'
+blue='\033[0;34m'
+light_blue='\033[1;34m'
+magenta='\033[1;35m'
+cyan='\033[0;36m'
+white='\033[0;37m'
+purple='\033[0;35m'
+default='\033[0m'
+black='\033[0;30m'
+
 . /oldroot/etc/initvars
 . /shutdown.cfg
 
@@ -37,78 +50,44 @@ shell_() {
 banner() {
 t=0.03
 echo -e $magenta
-printf "%*s\n" $[$(($COLUMNS + 6))/2]  "######"
-sleep $t
-printf "%*s\n" $[$(($COLUMNS + 16))/2] "################"
-sleep $t
-printf "%*s\n" $[$(($COLUMNS + 24))/2] "########################"
-sleep $t
-printf "%*s\n" $[$(($COLUMNS + 30))/2] "##############################"
-sleep $t
-printf "%*s\n" $[$(($COLUMNS + 34))/2] "##################################"
-sleep $t
-printf "%*s\n" $[$(($COLUMNS + 36))/2] "####################################"
-sleep $t
-printf "%*s\n" $[$(($COLUMNS + 38))/2] "####### ### ## ##     ##     #########"
-sleep $t
-printf "%*s\n" $[$(($COLUMNS + 40))/2] "######## ### ## ## ### ## #### #########"
-sleep $t
-printf "%*s\n" $[$(($COLUMNS + 40))/2] "######## ### ## ## ## ### #### #########"
-sleep $t
-printf "%*s\n" $[$(($COLUMNS + 38))/2] "#######     ## ## ### ##     #########"
-sleep $t
-printf "%*s\n" $[$(($COLUMNS + 36))/2] "####################################"
-sleep $t
-printf "%*s\n" $[$(($COLUMNS + 34))/2] "##################################"
-sleep $t
-printf "%*s\n" $[$(($COLUMNS + 28))/2] "############################"
-sleep $t
-printf "%*s\n" $[$(($COLUMNS + 24))/2] "########################"
-sleep $t
-printf "%*s\n" $[$(($COLUMNS + 20))/2] "####################"
-sleep $t
-printf "%*s\n" $[$(($COLUMNS + 16))/2] "################"
-sleep $t
-printf "%*s\n" $[$(($COLUMNS + 12))/2] "############"
-sleep $t
-printf "%*s\n" $[$(($COLUMNS + 4))/2]  "####"
-sleep $t
-printf "%*s\n" $[$(($COLUMNS + 6))/2]  "######"
-sleep $t
-printf "%*s\n" $[$(($COLUMNS + 2))/2]  "| "
-sleep $t
-printf "%*s\n" $[$(($COLUMNS + 2))/2]  "| "
-sleep $t
-printf "%*s\n" $[$(($COLUMNS + 2))/2]  "\ "
-sleep $t
-printf "%*s\n" $[$(($COLUMNS + 6))/2]  "   \  "
-sleep $t
-printf "%*s\n" $[$(($COLUMNS + 6))/2]  "    \ "
-sleep $t
-printf "%*s\n" $[$(($COLUMNS + 6))/2]  "     |"
-sleep $t
-printf "%*s\n" $[$(($COLUMNS + 8))/2]  "      \ "
-sleep $t
-printf "%*s\n" $[$(($COLUMNS + 8))/2]  "       \\"
-sleep $t
-printf "%*s\n" $[$(($COLUMNS + 8))/2]  "       |"
-for a in $(seq 50) ; do 
-echo ``
-sleep $t
+for a in $(seq 50) ; do echo '' ; done
+for a in "######" \
+"################" \
+"########################" \
+"##############################" \
+"##################################" \
+"####################################" \
+"####### ### ## ##     ##     #########" \
+"######## ### ## ## ### ## #### #########" \
+"######## ### ## ## ## ### #### #########" \
+"#######     ## ## ### ##     #########" \
+"####################################" \
+"##################################" \
+"############################" \
+"########################" \
+"####################" \
+"################" \
+"############" \
+"####" \
+"######" \
+"| " \
+"| " \
+"\ " \
+"   \  " \
+"    \ " \
+"     |" \
+"      \ " \
+"       \\" \
+"       |" ; do
+	sleep $t   
+	len=$(expr $(echo "$a" |wc -m) - 1)
+  	printf "%*s\n" $[$(("$COLUMNS" + "$len"))/2] "$a"
+  
 done
+for a in $(seq 70) ; do echo '' ; sleep $t; done
+echo -e $black
 }
 
-red='\033[0;31m'
-green='\033[0;32m'
-yellow='\033[1;33m'
-brown='\033[0;33m'
-blue='\033[0;34m'
-light_blue='\033[1;34m'
-magenta='\033[1;35m'
-cyan='\033[0;36m'
-white='\033[0;37m'
-purple='\033[0;35m'
-default='\033[0m'
  
 SRC=/oldroot${SYSMNT}/changes
 mkdir -p $SRC/var/log/
