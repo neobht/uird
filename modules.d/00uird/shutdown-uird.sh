@@ -1,8 +1,9 @@
 #!/bin/sh
-shell="no" ; ask="no" ; silent="no" 
+shell="no" ; ask="no" ; silent="no" ; haltonly="no"
 ERROR=yes
 DEVNULL=''
 DEFSQFSOPT="-b 512K -comp lz4"
+ACTION=$(ps |grep -m1 shutdown |sed 's:.*/shutdown::' |cut -f1 -d " ")
 
 red='\033[0;31m'
 green='\033[0;32m'
@@ -107,6 +108,7 @@ mkdir -p ${SYSMNT}
 mount -o move /oldroot${SYSMNT}  ${SYSMNT} 
 SRC=${SYSMNT}/changes
 #savetomodule
+[ "$ACTION" = "reboot" -a "$haltonly" = "yes" ] && unset CHANGESMNT  
 if 	[ $CHANGESMNT ] ; then
 	if umount /oldroot  ; then
 		echolog "[  ${green}OK${default}  ] Umount: ROOT AUFS"
