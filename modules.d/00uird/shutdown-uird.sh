@@ -3,7 +3,7 @@ shell="no" ; ask="no" ; silent="no" ; haltonly="no"
 ERROR=yes
 DEVNULL=''
 DEFSQFSOPT="-b 512K -comp lz4"
-ACTION=$(ps |grep -m1 shutdown |sed 's:.*/shutdown::' |cut -f1 -d " ")
+ACTION=$(ps |grep -m1 shutdown |sed 's:.*/shutdown ::' |cut -f1 -d " ")
 
 red='\033[0;31m'
 green='\033[0;32m'
