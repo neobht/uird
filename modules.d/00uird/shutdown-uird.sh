@@ -92,11 +92,10 @@ echo -e $black
  
 SRC=/oldroot${SYSMNT}/changes
 mkdir -p $SRC/var/log/
-echo "Shutdown started!" > $SRC/var/log/uird.shutdown.log 
+echo "UIRD shutdown started!" > $SRC/var/log/uird.shutdown.log 
  
 IMAGES=/oldroot${SYSMNT}/bundles 
 egrep "$IMAGES" /proc/mounts | awk '{print $2}' | while read a ; do
-
     mount -t aufs -o remount,del:"$a" aufs /oldroot
 	if umount $a  ; then
 		echolog "[  ${green}OK${default}  ] Umount: $a"
@@ -118,6 +117,8 @@ if 	[ $CHANGESMNT ] ; then
 	echolog $(umount $(mount | egrep -v "tmpfs|zram|proc|sysfs" | awk  '{print $3}' | sort -r) 2>&1)
 	echolog "Remounting media for saves..."
 	echolog $(/remount 2>&1 && echo -e "[  ${green}OK${default}  ] Remount complete")
+	CFGPWD=$(dirname $CHANGESMNT)
+	export CFGPWD
 	. $CHANGESMNT
 	. /shutdown.cfg # need to hot changed MODE in config file
 	n=0
