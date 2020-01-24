@@ -49,7 +49,7 @@ shell_() {
 }
 
 banner() {
-t=0.03
+t=0.02
 echo -e $magenta
 for a in $(seq 50) ; do echo '' ; done
 for a in "######" \
