@@ -1,10 +1,11 @@
 #!/bin/sh
-shell="no" ; ask="no" ; silent="no" ; haltonly="no"
+shell="no" ; ask="no" ; silent="no" ; haltonly="no" ; lowuptime="no"
 ERROR=yes
 DEVNULL=''
 DEFSQFSOPT="-b 512K -comp lz4"
 ACTION=$(ps |grep -m1 shutdown |sed 's:.*/shutdown ::' |cut -f1 -d " ")
-
+uptime=$(( $(cut -f1 -d "." /proc/uptime) / 60 ))
+[ "$uptime" -le 5 ] && lowuptime=yes
 red='\033[0;31m'
 green='\033[0;32m'
 yellow='\033[1;33m'
@@ -135,7 +136,8 @@ if 	[ $CHANGESMNT ] ; then
 		SAVETOMODULEDIR="$(dirname $CHANGESMNT)"
 		[ -w $SAVETOMODULEDIR  ] || continue
 		[ "$shell" == "yes" ] && shell_
-		if [ "$ask" == "yes" ] ; then
+		if [ "$ask" == "yes" -o "$lowuptime" == "yes" ] ; then
+			echolog "Uptime: $uptime min"
 			echo -e "${brown}The system is ready to save changes to the $XZM ${default} "
 			echo -ne $yellow"(C)ontinue(default), (A)bort: $default"
 			read ASK

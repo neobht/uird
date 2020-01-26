@@ -2037,7 +2037,7 @@ setup_toxzm_mode() {
 				mount -o remount,add:1:"$3/$BUN"=ro+wh aufs "$4"
 				[ $? -eq 0 ] && echolog "  $blue-->" $purple"$MODNAME"$green" [Mount mode] "$default
 			else
-				[ "$MODE" = "copy" ] || echolog "wrong value - $MODE"
+				[ "$MODE" = "copy" -o "$MODE" = "none" ] || echolog "wrong value - $MODE"
 			fi
 			echo MODE$n=$MODE >> /tmp/toxzm.state
 			#n=$(expr $n + 1)
