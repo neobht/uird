@@ -5,7 +5,7 @@ DEVNULL=''
 DEFSQFSOPT="-b 512K -comp lz4"
 ACTION=$(ps |grep -m1 shutdown |sed 's:.*/shutdown ::' |cut -f1 -d " ")
 uptime=$(( $(cut -f1 -d "." /proc/uptime) / 60 ))
-[ "$uptime" -le 5 ] && lowuptime=yes
+[ "$uptime" -le 3 ] && lowuptime=yes
 red='\033[0;31m'
 green='\033[0;32m'
 yellow='\033[1;33m'
@@ -51,6 +51,11 @@ shell_() {
 
 banner() {
 t=0.02
+if [ $COLUMNS ] ; then
+	TERMLEN=$COLUMNS
+else
+	TERMLEN=150
+fi
 echo -e $magenta
 for a in $(seq 50) ; do echo '' ; done
 for a in "######" \
@@ -83,13 +88,12 @@ for a in "######" \
 "       |" ; do
 	sleep $t   
 	len=$(expr $(echo "$a" |wc -m) - 1)
-  	printf "%*s\n" $[$(("$COLUMNS" + "$len"))/2] "$a"
+  	printf "%*s\n" $[$(("$TERMLEN" + "$len"))/2] "$a"
   
 done
 for a in $(seq 70) ; do echo '' ; sleep $t; done
 echo -e $black
 }
-
  
 SRC=/oldroot${SYSMNT}/changes
 mkdir -p $SRC/var/log/

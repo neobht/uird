@@ -1947,6 +1947,11 @@ setup_toxzm_mode() {
 	add_section() {
 		SECTION=$1
 		XZMNAME=$2
+		echo "# NEED" >> $CHANGESMNT
+		echo "# A" >> $CHANGESMNT
+		echo "# SIMPLE" >> $CHANGESMNT
+		echo "# HELP" >> $CHANGESMNT
+		echo "# HERE" >> $CHANGESMNT
 		echo "XZM${SECTION}=$XZMNAME" >> $CHANGESMNT
 		echo "MODE${SECTION}='copy'" >> $CHANGESMNT
 		echo "REBUILD${SECTION}='yes'" >> $CHANGESMNT
