@@ -1938,11 +1938,10 @@ setup_toxzm_mode() {
 	[ "$(getpar $UIRD_MODE 1 1)" != "toxzm" ] && return
 	CHANGESVAL=$(getpar $UIRD_CHANGES 1 1 )
 	FPARS="/tmp/parameters/$UIRD_CHANGES/1" 
-	[ -z "$CHANGESVAL" ] && CHANGESVAL="changes.cfg"
-		
+	[ -z "$CHANGESVAL" ] && CHANGESVAL="/changes.cfg"
+	CHANGESVAL="$(echo "$CHANGESVAL" |sed 's/.xzm$/.cfg/')"
 	echo_green_star
-	echolog "Seting up CHANGES to XZM mode" $brown"$2"$default
-
+	echolog "Seting up CHANGES to XZM mode" $brown"$CHANGESVAL"$default
 	DATA_FROM=$(find_data $CHANGESVAL $MNT_DIR "$FPARS")
 	add_section() {
 		SECTION=$1
