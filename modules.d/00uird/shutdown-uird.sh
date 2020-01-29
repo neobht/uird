@@ -56,18 +56,17 @@ if [ $COLUMNS ] ; then
 else
 	TERMLEN=150
 fi
-echo -e $magenta
 for a in $(seq 50) ; do echo '' ; done
 for a in "######" \
 "################" \
 "########################" \
 "##############################" \
 "##################################" \
-"####################################" \
-"####### ### ## ##     ##     #########" \
-"######## ### ## ## ### ## #### #########" \
-"######## ### ## ## ## ### #### #########" \
-"#######     ## ## ### ##     #########" \
+"########################      ######" \
+"#######################   UIRD   #####" \
+"##########################      ########" \
+"########################################" \
+"######################################" \
 "####################################" \
 "##################################" \
 "############################" \
@@ -124,8 +123,8 @@ if 	[ $CHANGESMNT ] ; then
 	echolog $(/remount 2>&1 && echo -e "[  ${green}OK${default}  ] Remount complete")
 	CFGPWD=$(dirname $CHANGESMNT)
 	export CFGPWD
-	. $CHANGESMNT
-	. /shutdown.cfg # need to hot changed MODE in config file
+	. $CHANGESMNT || exit 2 
+	. /shutdown.cfg || exit 2 # need to hot changed MODE in config file
 	n=0
 	for a in $(cat "$CHANGESMNT" |egrep '^[[:space:]]*XZM[[:digit:]]{,2}=') ; do
 		eval REBUILD=\$REBUILD$n
