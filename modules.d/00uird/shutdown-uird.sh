@@ -62,9 +62,9 @@ for a in "######" \
 "########################" \
 "##############################" \
 "##################################" \
-"########################      ######" \
-"#######################   UIRD   #####" \
-"##########################      ########" \
+"####################################" \
+"######################################" \
+"########################################" \
 "########################################" \
 "######################################" \
 "####################################" \
@@ -75,6 +75,7 @@ for a in "######" \
 "################" \
 "############" \
 "####" \
+"${LIVEKITNAME}" \
 "######" \
 "| " \
 "| " \
@@ -90,6 +91,8 @@ for a in "######" \
   	printf "%*s\n" $[$(("$TERMLEN" + "$len"))/2] "$a"
   
 done
+#echo '' ; echo '' ; echo ''
+#sleep 0.2 ; echo '' ; sleep 0.2 ; echo '' ; sleep 0.2 ; echo ''
 for a in $(seq 70) ; do echo '' ; sleep $t; done
 echo -e $black
 }
@@ -125,8 +128,10 @@ if 	[ $CHANGESMNT ] ; then
 	export CFGPWD
 	. $CHANGESMNT || exit 2 
 	. /shutdown.cfg || exit 2 # need to hot changed MODE in config file
-	n=0
-	for a in $(cat "$CHANGESMNT" |egrep '^[[:space:]]*XZM[[:digit:]]{,2}=') ; do
+	
+	end=$(( $(cat "$CHANGESMNT" |egrep '^[[:space:]]*XZM[[:digit:]]{,2}=' |wc -l) - 1 ))
+	notenumerated=$(cat "$CHANGESMNT" |egrep '^[[:space:]]*XZM.*[a-zA-Z]+.*=' |sed -e 's/^[[:space:]]*XZM//' -e 's/=.*$//')
+	for n in $(seq 0 $end) $notenumerated; do
 		eval REBUILD=\$REBUILD$n
 		eval XZM=\$XZM$n
 		[ -z "$XZM" ] && XZM=$(get_MUID).xzm
@@ -134,7 +139,6 @@ if 	[ $CHANGESMNT ] ; then
 		eval ADDFILTER="\$ADDFILTER$n"
 		eval DROPFILTER="\$DROPFILTER$n"
 		eval SQFSOPT="\$XZMOPT$n"
-		n=$(expr $n + 1)
 		[ "$REBUILD" != "yes"  ] && continue
 		SAVETOMODULEDIR="$(dirname $CHANGESMNT)"
 		[ -w $SAVETOMODULEDIR  ] || continue
@@ -205,7 +209,7 @@ if 	[ $CHANGESMNT ] ; then
 	fi
 	if  [ "$ERROR" == "yes" ] ; then
 		echo -e "[  ${red}FALSE!${default}  ]  System changes was not saved to $SAVETOMODULENAME"
-		echo "          Changes dir is /memory/changes, you may try to save it manualy"
+		echo "          Changes dir is $SRC, you may try to save it manualy"
 		[ "$shell" = "yes" ] && shell_
 	fi
 	done
