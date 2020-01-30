@@ -26,6 +26,7 @@ install() {
 	inst "$moddir/livekit/uird.scan" "/uird.scan"
 	inst "$moddir/livekit/uird.freemedia" "/uird.freemedia"
 	inst "$moddir/livekit/uird.shutdown" "/uird.shutdown"
+	inst "$moddir/livekit/uird.toxzm_mode" "/uird.toxzm_mode"
 #	inst "$moddir/livekit/shutdown" "/shutdown"
 #	inst "$moddir/livekit/i18n/ru.mo" "/usr/share/locale/ru/LC_MESSAGES/uird.mo"
 

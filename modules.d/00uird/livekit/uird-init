@@ -185,7 +185,10 @@ union_append_bundles $LAYER_BASE "$BUNDLES" "$UNION" "$COPY2RAM" "$LAYER_CACHE"
 debug_shell
 
 #toxzm mode
-setup_toxzm_mode "$DATAMNT/xzmchanges" "$CHANGES" "$BUNDLES" "$UNION" "$COPY2RAM"
+if [ $(getpar $UIRD_MODE 1 1) == "toxzm" ]  ; then
+	. /uird.toxzm_mode 
+	setup_toxzm_mode "$DATAMNT/xzmchanges" "$CHANGES" "$BUNDLES" "$UNION" "$COPY2RAM"
+fi
 
 #setup homes by using aufs
 [ "$BREAKSTEP" = "set_homes" ] && shell_cmd "break"
