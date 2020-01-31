@@ -1,11 +1,11 @@
 #!/bin/sh
 shell="no" ; ask="no" ; silent="no" ; haltonly="no" ; lowuptime="no"
-ERROR=yes
 DEVNULL=''
 DEFSQFSOPT="-b 512K -comp lz4"
-ACTION=$(ps |grep -m1 shutdown |sed 's:.*/shutdown ::' |cut -f1 -d " ")
+ACTION=$(ps |grep -m1 shutdown |sed 's:.*/shutdown ::' |cut -f1 -d " ") # reboot or halt
 uptime=$(( $(cut -f1 -d "." /proc/uptime) / 60 ))
 [ "$uptime" -lt 3 ] && lowuptime=yes
+
 red='\033[0;31m'
 green='\033[0;32m'
 yellow='\033[1;33m'
@@ -19,10 +19,8 @@ purple='\033[0;35m'
 default='\033[0m'
 black='\033[0;30m'
 
-. /oldroot/etc/initvars
-. /shutdown.cfg
-
-[ "$silent" = "yes" ] && DEVNULL=">/dev/null" 
+BALLOON_COLOR="$white"
+BALLOON_SPEED='0.02'
 
 get_MUID() {
 		# calculate machine UID
@@ -50,7 +48,10 @@ shell_() {
 }
 
 banner() {
-t=0.02
+# $1 BALLOON_COLOR
+# $2 BALLOON_SPEED
+echo -e $1
+t=$2
 if [ $COLUMNS ] ; then
 	TERMLEN=$COLUMNS
 else
@@ -75,63 +76,48 @@ for a in "######" \
 "################" \
 "############" \
 "####" \
-"${LIVEKITNAME}" \
+"#${LIVEKITNAME}#" \
 "######" \
-"| " \
-"| " \
-"\ " \
-"   \  " \
-"    \ " \
-"     |" \
-"      \ " \
-"       \\" \
-"       |" ; do
+"|" \
+"|" \
+"\\" \
+"    \  " \
+"     \ " \
+"      |" \
+"       \ " \
+"        \\" \
+"        |" ; do
 	sleep $t   
 	len=$(expr $(echo "$a" |wc -m) - 1)
   	printf "%*s\n" $[$(("$TERMLEN" + "$len"))/2] "$a"
   
 done
-#echo '' ; echo '' ; echo ''
-#sleep 0.2 ; echo '' ; sleep 0.2 ; echo '' ; sleep 0.2 ; echo ''
 for a in $(seq 70) ; do echo '' ; sleep $t; done
 echo -e $black
 }
- 
-SRC=/oldroot${SYSMNT}/changes
-mkdir -p $SRC/var/log/
-echo "UIRD shutdown started!" > $SRC/var/log/uird.shutdown.log 
- 
-IMAGES=/oldroot${SYSMNT}/bundles 
-egrep "$IMAGES" /proc/mounts | awk '{print $2}' | while read a ; do
-    mount -t aufs -o remount,del:"$a" aufs /oldroot
-	if umount $a  ; then
-		echolog "[  ${green}OK${default}  ] Umount: $a"
-	else
-		echolog "[${red}FALSE!${default}] Umount: $a"	
-	fi
-done
-mkdir -p ${SYSMNT}
-mount -o move /oldroot${SYSMNT}  ${SYSMNT} 
-SRC=${SYSMNT}/changes
-#savetomodule
-[ "$ACTION" = "reboot" -a "$haltonly" = "yes" ] && unset CHANGESMNT  
-if 	[ $CHANGESMNT ] ; then
-	if umount /oldroot  ; then
-		echolog "[  ${green}OK${default}  ] Umount: ROOT AUFS"
-	else
-		echolog "[${red}FALSE!${default}] Umount: ROOT AUFS"	
-	fi
-	echolog $(umount $(mount | egrep -v "tmpfs|zram|proc|sysfs" | awk  '{print $3}' | sort -r) 2>&1)
+
+rebuild() {
+	BALLOON_COLOR="$green"
 	echolog "Remounting media for saves..."
 	echolog $(/remount 2>&1 && echo -e "[  ${green}OK${default}  ] Remount complete")
 	CFGPWD=$(dirname $CHANGESMNT)
-	export CFGPWD
-	. $CHANGESMNT || exit 2 
-	. /shutdown.cfg || exit 2 # need to hot changed MODE in config file
-	
+	export CFGPWD # maybe it is not necessary
+	if [ -f $CHANGESMNT ] ; then
+		. $CHANGESMNT
+	else
+		echolog "ERROR: $CHANGESMNT no such file!"
+		BALLOON_COLOR="$red" 
+		BALLOON_SPEED="0.05"
+		sleep 10
+		return
+	fi
+	. /shutdown.cfg # this is necessary to hot change the mode
+	# number of enumerated sections
 	end=$(( $(cat "$CHANGESMNT" |egrep '^[[:space:]]*XZM[[:digit:]]{,2}=' |wc -l) - 1 ))
+	# list of not enumerated sections
 	notenumerated=$(cat "$CHANGESMNT" |egrep '^[[:space:]]*XZM.*[a-zA-Z]+.*=' |sed -e 's/^[[:space:]]*XZM//' -e 's/=.*$//')
 	for n in $(seq 0 $end) $notenumerated; do
+		SRC=${SYSMNT}/changes
 		eval REBUILD=\$REBUILD$n
 		eval XZM=\$XZM$n
 		[ -z "$XZM" ] && XZM=$(get_MUID).xzm
@@ -174,6 +160,9 @@ if 	[ $CHANGESMNT ] ; then
 			echo "/run" >> /tmp/excludedfiles
 			echo "/tmp" >> /tmp/excludedfiles
 			echo "/memory" >> /tmp/excludedfiles
+			echo "/dev" >> /tmp/excludedfiles # maybe it is not necessary
+			echo "/proc" >> /tmp/excludedfiles # maybe it is not necessary
+			echo "/sys" >> /tmp/excludedfiles # maybe it is not necessary
 			if [ -n "$ADDFILTER" -o -n "$DROPFILTER" ] ;then
 				echolog "Please wait. Preparing excludes for module ${SAVETOMODULENAME}....." 
 				>/tmp/savelist.black
@@ -202,18 +191,55 @@ if 	[ $CHANGESMNT ] ; then
 			[ -f "$SAVETOMODULENAME" ] && mv -f "$SAVETOMODULENAME" "${SAVETOMODULENAME}.bak" 
 			mv -f "${SAVETOMODULENAME}.new" "$SAVETOMODULENAME" 
 			chmod 444 "$SAVETOMODULENAME"
-			ERROR="no"
+		else
+			BALLOON_COLOR="$red" 
+			BALLOON_SPEED="0.05"
+			echo -e "[  ${red}FALSE!${default}  ]  System changes was not saved to $SAVETOMODULENAME"
+			echo "          Changes dir is $SRC, you may try to save it manualy"
+			shell_
 		fi
 			umount $AUFS  2> /dev/null
 			umount ${AUFS}-bundle 2> /dev/null 
 	fi
-	if  [ "$ERROR" == "yes" ] ; then
-		echo -e "[  ${red}FALSE!${default}  ]  System changes was not saved to $SAVETOMODULENAME"
-		echo "          Changes dir is $SRC, you may try to save it manualy"
-		[ "$shell" = "yes" ] && shell_
-	fi
 	done
+}
+
+[ -f /oldroot/etc/initvars ] && . /oldroot/etc/initvars || BALLOON_COLOR="$red"
+[ -f /shutdown.cfg ] && . /shutdown.cfg || BALLOON_COLOR="$red"
+if ! [ -d "/oldroot$SYSMNT" ] ; then
+	echolog "ERROR:  /oldroot$SYSMNT no such directory"
+	BALLOON_COLOR="$red"
+	unset CHANGESMNT
+	sleep 5
+fi 
+[ "$silent" = "yes" ] && DEVNULL=">/dev/null" 
+ 
+SRC=/oldroot${SYSMNT}/changes
+mkdir -p $SRC/var/log/
+echo "UIRD shutdown started!" > $SRC/var/log/uird.shutdown.log 
+ 
+#umount bundles
+IMAGES=/oldroot${SYSMNT}/bundles 
+egrep "$IMAGES" /proc/mounts | awk '{print $2}' | while read a ; do
+    mount -t aufs -o remount,del:"$a" aufs /oldroot
+	if umount $a  ; then
+		echolog "[  ${green}OK${default}  ] Umount: $a"
+	else
+		echolog "[${red}FALSE!${default}] Umount: $a"	
+	fi
+done
+mkdir -p ${SYSMNT}
+mount -o move /oldroot${SYSMNT}  ${SYSMNT} 
+[ "$ACTION" = "reboot" -a "$haltonly" = "yes" ] && unset CHANGESMNT  
+if umount /oldroot  ; then
+	echolog "[  ${green}OK${default}  ] Umount: ROOT AUFS"
+else
+	echolog "[${red}FALSE!${default}] Umount: ROOT AUFS"	
 fi
+echolog $(umount $(mount | egrep -v "tmpfs|zram|proc|sysfs" | awk  '{print $3}' | sort -r) 2>&1)
+
+#save changes to modules
+[ $CHANGESMNT ] && rebuild
 
 for mntp in $(mount | egrep -v "tmpfs|proc|sysfs" | awk  '{print $3}' | sort -r) ; do
 	if umount $mntp ; then 
@@ -224,7 +250,7 @@ for mntp in $(mount | egrep -v "tmpfs|proc|sysfs" | awk  '{print $3}' | sort -r)
 	fi
 done
 [ "$shell" = "yes" ] && shell_
-[ "$silent" = "no" ] && banner
+[ "$silent" = "no" ] && banner "$BALLOON_COLOR" "$BALLOON_SPEED"
 grep -q /dev/sd /proc/mounts && exit 1
 exit 0
 
