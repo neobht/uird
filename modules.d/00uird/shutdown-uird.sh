@@ -47,6 +47,18 @@ shell_() {
 	echo ''
 }
 
+wh_exclude() {
+	echo '' > /tmp/wh_exclude
+	find $1 -name '.wh.*' |sed "s:$1::" | while read WH ; do
+	F=$(echo $WH | sed 's/.wh.//g')
+	if [ -e ${SYSMNT}/changes/$F ] ; then
+		echo $WH  >> /tmp/wh_exclude
+	elif [ -e $2/$F ] ; then
+		echo $F >> /tmp/wh_exclude
+	fi
+	done
+}
+
 banner() {
 # $1 BALLOON_COLOR
 # $2 BALLOON_SPEED
@@ -143,27 +155,35 @@ rebuild() {
 		SAVETOMODULENAME="${SAVETOMODULEDIR}/$XZM"
 		[ -z "$SQFSOPT" ] && SQFSOPT="$DEFSQFSOPT"
 		# if old module exists we have to concatenate it
-		if [ -f "$SAVETOMODULENAME" -a "$MODE" = "mount" ]; then
-			echolog "Old module exists, we have to concatenate it"
-			AUFS=/tmp/aufs
-			mkdir -p $AUFS ${AUFS}-bundle
-			mount -o loop "$SAVETOMODULENAME" ${AUFS}-bundle
-			mount -t aufs -o br:$SRC=rw:${AUFS}-bundle=ro+wh aufs $AUFS 
-			[ $? == 0 ] && SRC=$AUFS
+		if [ -f "$SAVETOMODULENAME" ]; then
+		echolog "Old module exists..."
+			if [ "$MODE" = "mount+wh" -o "$MODE" = "mount" ] ; then
+				echolog "MODE=${MODE}, we have to concatenate $SAVETOMODULENAME and $SRC"
+				AUFS=/tmp/aufs
+				mkdir -p $AUFS ${AUFS}-bundle
+				mount -o loop "$SAVETOMODULENAME" ${AUFS}-bundle			
+				[ "$MODE" = "mount" ] && mount -t aufs -o br:$SRC=rw:${AUFS}-bundle=ro+wh aufs $AUFS 
+				[ "$MODE" = "mount+wh" ] && mount -t aufs -o ro,shwh,br:$SRC=ro+wh:${AUFS}-bundle=rr+wh aufs $AUFS
+				SRC=$AUFS
+			fi
 		fi
-			mkdir -p /tmp
-			#cut aufs arefacts
-			echo "/.wh..*" > /tmp/excludedfiles
-			#cut garbage 
-			echo "/.cache" >> /tmp/excludedfiles
-			echo "/.dbus" >> /tmp/excludedfiles
-			echo "/run" >> /tmp/excludedfiles
-			echo "/tmp" >> /tmp/excludedfiles
-			echo "/memory" >> /tmp/excludedfiles
-			echo "/dev" >> /tmp/excludedfiles # maybe it is not necessary
-			echo "/proc" >> /tmp/excludedfiles # maybe it is not necessary
-			echo "/sys" >> /tmp/excludedfiles # maybe it is not necessary
-			if [ -n "$ADDFILTER" -o -n "$DROPFILTER" ] ;then
+		mkdir -p /tmp
+		#cut aufs arefacts
+		echo "/.wh..*" > /tmp/excludedfiles
+		#cut garbage 
+		echo "/.cache" >> /tmp/excludedfiles
+		echo "/.dbus" >> /tmp/excludedfiles
+		echo "/run" >> /tmp/excludedfiles
+		echo "/tmp" >> /tmp/excludedfiles
+		echo "/memory" >> /tmp/excludedfiles
+		echo "/dev" >> /tmp/excludedfiles # maybe it is not necessary
+		echo "/proc" >> /tmp/excludedfiles # maybe it is not necessary
+		echo "/sys" >> /tmp/excludedfiles # maybe it is not necessary
+		if [ "$MODE" == "mount+wh" ] ; then
+			wh_exclude $SRC ${AUFS}-bundle
+			cat /tmp/wh_exclude >> /tmp/excludedfiles
+		fi
+		if [ -n "$ADDFILTER" -o -n "$DROPFILTER" ] ;then
 				echolog "Please wait. Preparing excludes for module ${SAVETOMODULENAME}....." 
 				>/tmp/savelist.black
 				for item in $DROPFILTER ; do echo "$item" >> /tmp/savelist.black ; done
@@ -181,7 +201,7 @@ rebuild() {
 				echo "$a" | grep -vf /tmp/savelist.black | grep -qf /tmp/savelist.white && continue
 				echo "$a" >> /tmp/excludedfiles
 				done
-			fi
+		fi
 		sed -i 's|^/||' /tmp/excludedfiles
 		echolog "Please wait. Saving changes to module ${SAVETOMODULENAME}....."
 		[ "$shell" = "yes" ] && shell_
@@ -199,7 +219,8 @@ rebuild() {
 			shell_
 		fi
 			umount $AUFS  2> /dev/null
-			umount ${AUFS}-bundle 2> /dev/null 
+			umount ${AUFS}-bundle 2> /dev/null
+			rm -rf  ${AUFS}-rw 2> /dev/null
 	fi
 	done
 }
