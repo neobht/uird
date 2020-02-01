@@ -726,14 +726,14 @@ uird_scan() {
 	if [ "$(getpar $UIRD_SCAN)" == "enabled" ]; then
 		/uird.scan
 		shell_cmd help
-	elif getpar $UIRD_SCAN >/dev/null ; then
-		getpar $UIRD_SCAN 1 1 || return
-		if [ "getpar $UIRD_SCAN 1 1"  == "legacy" ] ; then
-			export BASECFG
+	else
+		if [ "$(getpar $UIRD_SCAN 1 1)"  == "legacy" ] ; then
 			/uird.scan --legacy $(getpar $UIRD_SCAN 1 '2,$') || shell_cmd "help"
-		elif [ "getpar $UIRD_SCAN 1 1"  == "modules" ]; then
-			export BASECFG
+		elif [ "$(getpar $UIRD_SCAN 1 1)"  == "modules" ]; then
 			/uird.scan --modules || shell_cmd "help"
+		else
+			echolog "$(getpar $UIRD_SCAN 1 1)"
+			return
 		fi
 	fi
 }
@@ -2647,3 +2647,29 @@ echolog "ROOTFS TYPE: ${FSTYPE} ${ALG}, ${RAMDISK_SIZE}: ${SIZE%%%}% RAM"
 
 }
 
+unsquashfs() {
+	local force='' filexzm='' destdir
+	log "using unsquashfs function, not binary"
+	destdir=$(pwd)
+	for a in "$@" ; do
+		[ -f "$a" ] && filexzm="$a"
+	done
+	set -- `getopt "fd:"  "$@"`
+	while [ ! -z "$1" ] ; do
+	case "$1" in
+		-f)  force="f"; shift ;;
+		-d)  destdir="$2"; shift 2 ;;
+    *) break;;
+	esac
+	done
+	if ! [ -f $filexzm ] ; then
+		echolog " $filexzm -- no such file"
+		return 
+	fi
+	mkdir -p /tmp/tmpmntdir
+	mount_device  "$filexzm" /tmp/tmpmntdir
+	cp  -a"$force" /tmp/tmpmntdir/* ${destdir}/
+	[ $? != 0 ] && echolog "ERROR: $0 $@"
+	umount  /tmp/tmpmntdir
+	rm -rf /tmp/tmpmntdir
+}

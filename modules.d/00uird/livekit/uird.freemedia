@@ -30,7 +30,7 @@ uird_freemedia() {
 	swapparts=$(echo -e $swaps |sort -u)
 	for s in $swapparts ; do swapoff $s ; done
 	devices=$(echo -e $devs |sort -u)
-	echo "freemedia_devices="$(echo "$devices" |sed -e 's/\\n/ /g' -e 's/ /,/g' -e 's/^,//') >> $UNION/etc/initvars
+	echo "freemedia_devices="$(echo "$devices" |tr '\n' ' ' |sed -e 's/ /,/g' -e 's/^,//' -e 's/,$//') >> $UNION/etc/initvars
 	for dev in $devices; do
 		unset LOSETUP ; unset LOOP ; unset  LOOP_FILE
 		UUID=$($BIN_BLKID -s UUID | grep $dev | cut -d " " -f 2 | cut -d "\"" -f2)
@@ -41,7 +41,7 @@ uird_freemedia() {
 			unmnt=$(echo $mountstr | cut -d "," -f2)
 			LOOP=$($BIN_LOSETUP | grep $unmnt | cut -d " " -f 1)
 			LOOP_FILE=$($BIN_LOSETUP | grep $unmnt | awk '{print $6}')
-			[ $LOOP ] && $BIN_LOSETUP -d  $LOOP 2>/dev/null && LOSETUP=$LOOP_FILE
+			[ "$LOOP" ] && $BIN_LOSETUP -d  "$LOOP" 2>/dev/null && LOSETUP=$LOOP_FILE
 			umount $unmnt 2>/dev/null || echolog "$CANT_UNMOUNT $unmnt"
 		done
 		MPOINT=$(grep $dev /proc/self/mountinfo | head -n1 | grep ".* / .*$dev" | cut -d " " -f 5)
