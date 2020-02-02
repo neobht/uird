@@ -117,7 +117,7 @@ setup_toxzm_mode() {
 					sed -i "s/REBUILD$n\=.*/REBUILD$n\=\'no\'/" "$CHANGESMNT"
 				fi
 			fi
-			if [ "$MODE" = "mount" ] ; then
+			if [ "$MODE" = "mount" -o "$MODE" = "mount+wh" ] ; then
 				BUN="$(basename "$MODNAME")"
 				if [ "$(getpar toram)$(getpar $UIRD_COPY2RAM)" ] ; then
 					mkdir -p "$5"
