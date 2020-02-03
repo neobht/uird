@@ -1,10 +1,10 @@
 #!/bin/sh
-shell="no" ; ask="no" ; silent="no" ; haltonly="no" ; lowuptime="no"
+shell="no" ; ask="no" ; silent="no" ; haltonly="no" ; lowuptime="no" ; log='no'
 DEVNULL=''
 DEFSQFSOPT="-b 512K -comp lz4"
 ACTION=$(ps |grep -m1 shutdown |sed 's:.*/shutdown ::' |cut -f1 -d " ") # reboot or halt
 uptime=$(( $(cut -f1 -d "." /proc/uptime) / 60 ))
-[ "$uptime" -lt 3 ] && lowuptime=yes
+[ "$uptime" -lt 2 ] && lowuptime=yes
 
 red='\033[0;31m'
 green='\033[0;32m'
@@ -20,7 +20,7 @@ default='\033[0m'
 black='\033[0;30m'
 
 BALLOON_COLOR="$white"
-BALLOON_SPEED='0.02'
+BALLOON_SPEED='0.01'
 
 get_MUID() {
 		# calculate machine UID
@@ -31,8 +31,7 @@ get_MUID() {
 	}
 
 echolog() {
-mkdir -p $SRC/var/log/
-	echo "$@" 2>/dev/null >> $SRC/var/log/uird.shutdown.log
+	echo "$@" 2>/dev/null >> /tmp/uird.shutdown.log
 	if 	[ "$silent" == no ] >/dev/null ; then
 		local key
 		key="$1"
@@ -88,8 +87,8 @@ for a in "######" \
 "################" \
 "############" \
 "####" \
-"#${LIVEKITNAME}#" \
 "######" \
+"${LIVEKITNAME}" \
 "|" \
 "|" \
 "\\" \
@@ -225,6 +224,9 @@ rebuild() {
 	done
 }
 
+mkdir -p /tmp
+echo "UIRD shutdown started!" > /tmp/uird.shutdown.log
+
 [ -f /oldroot/etc/initvars ] && . /oldroot/etc/initvars || BALLOON_COLOR="$red"
 [ -f /shutdown.cfg ] && . /shutdown.cfg || BALLOON_COLOR="$red"
 if ! [ -d "/oldroot$SYSMNT" ] ; then
@@ -236,8 +238,6 @@ fi
 [ "$silent" = "yes" ] && DEVNULL=">/dev/null" 
  
 SRC=/oldroot${SYSMNT}/changes
-mkdir -p $SRC/var/log/
-echo "UIRD shutdown started!" > $SRC/var/log/uird.shutdown.log 
  
 #umount bundles
 IMAGES=/oldroot${SYSMNT}/bundles 
@@ -261,6 +261,18 @@ echolog $(umount $(mount | egrep -v "tmpfs|zram|proc|sysfs" | awk  '{print $3}' 
 
 #save changes to modules
 [ $CHANGESMNT ] && rebuild
+
+if [ -d $CFGPWD -a $log != 'no' ] ;then
+	logname=$(echo $CHANGESMNT | sed 's/.cfg$/.lod/')
+	[ -f $logname ] && mv -f $logname ${logname}.old
+	date >> $logname
+	for a in /tmp/uird.shutdown.log /tmp/allfiles /tmp/excludedfiles tmp/wh_exclude  ;do
+		echo "=== $(basename $a) ===" >> $logname
+		echo '' >> $logname 2>/dev/null
+		cat $a >> $logname 2>/dev/null
+		echo '' cat $a >> $logname 2>/dev/null
+	done
+fi
 
 for mntp in $(mount | egrep -v "tmpfs|proc|sysfs" | awk  '{print $3}' | sort -r) ; do
 	if umount $mntp ; then 
