@@ -46,7 +46,7 @@ shell_() {
 	echo ''
 }
 
-wh_exclude() {
+wh_exclude_DdShurick() {
 	echo '' > /tmp/wh_exclude
 	find $1 -name '.wh.*' |sed "s:$1::" | while read WH ; do
 	F=$(echo $WH | sed 's/.wh.//g')
@@ -56,6 +56,15 @@ wh_exclude() {
 		echo $F >> /tmp/wh_exclude
 	fi
 	done
+}
+
+wh_exclude() {
+	find $1 -name '.wh.*' |sed -e "s:$1::" -e  's/\/.wh./\//' > /tmp/wh_files
+	find ${SYSMNT}/changes/ |sed "s:${SYSMNT}/changes/:/:" > /tmp/ls_changes
+	find $2 |sed "s:$2/:/:" > /tmp/ls_bundle
+	cat /tmp/wh_files /tmp/ls_bundle |sort |uniq -d > /tmp/wh_exclude
+	cat /tmp/wh_files /tmp/ls_changes |sort |uniq -d |sed -r 's:^(/.*/)(.*):\1.wh.\2:' >> /tmp/wh_exclude
+	rm /tmp/ls_bundle /tmp/wh_files /tmp/ls_changes
 }
 
 banner() {
@@ -180,7 +189,7 @@ rebuild() {
 		echo "/proc" >> /tmp/$n/excludedfiles # maybe it is not necessary
 		echo "/sys" >> /tmp/$n/excludedfiles # maybe it is not necessary
 		echo "/mnt" >> /tmp/$n/excludedfiles # maybe it is not necessary
-		#cut filtered files and .wh.* for mode+wh mode
+		#cut filtered files and .wh.* for mount+wh mode
 		if [ -f /tmp/wh_exclude ] ; then 
 			cat /tmp/wh_exclude >> /tmp/$n/excludedfiles
 			mv /tmp/wh_exclude /tmp/$n/
@@ -275,7 +284,7 @@ echolog $(umount $(mount | egrep -v "tmpfs|zram|proc|sysfs" | awk  '{print $3}' 
 if [ -d $CFGPWD -a $log != 'no' ] ;then
 	logname=$(echo $CHANGESMNT | sed 's/.cfg$/_log.tar.gz/')
 	[ -f $logname ] && mv -f $logname ${logname}.old
-	cd /tmp ; tar -czvf $logname * ; cd /
+	cd /tmp ; tar -czf $logname * ; cd /
 fi
 
 for mntp in $(mount | egrep -v "tmpfs|proc|sysfs" | awk  '{print $3}' | sort -r) ; do
