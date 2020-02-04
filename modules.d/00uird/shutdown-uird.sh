@@ -273,7 +273,7 @@ echolog $(umount $(mount | egrep -v "tmpfs|zram|proc|sysfs" | awk  '{print $3}' 
 
 # make the log
 if [ -d $CFGPWD -a $log != 'no' ] ;then
-	logname=$(echo $CHANGESMNT | sed 's/.cfg$/_lod.tar.gz/')
+	logname=$(echo $CHANGESMNT | sed 's/.cfg$/_log.tar.gz/')
 	[ -f $logname ] && mv -f $logname ${logname}.old
 	cd /tmp ; tar -czvf $logname * ; cd /
 fi
