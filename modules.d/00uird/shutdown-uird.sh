@@ -164,47 +164,54 @@ rebuild() {
 				[ "$MODE" = "mount" ] && mount -t aufs -o br:$SRC=rw:${AUFS}-bundle=ro+wh aufs $AUFS 
 				[ "$MODE" = "mount+wh" ] && mount -t aufs -o ro,shwh,br:$SRC=ro+wh:${AUFS}-bundle=rr+wh aufs $AUFS
 				SRC=$AUFS
+				[ "$MODE" == "mount+wh" ] && wh_exclude $SRC ${AUFS}-bundle
 			fi
 		fi
-		mkdir -p /tmp
+		mkdir -p /tmp/$n
 		#cut aufs arefacts
-		echo "/.wh..*" > /tmp/excludedfiles
+		echo "/.wh..*" > /tmp/$n/excludedfiles
 		#cut garbage 
-		echo "/.cache" >> /tmp/excludedfiles
-		echo "/.dbus" >> /tmp/excludedfiles
-		echo "/run" >> /tmp/excludedfiles
-		echo "/tmp" >> /tmp/excludedfiles
-		echo "/memory" >> /tmp/excludedfiles
-		echo "/dev" >> /tmp/excludedfiles # maybe it is not necessary
-		echo "/proc" >> /tmp/excludedfiles # maybe it is not necessary
-		echo "/sys" >> /tmp/excludedfiles # maybe it is not necessary
-		if [ "$MODE" == "mount+wh" ] ; then
-			wh_exclude $SRC ${AUFS}-bundle
-			cat /tmp/wh_exclude >> /tmp/excludedfiles
+		echo "/.cache" >> /tmp/$n/excludedfiles
+		echo "/.dbus" >> /tmp/$n/excludedfiles
+		echo "/run" >> /tmp/$n/excludedfiles
+		echo "/tmp" >> /tmp/$n/excludedfiles
+		echo "/memory" >> /tmp/$n/excludedfiles
+		echo "/dev" >> /tmp/$n/excludedfiles # maybe it is not necessary
+		echo "/proc" >> /tmp/$n/excludedfiles # maybe it is not necessary
+		echo "/sys" >> /tmp/$n/excludedfiles # maybe it is not necessary
+		echo "/mnt" >> /tmp/$n/excludedfiles # maybe it is not necessary
+		#cut filtered files and .wh.* for mode+wh mode
+		if [ -f /tmp/wh_exclude ] ; then 
+			cat /tmp/wh_exclude >> /tmp/$n/excludedfiles
+			mv /tmp/wh_exclude /tmp/$n/
 		fi
 		if [ -n "$ADDFILTER" -o -n "$DROPFILTER" ] ;then
 				echolog "Please wait. Preparing excludes for module ${SAVETOMODULENAME}....." 
+				# do not create list of all files from changes, if it already exists
+				if ! [ -f /tmp/allfiles ] ; then
+					find $SRC/ -type l >/tmp/allfiles
+					find $SRC/ -type f >>/tmp/allfiles
+					sed -i 's|'$SRC'||' /tmp/allfiles
+				fi
 				>/tmp/savelist.black
 				for item in $DROPFILTER ; do echo "$item" >> /tmp/savelist.black ; done
 				>/tmp/savelist.white
 				for item in $ADDFILTER ; do echo "$item" >> /tmp/savelist.white ; done
 				grep -q . /tmp/savelist.white || echo '.' > /tmp/savelist.white
-				find $SRC/ -type l >/tmp/allfiles
-				find $SRC/ -type f >>/tmp/allfiles
-				sed -i 's|'$SRC'||' /tmp/allfiles
 				grep -f /tmp/savelist.white /tmp/allfiles | grep -vf /tmp/savelist.black > /tmp/includedfiles
-				grep -q . /tmp/savelist.black && grep -f /tmp/savelist.black /tmp/allfiles >> /tmp/excludedfiles
-				grep -vf /tmp/savelist.white /tmp/allfiles >> /tmp/excludedfiles
+				grep -q . /tmp/savelist.black && grep -f /tmp/savelist.black /tmp/allfiles >> /tmp/$n/excludedfiles
+				grep -vf /tmp/savelist.white /tmp/allfiles >> /tmp/$n/excludedfiles
 				find $SRC/ -type d | sed 's|'$SRC'||' | while read a ;do
 				grep -q "^$a" /tmp/includedfiles && continue
 				echo "$a" | grep -vf /tmp/savelist.black | grep -qf /tmp/savelist.white && continue
-				echo "$a" >> /tmp/excludedfiles
+				echo "$a" >> /tmp/$n/excludedfiles
 				done
 		fi
-		sed -i 's|^/||' /tmp/excludedfiles
+		rm -f /tmp/savelist.white /tmp/savelist.black /tmp/includedfiles
+		sed -i 's|^/||' /tmp/$n/excludedfiles
 		echolog "Please wait. Saving changes to module ${SAVETOMODULENAME}....."
 		[ "$shell" = "yes" ] && shell_
-		eval mksquashfs $SRC "${SAVETOMODULENAME}.new" -ef /tmp/excludedfiles $SQFSOPT -wildcards $DEVNULL 
+		eval mksquashfs $SRC "${SAVETOMODULENAME}.new" -ef /tmp/$n/excludedfiles $SQFSOPT -wildcards $DEVNULL 
 		if [ $? == 0 ] ; then
 			echolog "[  ${green}OK${default}  ]  $SAVETOMODULENAME  -- complete."
 			[ -f "$SAVETOMODULENAME" ] && mv -f "$SAVETOMODULENAME" "${SAVETOMODULENAME}.bak" 
@@ -217,15 +224,17 @@ rebuild() {
 			echo "          Changes dir is $SRC, you may try to save it manualy"
 			shell_
 		fi
-			umount $AUFS  2> /dev/null
+			umount $AUFS  2> /dev/null 
+			rmdir $AUFS 2> /dev/null
 			umount ${AUFS}-bundle 2> /dev/null
-			rm -rf  ${AUFS}-rw 2> /dev/null
+			rmdir ${AUFS}-bundle 2> /dev/null
 	fi
 	done
 }
 
 mkdir -p /tmp
 echo "UIRD shutdown started!" > /tmp/uird.shutdown.log
+date >> /tmp/uird.shutdown.log
 
 [ -f /oldroot/etc/initvars ] && . /oldroot/etc/initvars || BALLOON_COLOR="$red"
 [ -f /shutdown.cfg ] && . /shutdown.cfg || BALLOON_COLOR="$red"
@@ -259,19 +268,14 @@ else
 fi
 echolog $(umount $(mount | egrep -v "tmpfs|zram|proc|sysfs" | awk  '{print $3}' | sort -r) 2>&1)
 
-#save changes to modules
+#save changes to the modules
 [ $CHANGESMNT ] && rebuild
 
+# make the log
 if [ -d $CFGPWD -a $log != 'no' ] ;then
-	logname=$(echo $CHANGESMNT | sed 's/.cfg$/.lod/')
+	logname=$(echo $CHANGESMNT | sed 's/.cfg$/_lod.tar.gz/')
 	[ -f $logname ] && mv -f $logname ${logname}.old
-	date >> $logname
-	for a in /tmp/uird.shutdown.log /tmp/allfiles /tmp/excludedfiles tmp/wh_exclude  ;do
-		echo "=== $(basename $a) ===" >> $logname
-		echo '' >> $logname 2>/dev/null
-		cat $a >> $logname 2>/dev/null
-		echo '' cat $a >> $logname 2>/dev/null
-	done
+	cd /tmp ; tar -czvf $logname * ; cd /
 fi
 
 for mntp in $(mount | egrep -v "tmpfs|proc|sysfs" | awk  '{print $3}' | sort -r) ; do
