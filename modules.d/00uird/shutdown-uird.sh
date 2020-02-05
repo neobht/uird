@@ -60,11 +60,9 @@ wh_exclude_DdShurick() {
 
 wh_exclude() {
 	find $1 -name '.wh.*' |sed -e "s:$1::" -e  's/\/.wh./\//' > /tmp/wh_files
-	find ${SYSMNT}/changes/ |sed "s:${SYSMNT}/changes/:/:" > /tmp/ls_changes
-	find $2 |sed "s:$2/:/:" > /tmp/ls_bundle
-	cat /tmp/wh_files /tmp/ls_bundle |sort |uniq -d > /tmp/wh_exclude
-	cat /tmp/wh_files /tmp/ls_changes |sort |uniq -d |sed -r 's:^(/.*/)(.*):\1.wh.\2:' >> /tmp/wh_exclude
-	rm /tmp/ls_bundle /tmp/wh_files /tmp/ls_changes
+	(cat /tmp/wh_files ;  find $2 |sed "s:$2/:/:" )   |sort |uniq -d > /tmp/wh_exclude
+	(cat /tmp/wh_files ; find ${SYSMNT}/changes/ |sed "s:${SYSMNT}/changes/:/:" ) |sort |uniq -d |sed -r 's:^(/.*/)(.*):\1.wh.\2:' >> /tmp/wh_exclude
+	rm /tmp/wh_files 
 }
 
 banner() {
@@ -173,12 +171,18 @@ rebuild() {
 				[ "$MODE" = "mount" ] && mount -t aufs -o br:$SRC=rw:${AUFS}-bundle=ro+wh aufs $AUFS 
 				[ "$MODE" = "mount+wh" ] && mount -t aufs -o ro,shwh,br:$SRC=ro+wh:${AUFS}-bundle=rr+wh aufs $AUFS
 				SRC=$AUFS
-				[ "$MODE" == "mount+wh" ] && wh_exclude $SRC ${AUFS}-bundle
 			fi
 		fi
 		mkdir -p /tmp/$n
+		
 		#cut aufs arefacts
 		echo "/.wh..*" > /tmp/$n/excludedfiles
+		#cut filtered files and .wh.* for mount+wh mode
+		if [ "$MODE" == "mount+wh" ] ; then
+			wh_exclude $SRC ${AUFS}-bundle 
+			cat /tmp/wh_exclude >> /tmp/$n/excludedfiles
+			mv /tmp/wh_exclude  /tmp/$n/
+		fi
 		#cut garbage 
 		echo "/.cache" >> /tmp/$n/excludedfiles
 		echo "/.dbus" >> /tmp/$n/excludedfiles
@@ -189,11 +193,6 @@ rebuild() {
 		echo "/proc" >> /tmp/$n/excludedfiles # maybe it is not necessary
 		echo "/sys" >> /tmp/$n/excludedfiles # maybe it is not necessary
 		echo "/mnt" >> /tmp/$n/excludedfiles # maybe it is not necessary
-		#cut filtered files and .wh.* for mount+wh mode
-		if [ -f /tmp/wh_exclude ] ; then 
-			cat /tmp/wh_exclude >> /tmp/$n/excludedfiles
-			mv /tmp/wh_exclude /tmp/$n/
-		fi
 		if [ -n "$ADDFILTER" -o -n "$DROPFILTER" ] ;then
 				echolog "Please wait. Preparing excludes for module ${SAVETOMODULENAME}....." 
 				# do not create list of all files from changes, if it already exists
