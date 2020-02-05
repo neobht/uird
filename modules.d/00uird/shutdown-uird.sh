@@ -46,18 +46,6 @@ shell_() {
 	echo ''
 }
 
-wh_exclude_DdShurick() {
-	echo '' > /tmp/wh_exclude
-	find $1 -name '.wh.*' |sed "s:$1::" | while read WH ; do
-	F=$(echo $WH | sed 's/.wh.//g')
-	if [ -e ${SYSMNT}/changes/$F ] ; then
-		echo $WH  >> /tmp/wh_exclude
-	elif [ -e $2/$F ] ; then
-		echo $F >> /tmp/wh_exclude
-	fi
-	done
-}
-
 wh_exclude() {
 	find $1 -name '.wh.*' |sed -e "s:$1::" -e  's/\/.wh./\//' > /tmp/wh_files
 	(cat /tmp/wh_files ;  find $2 |sed "s:$2/:/:" )   |sort |uniq -d > /tmp/wh_exclude
