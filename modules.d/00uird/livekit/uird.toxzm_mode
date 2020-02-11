@@ -33,11 +33,17 @@ setup_toxzm_mode() {
 	add_section() {
 		SECTION=$1
 		XZMNAME=$2
-		echo "# NEED" >> $CHANGESMNT
-		echo "# A" >> $CHANGESMNT
-		echo "# SIMPLE" >> $CHANGESMNT
-		echo "# HELP" >> $CHANGESMNT
-		echo "# HERE" >> $CHANGESMNT
+		echo "# This file is a config for uird.mode=toxzm" >> $CHANGESMNT
+		echo "# One section for one module" >> $CHANGESMNT
+		echo "# Section numbers must be in order from zero" >> $CHANGESMNT
+		echo "# XZM - module name" >> $CHANGESMNT
+		echo "# MODE - mode of use (copy, mount, mount+wh)" >> $CHANGESMNT
+		echo "# REBULID - rebuild the module (yes, no)" >> $CHANGESMNT
+		echo "# ADDFILTER - a list of files, dirs to save" >> $CHANGESMNT
+		echo "# DROPFILTER - a list of files,dirs to exclude from saves" >> $CHANGESMNT
+		echo "# SQFSOPT - additional options for mksquashfs" >> $CHANGESMNT
+		echo "# MAXCOPYSIZE - maximum module size in copy mode" >> $CHANGESMNT
+		echo "" >> $CHANGESMNT
 		echo "XZM${SECTION}=$XZMNAME" >> $CHANGESMNT
 		echo "MODE${SECTION}='${DMODE}'" >> $CHANGESMNT
 		echo "REBUILD${SECTION}='$DREBUILD'" >> $CHANGESMNT
@@ -141,6 +147,9 @@ setup_toxzm_mode() {
 		done
 	else 	
 		add_section 0 $(basename $CHANGESMNT |sed "s/.cfg/.$EXT/")
+		echo_blue_star
+		echolog "$CHANGESMNT created, trying to setting up \"CHANGES to XZM\" mode again"
+		setup_toxzm_mode $@
 	fi		
 echo CHANGESMNT=\"$CHANGESMNT\" >> /tmp/toxzm.state
 }
