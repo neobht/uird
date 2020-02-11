@@ -139,7 +139,9 @@ setup_toxzm_mode() {
 				mount -o remount,add:1:"$3/$BUN"=ro+wh aufs "$4"
 				[ $? -eq 0 ] && echolog "  $blue-->" $purple"$MODNAME"$green" [$MODE mode] "$default
 			elif [ "$MODE" = "none" ] ; then
-				grep -q "/$(basename "$MODNAME")" /proc/mounts && MODE=mount 
+				grep -q "/$(basename "$MODNAME")" /proc/mounts && MODE="mount"
+			elif [ "$MODE" = "none+wh" ] ; then
+				grep -q "/$(basename "$MODNAME")" /proc/mounts && MODE="mount+wh" 
 			else 
 				[ "$MODE" = "copy"  ] || echolog "wrong value - $MODE"
 			fi
