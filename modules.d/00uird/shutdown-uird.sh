@@ -148,6 +148,21 @@ rebuild() {
 	if [ "$REBUILD" == "yes"  ] ; then
 		SAVETOMODULENAME="${SAVETOMODULEDIR}/$XZM"
 		[ -z "$SQFSOPT" ] && SQFSOPT="$DEFSQFSOPT"
+		#cut aufs arefacts
+		mkdir -p /tmp/$n
+		echo '#cut aufs arefacts#' > /tmp/$n/excludedfiles
+		echo "/.wh..*" >> /tmp/$n/excludedfiles
+		#cut garbage
+		echo '#cut garbage#'  >> /tmp/$n/excludedfiles
+		echo "/.cache" >> /tmp/$n/excludedfiles
+		echo "/.dbus" >> /tmp/$n/excludedfiles
+		echo "/run" >> /tmp/$n/excludedfiles
+		echo "/tmp" >> /tmp/$n/excludedfiles
+		echo "/memory" >> /tmp/$n/excludedfiles
+		echo "/dev" >> /tmp/$n/excludedfiles # maybe it is not necessary
+		echo "/proc" >> /tmp/$n/excludedfiles # maybe it is not necessary
+		echo "/sys" >> /tmp/$n/excludedfiles # maybe it is not necessary
+		echo "/mnt" >> /tmp/$n/excludedfiles # maybe it is not necessary
 		# if old module exists we have to concatenate it
 		if [ -f "$SAVETOMODULENAME" ]; then
 		echolog "Old module exists..."
@@ -160,27 +175,14 @@ rebuild() {
 				[ "$MODE" = "mount+wh" ] && mount -t aufs -o ro,shwh,br:$SRC=ro+wh:${AUFS}-bundle=rr+wh aufs $AUFS
 				SRC=$AUFS
 			fi
+			#cut filtered files and .wh.* for mount+wh mode
+			echo '#cut filtered files and .wh.* for mount+wh mode#' >> /tmp/$n/excludedfiles
+			if [ "$MODE" == "mount+wh" ] ; then
+				wh_exclude $SRC ${AUFS}-bundle 
+				cat /tmp/wh_exclude >> /tmp/$n/excludedfiles
+				mv -f /tmp/wh_exclude /tmp/$n/
+			fi
 		fi
-		mkdir -p /tmp/$n
-		
-		#cut aufs arefacts
-		echo "/.wh..*" > /tmp/$n/excludedfiles
-		#cut filtered files and .wh.* for mount+wh mode
-		if [ "$MODE" == "mount+wh" ] ; then
-			wh_exclude $SRC ${AUFS}-bundle 
-			cat /tmp/wh_exclude >> /tmp/$n/excludedfiles
-			mv /tmp/wh_exclude  /tmp/$n/
-		fi
-		#cut garbage 
-		echo "/.cache" >> /tmp/$n/excludedfiles
-		echo "/.dbus" >> /tmp/$n/excludedfiles
-		echo "/run" >> /tmp/$n/excludedfiles
-		echo "/tmp" >> /tmp/$n/excludedfiles
-		echo "/memory" >> /tmp/$n/excludedfiles
-		echo "/dev" >> /tmp/$n/excludedfiles # maybe it is not necessary
-		echo "/proc" >> /tmp/$n/excludedfiles # maybe it is not necessary
-		echo "/sys" >> /tmp/$n/excludedfiles # maybe it is not necessary
-		echo "/mnt" >> /tmp/$n/excludedfiles # maybe it is not necessary
 		if [ -n "$ADDFILTER" -o -n "$DROPFILTER" ] ;then
 				echolog "Please wait. Preparing excludes for module ${SAVETOMODULENAME}....." 
 				# do not create list of all files from changes, if it already exists
