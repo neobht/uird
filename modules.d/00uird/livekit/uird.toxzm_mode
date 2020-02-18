@@ -152,6 +152,7 @@ setup_toxzm_mode() {
 		echo_blue_star
 		echolog "$CHANGESMNT created, trying to setting up \"CHANGES to XZM\" mode again"
 		setup_toxzm_mode $@
+		return
 	fi		
 echo CHANGESMNT=\"$CHANGESMNT\" >> /tmp/toxzm.state
 }
