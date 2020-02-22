@@ -2184,6 +2184,7 @@ union_append_bundles() {
 		# OverlayFS
 		#LOWER_DIRS="$2/$BUN:$LOWER_DIRS"
 		mkdir -p "$OVERLAY/workdir"
+		log "mount -t overlay -o lowerdir="$LOWER_DIRS",upperdir="$CHANGES",workdir="$OVERLAY/workdir" overlay "$3""
 		mount -t overlay -o lowerdir="$LOWER_DIRS",upperdir="$CHANGES",workdir="$OVERLAY/workdir" overlay "$3"
 	fi	
 }

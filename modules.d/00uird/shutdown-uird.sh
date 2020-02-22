@@ -166,12 +166,13 @@ rebuild() {
 		# if old module exists we have to concatenate it
 		if [ -f "$SAVETOMODULENAME" ]; then
 		echolog "Old module exists..."
-			if [ "$MODE" = "mount+wh" -o "$MODE" = "mount" ] ; then
+			if [ "$MODE" = "mount+wh" -o "$MODE" = "mount" -o "$MODE" = "overlay" ] ; then
 				echolog "MODE=${MODE}, we have to concatenate $SAVETOMODULENAME and $SRC"
 				AUFS=/tmp/aufs
 				mkdir -p $AUFS ${AUFS}-bundle
 				mount -o loop "$SAVETOMODULENAME" ${AUFS}-bundle			
-				[ "$MODE" = "mount" ] && mount -t aufs -o br:$SRC=rw:${AUFS}-bundle=ro+wh aufs $AUFS 
+				[ "$MODE" = "mount" ] && mount -t aufs -o br:$SRC=rw:${AUFS}-bundle=ro+wh aufs $AUFS
+				[ "$MODE" = "overlay" ] && mount -t overlay overlay -olowerdir="$SRC":"${AUFS}-bundle" $AUFS
 				[ "$MODE" = "mount+wh" ] && mount -t aufs -o ro,shwh,br:$SRC=ro+wh:${AUFS}-bundle=rr+wh aufs $AUFS
 				SRC=$AUFS
 			fi
@@ -189,6 +190,7 @@ rebuild() {
 				if ! [ -f /tmp/allfiles ] ; then
 					find $SRC/ -type l >/tmp/allfiles
 					find $SRC/ -type f >>/tmp/allfiles
+					find $SRC/ -type c >>/tmp/allfiles
 					sed -i 's|'$SRC'||' /tmp/allfiles
 				fi
 				>/tmp/savelist.black
