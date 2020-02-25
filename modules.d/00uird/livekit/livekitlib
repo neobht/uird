@@ -1683,7 +1683,7 @@ syscp() {
 		FILEFROM=$(getpar $UIRD_SYSCP $NUMPAR 1)
 		FILETO=$(getpar $UIRD_SYSCP $NUMPAR 2)
 		mkdir -p ${1}${FILETO}
-		cp -fr ${FILEFROM} ${1}${FILETO}/
+		cp -fa ${FILEFROM} ${1}${FILETO}/
         echo_blue_star
 		echolog "${FILEFROM} -->  ${FILETO}"
 	done
