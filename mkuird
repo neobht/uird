@@ -1,16 +1,37 @@
 #!/bin/bash
+WORKDIR=./
+CONFIG=${WORKDIR}mkuird.cfg
+[ -f $CONFIG ] || CONFIG=/etc/mkuird.cfg
+
+RUNPWD=$(pwd)
+OUTD=$RUNPWD
 CFG=legacy
-CONFIG=./mkuird.cfg
 EXCLUDE=qqqqqqqqqqq
 BUILD=uird
 KERNEL=$(uname -r)
 ADDLOCALES=""
-date > ./notfound.log
+DCONFIG=dracut.conf
+date > ./not_found.log
 
+#find config for mkuird
 for arg in $@
 do
   case "${arg}" in
     "-c" | "--config" ) config=yes;;
+    *) [ "${config}" == "yes" ] && CONFIG="${arg}"
+        config="no"
+  esac
+done
+
+. $CONFIG
+
+#find another parameters
+for arg in $@
+do
+  case "${arg}" in
+    "-c" | "--config" ) true;;
+    "-o" | "--outdir" ) outdir=yes;;
+    "-d" | "--dracut-config" ) dconfig=yes;;
     "-e" | "--exclude" ) exclude=yes;;
     "-n" | "--name" ) name=yes;;
     "-k" | "--kernel" ) kernel=yes;;
@@ -19,13 +40,14 @@ do
     "--kmod" ) BUILD=kmod;;
     "--addon" ) BUILD=addon;;
     "-"*[A-Za-z]*) echo "$(basename "$0"): invalid option -- '$(echo ${arg} | tr -d '-')'" >&2; exit 1;;
-    *) if [ "${config}" == "yes" ]; then CONFIG="${arg}"
-		elif [ "${exclude}" == "yes" ]; then EXCLUDE="${arg}"
+    *) if [ "${exclude}" == "yes" ]; then EXCLUDE="${arg}"
+		elif [ "${dconfig}" == "yes" ]; then DCONFIG="${arg}"
+		elif [ "${outdir}" == "yes" ]; then OUTD="${arg}"
 		elif [ "${name}" == "yes" ]; then NAME="${arg}"
 		elif [ "${kernel}" == "yes" ]; then KERNEL="${arg}"
 		elif [ "${kmodpath}" == "yes" ]; then KMODPATH="${arg}"
 		else CFG="${arg}" ; fi
-        config="no"; exclude="no"; name="no" ; kernel="no" ; kmodpath="no" ;;
+        outdir="no" ; exclude="no"; name="no" ; kernel="no" ; kmodpath="no"; dconfig="no" ;;
   esac
 done
 
@@ -40,22 +62,22 @@ if ! depmod -A "$KERNEL" ; then
 	exit 2
 fi
 
-
-. $CONFIG
 EXCLUDE=$(echo "$EXCLUDE" |sed "s/,/|/g")
 
-if ! [ -f ./configs/uird_configs/$CFG ]; then
-	echo "./configs/uird_configs/$CFG is not exist"
+if ! [ -f $WORKDIR/configs/uird_configs/$CFG ]; then
+	echo "$WORKDIR/configs/uird_configs/$CFG is not exist"
 	exit 3
 fi
 
-cd dracut/modules.d
+
+cd ${WORKDIR}/dracut/modules.d
 ln -s ../../modules.d/* ../modules.d/ 2>/dev/null
-cd ../..
+cd $RUNPWD
+
 
 notfound() {
 echo "Not found: $1 - $2"
-echo "Not found: $1 - $2" >> ./notfound.log
+echo "Not found: $1 - $2" >> ./not_found.log
 }
 
 testMOd () {
@@ -72,7 +94,7 @@ if [ "$type" == "KM" -o "$type" == "FS" ] ;then
 elif [ "$type" == "BIN" ] ;then
 		which $mod >/dev/null 2>&1 && 	return 0
 elif [ "$type" == "DM" ] ;then
-		ls -1 ./dracut/modules.d |egrep -q "..${mod}$" && return 0
+		ls -1 ${WORKDIR}/dracut/modules.d |egrep -q "..${mod}$" && return 0
 fi
 notfound $type  $mod 
 return 1
@@ -96,30 +118,30 @@ for   mod in ${!item} ; do
 done
 done
 }
+
 BUILTIN=$(cat /lib/modules/$KERNEL/modules.builtin |while read a ; do basename $a ; done |sed 's/.ko$//')
-
-
+cd ${WORKDIR}
 if [ "$BUILD" == "kmod" ] ; then
 	parser KM ; parser FS ; parser DM
 	echo "MAKE UIRD (Kernel modules only)...."
-	uirdfile=uird.kmod.cpio.xz
+	uirdfile=${OUTD}/uird.kmod.cpio.xz
 	./dracut/dracut.sh -l -N -f -m "$DM_base" \
 	-d "$KM" \
 	--filesystems "$FS" \
 	--kernel-only \
-	-c dracut.conf -v -M $uirdfile $KERNEL >dracut_kmod.log 2>&1
+	-c $DCONFIG -v -M $uirdfile $KERNEL >${RUNPWD}/dracut_kmod.log 2>&1
 elif [ "$BUILD" == "addon" ] ; then
 	echo "MAKE UIRD addon.... "
-	uirdfile=uird.addon.cpio.xz
+	uirdfile=${OUTD}/uird.addon.cpio.xz
 	./dracut/dracut.sh -l -N -f -m "$ExtraDM" \
 	--no-kernel \
-	-c dracut.conf -v -M $uirdfile $KERNEL >dracut_addon.log 2>&1
+	-c $DCONFIG -v -M $uirdfile $KERNEL >${RUNPWD}/dracut_addon.log 2>&1
 else
 	parser KM ; parser FS ; parser DM ; parser BIN
 	UIRD_BINS="$BIN"
 	export UIRD_BINS
 	echo "MAKE UIRD ${CFG}...."
-	uirdfile="uird.$CFG.cpio.xz"
+	uirdfile="${OUTD}/uird.$CFG.cpio.xz"
 	./dracut/dracut.sh -l -N --strip -f -m "$DM" \
 	-d "$KM" \
 	--filesystems "$FS" \
@@ -128,7 +150,8 @@ else
 	-i keys / \
 	$ADDLOCALES \
 	--kernel-cmdline "uird.basecfg=/uird_configs/$CFG" \
-	-c dracut.conf -v -M $uirdfile $KERNEL  >dracut_magos.log 2>&1
+	-c $DCONFIG -v -M $uirdfile $KERNEL  >${RUNPWD}/dracut_uird.log 2>&1
 fi
+cd $RUNPWD
 [ "$KMODPATH" -a -L "/lib/modules/$KERNEL"  ]  && rm /lib/modules/$KERNEL
 [ "$NAME" ] && mv "$uirdfile" "$NAME"
