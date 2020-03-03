@@ -214,7 +214,7 @@ debug_shell
 
 # copy some files to system
 getpar $UIRD_SYSCP >/dev/null && syscp  $UNION
-[ -f /etc/initvars ] && cat /etc/initvars | sort | uniq >$UNION/etc/initvars
+[ -f "/etc/initvars" ] && cat /etc/initvars | sort | uniq >$UNION/etc/initvars
 
 cd $UNION
 

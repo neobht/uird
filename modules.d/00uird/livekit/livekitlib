@@ -1240,7 +1240,7 @@ find_file() {
 
 	# if parameter is just a device, echo it and exit
 	#if [ -b "$FIND" -o -c "$FIND" -o "$FIND" = "" ]; then echo "$FIND"; return; fi
-	if [ -c "$FIND" -o "$FIND" = "" ]; then
+	if [ -b "$FIND" -o "$FIND" = "" ]; then
 		echo "$FIND"
 		return
 	fi
@@ -1932,7 +1932,7 @@ setup_changes() {
 setup_machines() {
 	debug_log "setup_machines" "$*"
 	local CHANGESMNT MACHINES SOURCE MNT_DIR MUID
-	[ $(getpar $UIRD_MODE 1 1) == "machines" ] || return
+	[ "$(getpar $UIRD_MODE 1 1)" == "machines" ] || return
 
 	# calculate machine UID
 	MUID=mac-$(cat /sys/class/net/e*/address 2>/dev/null | head -1 | tr -d :)
