@@ -391,7 +391,7 @@ for par in $(cat  /tmp/basecfg) ; do
 		NUM_PAR=$((NUM_PAR + 1))
 		done
 		
-	echo "$par" | sed -re 's/^(.*)\.(.*\=.*)$/\1_\2/' -e 's/^([[:digit:]].*)$/_&/'  >> /etc/initvars
+	echo "$par" | sed -re 's/^([^=]*)\.([^=]*\=.*)$/\1_\2/' -e 's/^([[:digit:]].*)$/_&/'  >> /etc/initvars
 	else
 		: > /tmp/parameters/$parDir/enabled
 		echo "${par}=enabled" | sed -re 's/^(.*)\.(.*\=.*)$/\1_\2/' -e 's/^([[:digit:]].*)$/_&/' >> /etc/initvars
