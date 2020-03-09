@@ -9,7 +9,7 @@ uird.from=/lfa,/UIRD::FORCE=yes::TIMEOUT=3
 uird.find_params=-maxdepth_4
 uird.mode=clean 
 uird.changes=/saves/todir
-#uird.preinit
+uird.preinit
 #uird.syscp=/livekitlib::/usr/bin
 #uird.shutdown
 # Комментарии могут быть только в конце файла
