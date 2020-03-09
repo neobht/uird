@@ -1880,13 +1880,21 @@ setup_changes() {
 	CHANGESVAL=$(getpar $UIRD_CHANGES 1 1 )
 	FPARS="/tmp/parameters/$UIRD_CHANGES/1" 
 	[ -z "$CHANGESVAL" ] && CHANGESVAL="changes"
+	
+	UNION_FS="$(getpar $UIRD_UNION 1 1 )"
+	[ -z $UNION_FS ] && UNION_FS="aufs"
 		
 	echo_green_star
 	echolog "$SETUP_CHANGES" $brown"$2"$default
 
 	if ! echo "$CHANGESVAL" | grep -q [XxLl][Zz][Mm]$; then
 		log "mount_data_source $CHANGESVAL $2 $1  "$FPARS""
-		mount_data_source $CHANGESVAL $2 $1 "$FPARS"
+		if [ "$UNION_FS" == 'aufs' ] ; then
+			mount_data_source $CHANGESVAL $2 $1 "$FPARS"
+		else
+			mkdir -p $OVERLAY/changes
+			mount_data_source $CHANGESVAL $OVERLAY  $1 "$FPARS"
+		fi
 	else
 		echo_green_star
 		echolog $SETUP_MACHINES_MOD $yellow"$CHANGESVAL"$default # text is not correct here
@@ -2160,9 +2168,6 @@ union_append_bundles() {
 			if [ "$UNION_FS" = "overlay" ]; then
 				# OverlayFS
 				LOWER_DIRS="$2/$BUN:$LOWER_DIRS"
-				# debug_log "===============>$LOWER_DIRS"
-				#mkdir -p "$MEMORY/ovl"
-				#mount -t overlay -o lowerdir="$MEMORY/ovl",upperdir="$1" overlay "$2"
 			else
 				mount -o remount,add:1:"$2/$BUN"="$MOD" aufs "$3"
 			fi
@@ -2182,10 +2187,10 @@ union_append_bundles() {
 	
 	if [ "$UNION_FS" = "overlay" ]; then
 		# OverlayFS
-		#LOWER_DIRS="$2/$BUN:$LOWER_DIRS"
-		mkdir -p "$OVERLAY/workdir"
-		log "mount -t overlay -o lowerdir="$LOWER_DIRS",upperdir="$CHANGES",workdir="$OVERLAY/workdir" overlay "$3""
-		mount -t overlay -o lowerdir="$LOWER_DIRS",upperdir="$CHANGES",workdir="$OVERLAY/workdir" overlay "$3"
+		mkdir -p "$OVERLAY/workdir" "$OVERLAY/changes"
+		log ""mount -t overlay -o lowerdir="$LOWER_DIRS",upperdir="$OVERLAY/changes",workdir="$OVERLAY/workdir" overlay "$3"
+		mount -t overlay -o lowerdir="$LOWER_DIRS",upperdir="$OVERLAY/changes",workdir="$OVERLAY/workdir" overlay "$3"
+		mount --bind $OVERLAY/changes $CHANGES
 	fi	
 }
 
