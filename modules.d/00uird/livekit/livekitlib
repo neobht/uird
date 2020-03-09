@@ -2189,7 +2189,7 @@ union_append_bundles() {
 		# OverlayFS
 		mkdir -p "$OVERLAY/workdir" "$OVERLAY/changes"
 		log ""mount -t overlay -o lowerdir="$LOWER_DIRS",upperdir="$OVERLAY/changes",workdir="$OVERLAY/workdir" overlay "$3"
-		mount -t overlay -o lowerdir="$LOWER_DIRS",upperdir="$OVERLAY/changes",workdir="$OVERLAY/workdir" overlay "$3"
+		mount -t overlay -o redirect_dir=on,metacopy=off,index=on,lowerdir="$LOWER_DIRS",upperdir="$OVERLAY/changes",workdir="$OVERLAY/workdir" overlay "$3"
 		mount --bind $OVERLAY/changes $CHANGES
 	fi	
 }

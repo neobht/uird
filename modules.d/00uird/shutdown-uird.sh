@@ -124,6 +124,10 @@ rebuild() {
 	notenumerated=$(cat "$CHANGESMNT" |egrep '^[[:space:]]*XZM.*[a-zA-Z]+.*=' |sed -e 's/^[[:space:]]*XZM//' -e 's/=.*$//')
 	for n in $(seq 0 $end) $notenumerated; do
 		SRC=${SYSMNT}/changes
+		if [ -d ${SYSMNT}/ovl/changes ] ; then 
+			SRC=${SYSMNT}/ovl/changes 
+			SRCWORK=${SYSMNT}/ovl/workdir
+		fi
 		eval REBUILD=\$REBUILD$n
 		eval XZM=\$XZM$n
 		[ -z "$XZM" ] && XZM=$(get_MUID).xzm
@@ -172,7 +176,7 @@ rebuild() {
 				mkdir -p $AUFS ${AUFS}-bundle
 				mount -o loop "$SAVETOMODULENAME" ${AUFS}-bundle			
 				[ "$MODE" = "mount" ] && mount -t aufs -o br:$SRC=rw:${AUFS}-bundle=ro+wh aufs $AUFS
-				[ "$MODE" = "overlay" ] && mount -t overlay overlay -olowerdir="$SRC":"${AUFS}-bundle" $AUFS
+				[ "$MODE" = "overlay" ] && mount -t overlay -o redirect_dir=on,metacopy=off,index=on,lowerdir="${AUFS}-bundle",upperdir="$SRC",workdir="$SRCWORK" overlay "$AUFS"
 				[ "$MODE" = "mount+wh" ] && mount -t aufs -o ro,shwh,br:$SRC=ro+wh:${AUFS}-bundle=rr+wh aufs $AUFS
 				SRC=$AUFS
 			fi
@@ -251,7 +255,7 @@ SRC=/oldroot${SYSMNT}/changes
 #umount bundles
 IMAGES=/oldroot${SYSMNT}/bundles 
 egrep "$IMAGES" /proc/mounts | awk '{print $2}' | while read a ; do
-    mount -t aufs -o remount,del:"$a" aufs /oldroot
+    mount -t aufs -o remount,del:"$a" aufs /oldroot 2> /dev/null
 	if umount $a  ; then
 		echolog "[  ${green}OK${default}  ] Umount: $a"
 	else
@@ -266,10 +270,11 @@ if umount /oldroot  ; then
 else
 	echolog "[${red}FALSE!${default}] Umount: ROOT AUFS"	
 fi
-echolog $(umount $(mount | egrep -v "tmpfs|zram|proc|sysfs" | awk  '{print $3}' | sort -r) 2>&1)
 
 #save changes to the modules
 [ $CHANGESMNT ] && rebuild
+
+echolog $(umount $(mount | egrep -v "tmpfs|zram|proc|sysfs" | awk  '{print $3}' | sort -r) 2>&1)
 
 # make the log
 if [ -d $CFGPWD -a $log != 'no' ] ;then
