@@ -21,7 +21,7 @@ Now you need to translate UIRD messages
 To translate using gettext:
 
 # Get pot file
-sed 's/$GETTEXT/GETTEXT/g' ./modules.d/00uird/livekit/{livekitlib,uird-init,uird.freemedia} | xgettext -o uird.pot  -L Shell --keyword --keyword=GETTEXT -
+sed 's/$GETTEXT/GETTEXT/g' ./modules.d/00uird/livekit/{livekitlib,uird*} | xgettext -o uird.pot  -L Shell --keyword --keyword=GETTEXT -
 
 # if the first time
 msginit -i uird.pot -o i18n/usr/share/locale/ru/LC_MESSAGES/uird.po -l ru.UTF-8

@@ -6,9 +6,17 @@
 # $4 = union dir
 # $5 = toram dir
 setup_toxzm_mode() {
-	local OPTIONS FS BUNDLE DATA_FROM DATA_FROM_DIR n end 
+	local OPTIONS FS BUNDLE DATA_FROM DATA_FROM_DIR n end
 	local MODE='' REBUILD='' ADDFILTER='' DROPFILTER=''  SQFSOPT='' MAXCOPYSIZE='' EXT=''
 	debug_log "setup toxzm_mode" "$*"
+	
+	TOXZM_BEGIN=$($GETTEXT "Seting up CHANGES to XZM mode")
+	TOXZM_NOTFOUND=$($GETTEXT "File or dir for toxzm mode not found")
+	TOXZM_DISABLED=$($GETTEXT "Toxzm  mode disabled!!!")
+	TOXZM_PARSING=$($GETTEXT "Parsing")
+	TOXZM_WRONG=$($GETTEXT "wrong value - ")
+	TOXZM_AGAIN=$($GETTEXT "created, trying to setting up \"CHANGES to XZM\" mode again")
+	
 	MNT_DIR=$1
 	FPARS="/tmp/parameters/$UIRD_MODE/1"
 	if [ -f "$FPARS" ] ; then
@@ -28,7 +36,7 @@ setup_toxzm_mode() {
 	[ -z "$CHANGESVAL" ] && CHANGESVAL="/changes.cfg"
 	CHANGESVAL="$(echo "$CHANGESVAL" |sed "s/\.${EXT}$/\.cfg/")"
 	echo_green_star
-	echolog "Seting up CHANGES to XZM mode" $brown"$CHANGESVAL"$default
+	echolog "$TOXZM_BEGIN" $brown"$CHANGESVAL"$default
 	DATA_FROM=$(find_data $CHANGESVAL $MNT_DIR "$FPARS")
 	add_section() {
 		SECTION=$1
@@ -68,8 +76,8 @@ setup_toxzm_mode() {
 		CHANGESMNT=$DATA_FROM
 	else
 		if dirname  $CHANGESVAL |egrep -q "^\.$|^\/$" ; then
-			echolog "File or dir for toxzm mode not found"
-			echolog "Toxzm  mode disabled!!!"
+			echolog "$TOXZM_NOTFOUND"
+			echolog "$TOXZM_DISABLED"
 			sleep 5
 			return
 		fi
@@ -78,7 +86,7 @@ setup_toxzm_mode() {
 	fi
 	if [ -f "$CHANGESMNT" ]; then
 		echo_blue_star
-		echolog "Parsing $CHANGESMNT"
+		echolog "$TOXZM_PARSING $CHANGESMNT"
 		source  "$CHANGESMNT"
 		end=$(( $(cat "$CHANGESMNT" |egrep '^[[:space:]]*XZM[[:digit:]]{,2}=' |wc -l) - 1 ))
 		notenumerated=$(cat "$CHANGESMNT" |egrep '^[[:space:]]*XZM.*[a-zA-Z]+.*=' |sed -e 's/^[[:space:]]*XZM//' -e 's/=.*$//')
@@ -144,14 +152,14 @@ setup_toxzm_mode() {
 			elif [ "$MODE" = "none+wh" ] ; then
 				grep -q "/$(basename "$MODNAME")" /proc/mounts && MODE="mount+wh" 
 			else 
-				[ "$MODE" = "copy"  ] || echolog "wrong value - $MODE"
+				[ "$MODE" = "copy"  ] || echolog "$TOXZM_WRONG $MODE"
 			fi
 			echo MODE$n=$MODE >> /tmp/toxzm.state
 		done
 	else 	
 		add_section 0 $(basename $CHANGESMNT |sed "s/.cfg/.$EXT/")
 		echo_blue_star
-		echolog "$CHANGESMNT created, trying to setting up \"CHANGES to XZM\" mode again"
+		echolog "$CHANGESMNT $TOXZM_AGAIN"
 		setup_toxzm_mode $@
 		return
 	fi		

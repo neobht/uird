@@ -43,30 +43,22 @@ BIN_BTRFSCK=/sbin/btrfsck
 BIN_BLKID=/sbin/blkid.real
 BIN_LOSETUP=/sbin/losetup.real
 
-#[ -f $BIN-BLKID ] || BIN_BLKID=$(which blkid)
-
-[ -f /etc/initvars ] && . /etc/initvars
-
-[ "$SYSMNT" ] && MEMORY=$SYSMNT || MEMORY=/memory
+[ -f $BIN_GETTEXT ] && GETTEXT=gettext || GETTEXT=f_gettext
 
 FSCHECKED=""
 MOUNTBINDS=""
 
-#lang and fonts
-export TEXTDOMAIN="uird"
-export TEXTDOMAINDIR="/usr/share/locale"
-
-CMDLINE_LANG=$(echo -n " " | cat - /proc/cmdline 2>/dev/null | tr -s ";" "," | egrep -m1 -o "(^|[[:space:]])lang=[^[:space:]]+" | cut -d "=" -f 2- | head -n1)
-[ "_$CMDLINE_LANG" != "_"  ] &&  LANG="$CMDLINE_LANG" 
-[ "$LANG" ]  ||	LANG=en
-[ -e /usr/share/locale/${LANG}.alias ] && LANG=$(cat /usr/share/locale/${LANG}.alias)
-export LANG=$LANG
-export LOCALE=$LANG
-
-[ -d "/usr/lib/consolefonts/${LANG}" -o -L "/usr/lib/consolefonts/${LANG}" ] && loadfont < /usr/lib/consolefonts/${LANG}/$(ls -1 /usr/lib/consolefonts/${LANG}/)  >/dev/null
-[ -d "/usr/lib/kbd/${LANG}" -o -L "/usr/lib/kbd/${LANG}" ] && loadkeys /usr/lib/kbd/${LANG}/$(ls -1 /usr/lib/kbd/${LANG}/) >/dev/null
-
-[ -f $BIN_GETTEXT ] && GETTEXT=gettext || GETTEXT=echo
+f_gettext() {
+	local TEXT='' STR
+	STR="$(echo $1 |sed 's#\/#\\/#g')"
+	TDOMAIN=${TEXTDOMAINDIR}/$(echo $LANG |sed 's/_.*$//')/LC_MESSAGES/${TEXTDOMAIN}.po
+	[ -f $TDOMAIN ] && TEXT="$(cat $TDOMAIN |sed -ne "/\"$STR\"/{n;p;}" |sed  -e 's/^msgstr\ *\"//' -e 's/\"$//')"
+	if [ -n "$TEXT" ] ; then 
+		echo -n $TEXT
+	else 
+		echo -n $1
+	fi
+}
 
 # Messages
 INIT_UNION=$($GETTEXT "Initializing filesystem")
@@ -2679,3 +2671,5 @@ unsquashfs() {
 	umount  /tmp/tmpmntdir
 	rm -rf /tmp/tmpmntdir
 }
+
+

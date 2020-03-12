@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 1.1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-02-21 21:26+0700\n"
+"POT-Creation-Date: 2020-03-12 16:20+0700\n"
 "PO-Revision-Date: 2015-10-20 00:00+0700\n"
 "Last-Translator: Anton Goroshkin <neobht@gmail.com>\n"
 "Language-Team: Russian <http://magos-linux.ru>\n"
@@ -17,172 +17,196 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: стандартный ввод:72
+#: стандартный ввод:64
 msgid "Initializing filesystem"
 msgstr "Инициализация файловой системы"
 
-#: стандартный ввод:73
+#: стандартный ввод:65
 msgid "Initializing:"
 msgstr "Инициализация:"
 
-#: стандартный ввод:75
+#: стандартный ввод:67
 msgid "Searching and initializing source:"
 msgstr "Поиск и инициализация источника:"
 
-#: стандартный ввод:76
+#: стандартный ввод:68
 msgid "using source:"
 msgstr "используется источник:"
 
-#: стандартный ввод:77
+#: стандартный ввод:69
 msgid "source not found or not initialized"
 msgstr "источник не найден или не инициализирован"
 
-#: стандартный ввод:78
+#: стандартный ввод:70
 msgid "[S]hutdown, [R]eboot, [C]ontinue, [T]ry again ?"
 msgstr ""
 "[S]hutdown (завершить), [R]eboot (перезагрузить), [C]ontinue (продолжить), "
 "[T]ry again (попробовать снова) ?"
 
-#: стандартный ввод:80
+#: стандартный ввод:72
 msgid "Testing filesystem for POSIX compatibility"
 msgstr "Тестирование файловой системы на совместимость с POSIX"
 
-#: стандартный ввод:81
+#: стандартный ввод:73
 msgid "POSIX not available, using POSIXOVL"
 msgstr "POSIX не поддерживается, используется POSIXOVL"
 
-#: стандартный ввод:82
+#: стандартный ввод:74
 msgid "Writing is not available, using RAM"
 msgstr "Запись не поддерживается, используется ОЗУ"
 
-#: стандартный ввод:84
+#: стандартный ввод:76
 msgid "Searching and initializing configuration file:"
 msgstr "Поиск и инициализация файла конфигурации:"
 
-#: стандартный ввод:85
+#: стандартный ввод:77
 msgid "using configuration file:"
 msgstr "используется конфигурационный файл:"
 
-#: стандартный ввод:86
+#: стандартный ввод:78
 msgid "configuration file not found, using default parameters"
 msgstr "конфигурационный файл не найден, используются параметры по-умолчанию"
 
-#: стандартный ввод:87
+#: стандартный ввод:79
 msgid "Initializing source for persistent changes:"
 msgstr "Инициализация источника персистентных изменений:"
 
-#: стандартный ввод:88
+#: стандартный ввод:80
 msgid "using for changes:"
 msgstr "используется для изменений:"
 
-#: стандартный ввод:89
+#: стандартный ввод:81
 msgid "Initializing source for machine-depended changes:"
 msgstr "Инициализация источника машинно-зависимых изменений:"
 
-#: стандартный ввод:90
+#: стандартный ввод:82
 msgid "Searching bundle for machine-depended changes:"
 msgstr "Поиск модуля машинно-зависимых изменений:"
 
-#: стандартный ввод:91
+#: стандартный ввод:83
 msgid "unpacking"
 msgstr "распаковка"
 
-#: стандартный ввод:92
+#: стандартный ввод:84
 msgid "to RAM"
 msgstr "в ОЗУ"
 
-#: стандартный ввод:93
+#: стандартный ввод:85
 msgid "Mounting sources for homes directories:"
 msgstr "Подключение источников для домашних директорий:"
 
-#: стандартный ввод:95
+#: стандартный ввод:87
 msgid "Trying to enable SWAP"
 msgstr "Инициализируем SWAP"
 
-#: стандартный ввод:96
+#: стандартный ввод:88
 msgid "Resizing TMPFS to -"
 msgstr "Изменение TMPFS до -"
 
-#: стандартный ввод:97
+#: стандартный ввод:89
 msgid "Copying some UIRD files to system"
 msgstr "Копирование некоторых UIRD файлов в основную систему"
 
-#: стандартный ввод:99
+#: стандартный ввод:91
 msgid "Initializing network services"
 msgstr "Инициализация сетевых сервисов"
 
-#: стандартный ввод:100
+#: стандартный ввод:92
 msgid "Mounting bundles to root:"
 msgstr "Подключение модулей в общий корень:"
 
-#: стандартный ввод:101
+#: стандартный ввод:93
 msgid "Copy data to RAM, this may take a long time, waiting..."
 msgstr "Копирование в ОЗУ, это может занять длительное время, ожидайте..."
 
-#: стандартный ввод:102
+#: стандартный ввод:94
 msgid "Copy data to CACHE, this may take a long time, waiting..."
 msgstr "Копирование в КЭШ, это может занять длительное время, ожидайте..."
 
-#: стандартный ввод:104
+#: стандартный ввод:96
 msgid "waiting, it is searching and mounting source\\r"
 msgstr "ожидайте, идёт поиск и подключение источника\\r"
 
-#: стандартный ввод:105
+#: стандартный ввод:97
 msgid "Checking filesystem:"
 msgstr "Идёт проверка файловой системы:"
 
-#: стандартный ввод:106
+#: стандартный ввод:98
 msgid "Mounting encrypted filesystem:"
 msgstr "Подключение шифрованной файловой системы:"
 
-#: стандартный ввод:107
+#: стандартный ввод:99
 msgid "not enough memory."
 msgstr "недостаточно памяти."
 
-#: стандартный ввод:109
+#: стандартный ввод:101
 msgid "initializing"
 msgstr "Инициализируем"
 
-#: стандартный ввод:2419
-msgid "Starting UIRD init <http://magos-linux.ru>"
-msgstr "Запускается UIRD init <http://magos-linux.ru>"
-
-#: стандартный ввод:2420
-msgid "UIRD init is finished, starting"
-msgstr "UIRD init завершил работу, запускается"
-
-#: стандартный ввод:2421
-msgid "Updating directory /mnt"
-msgstr "Обновление директории /mnt"
-
-#: стандартный ввод:2422
-msgid "UIRD help system"
-msgstr "Справка по UIRD"
-
-#: стандартный ввод:2423
-msgid "No modules found for current kernel"
-msgstr "Модули для текущего ядра не найдены"
-
-#: стандартный ввод:2424
-msgid "RAM disk size"
-msgstr "Размер RAM диска"
-
-#: стандартный ввод:2702
+#: стандартный ввод:2679
 msgid "Starting freemedia...."
 msgstr "Отключаются источники (freemedia)..."
 
-#: стандартный ввод:2703
+#: стандартный ввод:2680
 msgid "Media"
 msgstr "Ресурс"
 
-#: стандартный ввод:2704
+#: стандартный ввод:2681
 msgid "is not free"
 msgstr "не удалось отключить"
 
-#: стандартный ввод:2705
+#: стандартный ввод:2682
 msgid "add the udev rules to remount sources"
 msgstr "создаются правила UDEV для повторного монтирования источников"
 
-#: стандартный ввод:2706
+#: стандартный ввод:2683
 msgid "Can't unmount"
 msgstr "Невозможно размонтировать"
+
+#: стандартный ввод:2801
+msgid "Starting UIRD init <http://magos-linux.ru>"
+msgstr "Запускается UIRD init <http://magos-linux.ru>"
+
+#: стандартный ввод:2802
+msgid "UIRD init is finished, starting"
+msgstr "UIRD init завершил работу, запускается"
+
+#: стандартный ввод:2803
+msgid "Updating directory /mnt"
+msgstr "Обновление директории /mnt"
+
+#: стандартный ввод:2804
+msgid "UIRD help system"
+msgstr "Справка по UIRD"
+
+#: стандартный ввод:2805
+msgid "No modules found for current kernel"
+msgstr "Модули для текущего ядра не найдены"
+
+#: стандартный ввод:2806
+msgid "RAM disk size"
+msgstr "Размер RAM диска"
+
+#: стандартный ввод:3248
+msgid "Seting up CHANGES to XZM mode"
+msgstr "Включение режима сохранения в модуль \"toxzm\""
+
+#: стандартный ввод:3249
+msgid "File or dir for toxzm mode not found"
+msgstr "Файл или каталог для режима \"toxzm\" не найден"
+
+#: стандартный ввод:3250
+msgid "Toxzm  mode disabled!!!"
+msgstr "Режим \"toxzm\" отключен!!!"
+
+#: стандартный ввод:3251
+msgid "Parsing"
+msgstr "Разбирается"
+
+#: стандартный ввод:3252
+msgid "wrong value - "
+msgstr "неверное значение - "
+
+#: стандартный ввод:3253
+msgid "created, trying to setting up \"CHANGES to XZM\" mode again"
+msgstr "создан, повторная попытка включения режима \"toxzm\""
