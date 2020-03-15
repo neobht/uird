@@ -15,7 +15,7 @@ setup_toxzm_mode() {
 	TOXZM_DISABLED=$($GETTEXT "Toxzm  mode disabled!!!")
 	TOXZM_PARSING=$($GETTEXT "Parsing")
 	TOXZM_WRONG=$($GETTEXT "wrong value - ")
-	TOXZM_AGAIN=$($GETTEXT "created, trying to setting up \"CHANGES to XZM\" mode again")
+	TOXZM_AGAIN=$($GETTEXT "created, trying to setting up CHANGES to XZM mode again")
 	
 	MNT_DIR=$1
 	FPARS="/tmp/parameters/$UIRD_MODE/1"

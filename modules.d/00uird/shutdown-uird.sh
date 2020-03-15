@@ -270,7 +270,7 @@ if umount /oldroot  ; then
 else
 	echolog "[${red}FALSE!${default}] Umount: ROOT AUFS"	
 fi
-echolog $(umount $(mount | egrep -v "tmpfs|zram|proc|sysfs" | awk  '{print $3}' | sort -r) 2>&1)
+echolog "$(umount $(mount | egrep -v "tmpfs|zram|proc|sysfs" | awk  '{print $3}' | sort -r) 2>&1) "
 
 #save changes to the modules
 [ $CHANGESMNT ] && rebuild
