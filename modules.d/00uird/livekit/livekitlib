@@ -537,8 +537,8 @@ init_zram_swap() {
 	memtotal=$(grep MemTotal /proc/meminfo | awk ' { print $2 } ')
 	memzram=$(($memtotal * ${SIZE} / 100 * 1024))
 	modprobe -q zram num_devices=2 2>/dev/null
-	[ $ALG == 'none' ] && ALG=$(cat /sys/block/zram0/comp_algorithm |sed -e 's/^.*\[//' -e 's/\].*$//')
-	echo $ALG > /sys/block/zram0/comp_algorithm 2>/dev/null
+	[ $ALG != 'none' ] && echo $ALG > /sys/block/zram0/comp_algorithm 2>/dev/null
+	ALG=$(cat /sys/block/zram0/comp_algorithm |sed -e 's/^.*\[//' -e 's/\].*$//')
 	echo $memzram >/sys/block/zram0/disksize
 	mkswap /dev/zram0 > /dev/null
 	swapon -p 100 /dev/zram0 
@@ -2607,7 +2607,7 @@ mkimg() {
 }
 
 setup_rootfs() {
-	local SIZE='70%' ALG='' FSTYPE RAM SWAP
+	local SIZE='70%' ALG='none' FSTYPE RAM SWAP
 	if [ "$1" != "yes" ] ; then
 			for str in  $(getpar $UIRD_ROOTFS 1 '2,$p')  ; do
 				local |grep -q "$(echo $str |cut  -f1 -d=)=" &&  eval $str 
@@ -2624,13 +2624,15 @@ setup_rootfs() {
 		mount -t tmpfs -o "size=${SIZE%%%}%" tmpfs $MEMORY
 	elif [ "$FSTYPE" == 'zram' ] ; then
 		[ $SIZE == 'auto' ] && SIZE=90%
-		[ -z "$ALG" ] || modprobe -q $ALG 2>/dev/null
 		modprobe -q zram num_devices=2 2>/dev/null
+		if [ "$ALG" != 'none' ] ; then 
+			modprobe -q $ALG 2>/dev/null
+			echo $ALG > /sys/block/zram1/comp_algorithm 2>/dev/null
+		fi
+		ALG=$(cat /sys/block/zram1/comp_algorithm |sed -e 's/^.*\[//' -e 's/\].*$//')
 		mem_zram=$(expr $(grep MemTotal /proc/meminfo | awk ' { print $2 } ') \* ${SIZE%%%} / 100 \* 1024)
-		[ -z "$ALG" ] && ALG=$(cat /sys/block/zram1/comp_algorithm |sed -e 's/^.*\[//' -e 's/\].*$//')
 		echo $mem_zram >/sys/block/zram1/disksize
 		echo $mem_zram >/sys/block/zram1/mem_limit
-		echo $ALG > /sys/block/zram1/comp_algorithm 2>/dev/null
 		mkfs.ext4 -O ^has_journal /dev/zram1 >/dev/null 2>&1
 		mount -t ext4 -o discard,rw /dev/zram1 $MEMORY
 	else
