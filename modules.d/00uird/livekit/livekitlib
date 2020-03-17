@@ -2632,7 +2632,7 @@ setup_rootfs() {
 		echo $mem_zram >/sys/block/zram1/mem_limit
 		echo $ALG > /sys/block/zram1/comp_algorithm 2>/dev/null
 		mkfs.ext4 -O ^has_journal /dev/zram1 >/dev/null 2>&1
-		mount -o discard,rw /dev/zram1 $MEMORY
+		mount -t ext4 -o discard,rw /dev/zram1 $MEMORY
 	else
 		echolog "unknown rootfs type: $FSTYPE"
 		debug_shell 
