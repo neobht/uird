@@ -1,4 +1,8 @@
 #!/bin/sh
+# script must be started only once
+[ -f /tmp/was_started ] && exit 0
+> /tmp/was_started
+ 
 shell="no" ; ask="no" ; silent="no" ; haltonly="no" ; lowuptime="no" ; log='no'
 DEVNULL=''
 DEFSQFSOPT="-b 512K -comp lz4"
@@ -292,7 +296,7 @@ for mntp in $(mount | egrep -v "tmpfs|proc|sysfs" | awk  '{print $3}' | sort -r)
 done
 [ "$shell" = "yes" ] && shell_
 [ "$silent" = "no" ] && banner "$BALLOON_COLOR" "$BALLOON_SPEED"
-grep -q /dev/sd /proc/mounts && exit 1
+grep  /dev/sd /proc/mounts && sleep 5
 exit 0
 
  
