@@ -1,7 +1,7 @@
 #!/bin/sh
 # script must be started only once
-[ -f /tmp/was_started ] && exit 0
-> /tmp/was_started
+# if tmp dir exists, the script is run a second time
+[ -d /tmp ] && exit 0
  
 shell="no" ; ask="no" ; silent="no" ; haltonly="no" ; lowuptime="no" ; log='no'
 DEVNULL=''
