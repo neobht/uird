@@ -138,7 +138,7 @@ rebuild() {
 		eval MODE=\$MODE$n
 		eval ADDFILTER="\$ADDFILTER$n"
 		eval DROPFILTER="\$DROPFILTER$n"
-		eval SQFSOPT="\$XZMOPT$n"
+		eval SQFSOPT="\$SQFSOPT$n"
 		[ "$REBUILD" != "yes"  ] && continue
 		SAVETOMODULEDIR="$(dirname $CHANGESMNT)"
 		[ -w $SAVETOMODULEDIR  ] || continue
