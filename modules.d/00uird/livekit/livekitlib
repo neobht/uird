@@ -243,6 +243,7 @@ show_debug_banner() {
 #
 debug_shell() {
 	if [ "$DEBUG_IS_ENABLED" ]; then
+		plymouth quit
 		show_debug_banner
 		setsid sh -c 'exec sh < /dev/tty1 >/dev/tty1 2>&1'
 		echo
@@ -251,6 +252,7 @@ debug_shell() {
 # start shell
 # if $1==help then start shell
 shell_cmd() {
+	plymouth quit
 	ln -s /root/bashrc /root/.bashrc 2>/dev/null
 	ln -s /root/bash_profile /root/.bash_profile 2>/dev/null
 	echo
@@ -273,6 +275,8 @@ shell_cmd() {
 # start quickshell
 start_quickshell() {
 	if getpar qs  > /dev/null ; then
+		plymouth quit
+		#sleep 2
 		ln -s /root/bashrc /root/.bashrc
 		ln -s /root/bash_profile /root/.bash_profile
 		mkdir -p /mnt
