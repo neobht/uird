@@ -5,16 +5,18 @@
 [ -z "$1" ] && echo "Error: should be called from udhcpc" && exit 1
 
 RESOLV_CONF="/etc/resolv.conf"
+IFCONFIG_BIN=$(which ifconfig)
+
 [ -n "$broadcast" ] && BROADCAST="broadcast $broadcast"
 [ -n "$subnet" ] && NETMASK="netmask $subnet"
 
 case "$1" in
 	deconfig)
-		/sbin/ifconfig $interface 0.0.0.0
+		$IFCONFIG_BIN $interface 0.0.0.0
 		;;
 
 	renew|bound)
-		/sbin/ifconfig $interface $ip $BROADCAST $NETMASK
+		$IFCONFIG_BIN $interface $ip $BROADCAST $NETMASK
 
 		if [ -n "$router" ] ; then
 			echo "deleting routers"
