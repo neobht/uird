@@ -51,12 +51,13 @@ install() {
     inst_multiple /usr/include/kmod-25/*
     inst_multiple /usr/include/arpa/*
     inst_multiple /usr/include/netinet/*
-    inst_multiple /usr/include/kmod-25/*
+
     inst_multiple /usr/include/rpc/*
     inst_multiple /usr/include/net/*
     inst_multiple /usr/include/mtd/*
     inst_multiple /usr/include/netpacket/*
     inst_multiple /usr/include/scsi/*
+#    inst_multiple /usr/include/.../*
 
     inst /usr/lib64/crt1.o
     inst /usr/lib64/crti.o
