@@ -29,6 +29,7 @@ done
 for arg in $@
 do
   case "${arg}" in
+    "-s" | "--show" ) SHOW=yes;;
     "-c" | "--config" ) true;;
     "-o" | "--outdir" ) outdir=yes;;
     "-d" | "--dracut-config" ) dconfig=yes;;
@@ -142,15 +143,23 @@ else
 	export UIRD_BINS
 	echo "MAKE UIRD ${CFG}...."
 	uirdfile="${OUTD}/uird.$CFG.cpio.xz"
-	./dracut/dracut.sh -l -N --strip -f -m "$DM" \
-	-d "$KM" \
-	--filesystems "$FS" \
-	-i initrd /  \
-	-i configs /  \
-	-i keys / \
-	$ADDLOCALES \
-	--kernel-cmdline "uird.basecfg=/uird_configs/$CFG" \
-	-c $DCONFIG -v -M $uirdfile $KERNEL  >${RUNPWD}/dracut_uird.log 2>&1
+	echo "-l -N --strip -f"		> ./dracut_run 
+	echo "-m \"$DM\""		>> ./dracut_run	
+	echo "-d \"$KM\""		>> ./dracut_run
+	echo "--filesystems \"$FS\""	>> ./dracut_run
+	echo "-i initrd /"		>> ./dracut_run
+	echo "-i configs /"		>> ./dracut_run
+	echo "-i keys /"		>> ./dracut_run
+	echo "$ADDLOCALES"		>> ./dracut_run
+	echo "--kernel-cmdline \"uird.basecfg=/uird_configs/$CFG\""	>> ./dracut_run
+	echo "-c $DCONFIG -v -M $uirdfile $KERNEL"			>> ./dracut_run
+	sed -i 's/"\ */"/g' ./dracut_run
+	sed -i '/^[[:space:]]*$/d'  ./dracut_run 
+	if [ $SHOW ] ; then
+		cat ./dracut_run	
+	else
+		cat ./dracut_run |xargs ./dracut/dracut.sh >${RUNPWD}/dracut_uird.log 2>&1
+	fi
 fi
 cd $RUNPWD
 [ "$KMODPATH" -a -L "/lib/modules/$KERNEL"  ]  && rm /lib/modules/$KERNEL
