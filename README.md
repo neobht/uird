@@ -184,7 +184,7 @@ _Более подробную информацию ищите во встрое
 
 ### Реализация
 
-В основе реализации лежит набор скриптов инициализации dracut (модули base, kernel-modules ) и скрипты uird (livekitlib+uird-init).
+В основе реализации лежит набор скриптов инициализации [dracut](https://cdn.kernel.org/pub/linux/utils/boot/dracut/dracut.html) (модули base, kernel-modules ) и скрипты uird (livekitlib+uird-init).
 
     cmdline-hook: parse-root-uird.sh (заглушка)
     mount-hook: mount-uird.sh (выполняет скрипт uird-init)
