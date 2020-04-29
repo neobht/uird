@@ -2565,7 +2565,7 @@ fi
 }
 
 mkimg() {
-	local  DIR newimg SIZE FS MNT_DIR
+	local  DIR newimg SIZE FS MNT_DIR PASS
 	newimg=$1 #new img (or new dir) name
 	MNT_DIR=$2 #mount point
 	SIZE='' ; FS=''
@@ -2598,9 +2598,20 @@ mkimg() {
 					fi
 				fi
 			fi
-			if  basename $newimg |grep -q img$  ; then
-					dd if=/dev/zero of="$DIR/$(basename $newimg)" bs=1 count=0 seek=${SIZE}M >/dev/null 
-					mkfs.$FS  "$DIR/$(basename $newimg)" >/dev/null  &&	DATA_FROM="$DIR/$(basename $newimg)" 
+			if  basename $newimg |egrep -q '\.img$|\.enc$'  ; then
+					FNAME="$DIR/$(basename $newimg)"
+					dd if=/dev/zero of="$FNAME" bs=1 count=0 seek=${SIZE}M >/dev/null
+					 if  basename $newimg |grep -q 'enc$' ; then
+						if ! [ "$PASS" ] ; then
+							read -p "enter PASSWORD:(default: linuxforever) " PASS 
+							[  -z "$PASS" ] && PASS='linuxforever'
+						fi
+						echo "$PASS" | cryptsetup open --type loopaes "$FNAME"  uirdnewenc --key-file -
+						FNAME="/dev/mapper/uirdnewenc"
+					 fi
+					mkfs.$FS  "$FNAME" >/dev/null 	
+					basename $newimg |grep -q 'enc$' && cryptsetup close uirdnewenc
+					DATA_FROM="$DIR/$(basename $newimg)" 
 			elif 
 					basename $newimg | grep -qv "\." ; then
 					mkdir "$DIR/$(basename $newimg)" && DATA_FROM="$DIR/$(basename $newimg)"
