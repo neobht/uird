@@ -30,7 +30,7 @@ get_MUID() {
 		# calculate machine UID
 		MUID=mac-$(cat /sys/class/net/e*/address 2>/dev/null | head -1 | tr -d :)
 		[ "$MUID" = "mac-" ] && MUID=mac-$(cat /sys/class/net/*/address 2>/dev/null | head -1 | tr -d :)
-		[ "$MUID" = "mac-" ] && MUID=vga-$(lspci -mm | grep -i vga | md5sum | cut -c 1-12)
+		[ "$MUID" = "mac-"  -o "$MUID" = "mac-000000000000" ] && MUID=vga-$(lspci -mm | grep -i vga | md5sum | cut -c 1-12)
 		echo "$MUID"
 	}
 

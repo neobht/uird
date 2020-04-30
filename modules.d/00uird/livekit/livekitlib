@@ -1929,6 +1929,14 @@ setup_changes() {
 	#   posix_test $1 $2
 }
 
+# calculate machine UID
+get_MUID() {
+	MUID=mac-$(cat /sys/class/net/e*/address 2>/dev/null | head -1 | tr -d :)
+	[ "$MUID" = "mac-" ] && MUID=mac-$(cat /sys/class/net/*/address 2>/dev/null | head -1 | tr -d :)
+	[ "$MUID" = "mac-"  -o "$MUID" = "mac-000000000000" ] && MUID=vga-$(lspci -mm | grep -i vga | md5sum | cut -c 1-12)
+	echo "$MUID"
+	}
+
 # $1 = machines directory
 # $2 = machines mount directory
 # $3 = changes directory
@@ -1937,12 +1945,18 @@ setup_machines() {
 	debug_log "setup_machines" "$*"
 	local CHANGESMNT MACHINES SOURCE MNT_DIR MUID
 	[ "$(getpar $UIRD_MODE 1 1)" == "machines" ] || return
-
-	# calculate machine UID
-	MUID=mac-$(cat /sys/class/net/e*/address 2>/dev/null | head -1 | tr -d :)
-	[ "$MUID" = "mac-" ] && MUID=mac-$(cat /sys/class/net/*/address 2>/dev/null | head -1 | tr -d :)
-	[ "$MUID" = "mac-" ] && MUID=vga-$(lspci -mm | grep -i vga | md5sum | cut -c 1-12)
-
+	
+	MUID=$(get_MUID)
+	
+	UNION_FS="$(getpar $UIRD_UNION 1 1 )"
+	[ -z $UNION_FS ] && UNION_FS="aufs"
+	if [ "$UNION_FS" == 'aufs' ] ; then
+			CHANGES_DIR=$3
+	else
+			mkdir -p $OVERLAY/changes
+			CHANGES_DIR=$OVERLAY/changes
+	fi
+		
 	# locate machines folders
 	if cat /proc/cmdline | grep -q "uird.changes="; then
 		# machine source was specified, we have to mount it
@@ -1969,14 +1983,14 @@ setup_machines() {
 	# unpack module to changes folder
 	if [ -f "$CHANGESMNT" ]; then
 		echolog $default"  $SETUP_MACHINES_UNPACKING $yellow$CHANGESMNT$default $SETUP_MACHINES_TO_RAM"
-		unsquashfs -f -d "$3" "$CHANGESMNT" >/dev/null 2>&1
+		unsquashfs -f -d "$CHANGES_DIR" "$CHANGESMNT" >/dev/null 2>&1
 	fi
 	# save module filename
-	echo "$CHANGESMNT" >$3/.savetomodule
+	echo "$CHANGESMNT" >$CHANGES_DIR/.savetomodule
 	# lock media from systemd umount
 	if  ! getpar $UIRD_SHUTDOWN >/dev/null ; then
 		touch $1/.lock
-		losetup $(losetup -f) $1/.lock
+		losetup $(losetup -f) $1/.lock 2>/dev/null
 	fi
 }
 
