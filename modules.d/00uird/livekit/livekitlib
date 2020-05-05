@@ -882,12 +882,24 @@ mount_device() {
 		for a in $(seq 0 254); do
 			[ -f /dev/mapper/uirdencdev$a -o -b /dev/mapper/uirdencdev$a ] && continue
 			LOOPDEV=uirdencdev$a
+			AESKEY=/tmp/aeskey$a
 			break
 		done
 		times=3
+		if  [  -n "$KEY"  -a ! -f "$KEY"  ] ; then
+				echo_blue_star
+				echolog "find key:  $KEY"
+				KEY=$(find_data "$KEY" "$AESKEY")
+		fi
+		echo_blue_star
 		while [ $times -gt 0 ]; do
-			read -s -pPassword: >/dev/console </dev/console 2>/dev/console
-			echo $REPLY | cryptsetup open --type loopaes "$DEV" "$LOOPDEV" --key-file -
+			if [ -f "$KEY" ] ; then 
+				echolog "Found keyfile:  $KEY "
+				cryptsetup open --type loopaes "$DEV" "$LOOPDEV" --key-file  "$KEY"
+			else
+				read -s -pPassword: >/dev/console </dev/console 2>/dev/console
+				echo $REPLY | cryptsetup open --type loopaes "$DEV" "$LOOPDEV" --key-file -
+			fi
 			mount -n -o ro "/dev/mapper/$LOOPDEV" "$2" >>/var/log/uird.dbg.log 2>&1
 			ERR=$?
 			REPLY=
@@ -1155,8 +1167,8 @@ find_filepath() {
 	if [ $? -eq 0 ]; then
 		PRESERVE="true"
 	else
-		log "mount_device $1 $DIR ro "" $4"
-		mount_device $1 $DIR ro "" $4
+		log "mount_device $1 $DIR ro "" $FPARS"
+		mount_device "$1" "$DIR" "ro" "" "$FPARS"
 		if [ $? -ne 0 ]; then
 			rmdir $DIR 2>/dev/null
 			return 1
@@ -1184,7 +1196,8 @@ find_filepath() {
 		# Only in the case it was not mounted already before.
 		if [ "$PRESERVE" != "true" ]; then
 			fumount $DIR
-			mount_device $1 $DIR rw,$MNT_OPTS "" $4
+			log "$1" "$DIR" "rw,$MNT_OPTS" "" "$FPARS"
+			mount_device "$1" "$DIR" "rw,$MNT_OPTS" "" "$FPARS"
 			if [ $? -ne 0 ]; then
 				rmdir $DIR 2>/dev/null
 				return 2
@@ -1281,7 +1294,7 @@ find_data() {
 			done 
 	fi
 	[ "$TIMEOUT" ] || TIMEOUT=$(getpar scantimeout 1 1 | sed -r 's/[^0-9]*([0-9]+).*/\1/')
-	if [ "$TIMEOUT" = "" ]; then TIMEOUT=10; fi
+	if [ "$TIMEOUT" = "" ]; then TIMEOUT=5; fi
 	log "find_file "$1" "$2" "$3" "
 	RESULT=$(find_file "$1" "$2" "$3" )
 
@@ -1614,19 +1627,18 @@ mount_data_source() {
 			log "mkimg maked DATA_FROM - $DATA_FROM"
 		fi
 ##################################################################
-		[ -b "$DATA_FROM" ] && mount_device $DATA_FROM $DST_DIR "$MNT_OPTS"  # mount block device
+		[ -b "$DATA_FROM" ] && mount_device "$DATA_FROM" "$DST_DIR" "$MNT_OPTS"  ""  "$FPARS" # mount block device
 	fi
 	if [ -r "$DATA_FROM" ]; then
 		log "mount_device $DATA_FROM $DST_DIR  $MNT_OPTS"
-		[ -d "$DATA_FROM" ] && mount_device $DATA_FROM $DST_DIR $MNT_OPTS # mount dir
+		[ -d "$DATA_FROM" ] && mount_device "$DATA_FROM" "$DST_DIR" "$MNT_OPTS"  "" "$FPARS"  # mount dir
 		if [ -f "$DATA_FROM" ]; then
-			# (|grep "^file" | grep -vq "file.*raw$")  - this if..fi block  must works without qemu-img too
 			if qemu-img info "$DATA_FROM" 2>/dev/null | grep "^file" | grep -vq "file.*raw$"; then
 				init_nbd "$DATA_FROM"
-				#rmdir $DST_DIR && NUM_SUBL=$(( $NUM_SUBL - 1 ))
 				>$DST_DIR/qemu_ndb_layer
 			else
-				mount_device $DATA_FROM $DST_DIR $MNT_OPTS # mount again, it may be loop device
+				log "mount_device $DATA_FROM $DST_DIR $MNT_OPTS  ""  $FPARS # mount again, it may be loop device"
+				mount_device "$DATA_FROM" "$DST_DIR" "$MNT_OPTS"  ""  "$FPARS"  # mount again, it may be loop device
 				echolog "$MOUNT_DATA_SOURCE_USING" $yellow$DATA_FROM$default
 			fi
 		fi
@@ -2579,60 +2591,79 @@ fi
 }
 
 mkimg() {
-	local  DIR newimg SIZE FS MNT_DIR PASS
+	local  DIR newimg SIZE FS MNT_DIR PASS KEY FORCE
 	newimg=$1 #new img (or new dir) name
 	MNT_DIR=$2 #mount point
-	SIZE='' ; FS=''
+	SIZE='' ; FS='' ; KEY='' ; FORCE=""
 	FPARS=$3
 	if [ "$FPARS" ] ; then
 		for str in  $(cat $FPARS |sed -n '2,$p')  ; do
 				local |grep -q "$(echo $str |cut  -f1 -d=)=" &&  eval $str 
 		done 
 	fi
-		log "mkimg: $FS $SIZE"
-		echo '' ; echo_green_star
-		echolog "Trying to create $SOURCE $FS ${SIZE}"
-		if $(dirname $newimg |grep -q [[:alnum:]] ); then
-			if $(dirname $newimg |grep -q ^$SYSMNT ) ; then
-					DIR=$(dirname $newimg)
-					mkdir -p $DIR
-					SIZE=512 ; FS=btrfs
-			else
-				read -p  "$SOURCE was not found, create it? (Y/N): " ANS
-				if [ "$ANS" == "y" -o "$ANS" == "Y" ] ; then
+	log "mkimg: $FS $SIZE"
+	echo '' ; echo_green_star
+	echolog "Trying to create $SOURCE $FS ${SIZE}"
+	if $(dirname $newimg |grep -q ^$SYSMNT ) ; then
+			DIR=$(dirname $newimg)
+			mkdir -p $DIR
+			SIZE=512 ; FS=btrfs
+	else
+			ANS="y"
+			[  "$(getpar $UIRD_FORCE)_" == "enabled_" -o  "$FORCE" == "yes"   ]  ||	read -p  "$SOURCE was not found, create it? (Y/N): " ANS
+			if [ "$ANS" == "y" -o "$ANS" == "Y" ] ; then
+				if $(dirname $newimg |grep -q [[:alnum:]] ); then
 					DIR=$(find_data $(dirname $newimg) $MNT_DIR "")
-					if ! [ "$FS" ] ; then
-						read -p "enter FS type (default ext4): " FS 
-						[ "$FS" == "" ] && FS='ext4'
-					fi
-					if ! [ "$SIZE" ] ; then
-						maxsize=$(df -m $DIR |tail -n1 |awk '{print $4}')
-						read -p "enter new image size Mb (default: 1024, max: $maxsize): " SIZE  
-						[ "$SIZE" == "" ] && SIZE='1024'
-					fi
+				else
+					DIR="$(find $LAYER_BASE  -maxdepth 1 -type d |sort | tail -n1)"
+				fi
+				if ! [ "$FS" ] ; then
+					read -p "enter FS type (default ext4): " FS 
+					[ "$FS" == "" ] && FS='ext4'
+				fi
+				if ! [ "$SIZE" ] ; then
+					maxsize=$(df -m $DIR |tail -n1 |awk '{print $4}')
+					read -p "enter new image size Mb (default: 1024, max: $maxsize): " SIZE  
+					[ "$SIZE" == "" ] && SIZE='1024'
 				fi
 			fi
-			if  basename $newimg |egrep -q '\.img$|\.enc$'  ; then
-					FNAME="$DIR/$(basename $newimg)"
-					dd if=/dev/zero of="$FNAME" bs=1 count=0 seek=${SIZE}M >/dev/null
-					 if  basename $newimg |grep -q 'enc$' ; then
-						if ! [ "$PASS" ] ; then
-							read -p "enter PASSWORD:(default: linuxforever) " PASS 
-							[  -z "$PASS" ] && PASS='linuxforever'
+	fi
+	if  basename $newimg |egrep -q '\.img$|\.enc$'  ; then
+			FNAME="$DIR/$(basename $newimg)"
+			dd if=/dev/zero of="$FNAME" bs=1 count=0 seek=${SIZE}M >/dev/null
+			if  basename $newimg |grep -q 'enc$' ; then
+				if  [  -n "$KEY"  -a ! -f "$KEY"  ] ; then
+					EXIST_KEY=$(find_data "$KEY" "/tmp/aeskey")
+					if ! [ -f "$EXIST_KEY" ] ; then
+						if $(dirname $KEY |grep -q [[:alnum:]] ); then
+							KEYDIR=$(find_data $(dirname $KEY) $MNT_DIR "")
+						else
+							KEYDIR="$(find $LAYER_BASE  -maxdepth 1 -type d |sort | tail -n1)"
 						fi
-						echo "$PASS" | cryptsetup open --type loopaes "$FNAME"  uirdnewenc --key-file -
-						FNAME="/dev/mapper/uirdnewenc"
-					 fi
-					mkfs.$FS  "$FNAME" >/dev/null 	
-					basename $newimg |grep -q 'enc$' && cryptsetup close uirdnewenc
-					DATA_FROM="$DIR/$(basename $newimg)" 
-			elif 
-					basename $newimg | grep -qv "\." ; then
-					mkdir "$DIR/$(basename $newimg)" && DATA_FROM="$DIR/$(basename $newimg)"
+						EXIST_KEY="${KEYDIR}/$(basename $KEY)"
+						[ -f "$EXIST_KEY" ] || 	head -c 3705 /dev/urandom | uuencode -m - | head -n 66 | tail -n 65 > "$EXIST_KEY"
+						echo "" ; echo_blue_star
+						echolog "Keyfile   "$EXIST_KEY" generated"
+					fi
+					KEY="$EXIST_KEY"
+					echo "KEY=$EXIST_KEY" >> $FPARS # to do not find it again
+				fi
+				if [ -f "$KEY" ] ; then
+					cryptsetup open --type loopaes "$FNAME"  uirdnewenc --key-file "$KEY"
+				else
+					read -p "enter PASSWORD:(default: linuxforever) " PASS 
+					[  -z "$PASS" ] && PASS='linuxforever'
+					echo "$PASS" | cryptsetup open --type loopaes "$FNAME"  uirdnewenc --key-file -
+				fi
+				FNAME="/dev/mapper/uirdnewenc"
 			fi
-		else
-			echo "Add path to image filename and try again"
-		fi
+			mkfs.$FS  "$FNAME" >/dev/null 	
+			basename $newimg |grep -q 'enc$' && cryptsetup close uirdnewenc
+			DATA_FROM="$DIR/$(basename $newimg)" 
+	elif 
+			basename $newimg | grep -qv "\." ; then
+			mkdir "$DIR/$(basename $newimg)" && DATA_FROM="$DIR/$(basename $newimg)"
+	fi
 }
 
 setup_rootfs() {
