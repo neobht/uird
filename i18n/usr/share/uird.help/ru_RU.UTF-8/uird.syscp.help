@@ -2,7 +2,7 @@
 uird.syscp= - список файлов и каталогов, которые нужно скопировать из UIRD в систему
 
 
-uird.syscp=SOURCE::TARGET;SUORCE2::TARGET2 -копировать SOURCE (uird) в TARGET (система)
+uird.syscp=SOURCE::TARGET;SOURCE2::TARGET2 -копировать SOURCE (uird) в TARGET (система)
 
 
 Пример:
