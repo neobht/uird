@@ -4,8 +4,9 @@
 # Author: Anton Goroshkin <http://magos-linux.ru>
 # Author: Alexander Betkher <http://magos-linux.ru>
 
-[ "$SYSMNT" ] && MEMORY=$SYSMNT || MEMORY=/memory
+
 [ -f /etc/initvars ] && . /etc/initvars
+[ "$SYSMNT" ] && MEMORY=$SYSMNT || MEMORY=/memory
 
 #lang and fonts
 export TEXTDOMAIN="uird"
@@ -202,7 +203,7 @@ union_append_bundles $LAYER_BASE "$BUNDLES" "$UNION" "$COPY2RAM" "$LAYER_CACHE"
 debug_shell
 
 #toxzm mode
-if [ $(getpar $UIRD_MODE 1 1) == "toxzm" ]  ; then
+if [ "$(getpar $UIRD_MODE 1 1)" == "toxzm" ]  ; then
 	. /uird.toxzm_mode 
 	setup_toxzm_mode "$DATAMNT/xzmchanges" "$CHANGES" "$BUNDLES" "$UNION" "$COPY2RAM"
 fi

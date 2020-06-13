@@ -193,27 +193,34 @@ rebuild() {
 			fi
 		fi
 		if [ -n "$ADDFILTER" -o -n "$DROPFILTER" ] ;then
-				echolog "Please wait. Preparing excludes for module ${SAVETOMODULENAME}....." 
-				# do not create list of all files from changes, if it already exists
-				if ! [ -f /tmp/allfiles ] ; then
+			echo "Please wait. Preparing excludes for module ${SAVETOMODULENAME}....." 
+			# do not create list of all files from changes, if it already exists
+				if ! [ -f /tmp/allfiles -o -f /tmp/alldirs ] ; then
 					find $SRC/ -type l >/tmp/allfiles
 					find $SRC/ -type f >>/tmp/allfiles
 					find $SRC/ -type c >>/tmp/allfiles
-					sed -i 's|'$SRC'||' /tmp/allfiles
+					sed -i 's|^'$SRC'||' /tmp/allfiles
 				fi
 				>/tmp/savelist.black
-				for item in $DROPFILTER ; do echo "$item" >> /tmp/savelist.black ; done
+				for item in $DROPFILTER ; do 
+					if [ -d "$SRC$item" ] ; then
+						echo "$item" >> /tmp/$n/excludedfiles
+					else
+						echo "$item" >> /tmp/savelist.black 
+					fi
+				done
 				>/tmp/savelist.white
-				for item in $ADDFILTER ; do echo "$item" >> /tmp/savelist.white ; done
+				for item in $ADDFILTER ; do 
+					if [ -d "$SRC$item" ] ; then
+						echo "^$item" >> /tmp/savelist.white
+					else
+						echo "$item" >> /tmp/savelist.white 
+					fi
+				done
 				grep -q . /tmp/savelist.white || echo '.' > /tmp/savelist.white
 				grep -f /tmp/savelist.white /tmp/allfiles | grep -vf /tmp/savelist.black > /tmp/includedfiles
 				grep -q . /tmp/savelist.black && grep -f /tmp/savelist.black /tmp/allfiles >> /tmp/$n/excludedfiles
 				grep -vf /tmp/savelist.white /tmp/allfiles >> /tmp/$n/excludedfiles
-				find $SRC/ -type d | sed 's|'$SRC'||' | while read a ;do
-				grep -q "^$a" /tmp/includedfiles && continue
-				echo "$a" | grep -vf /tmp/savelist.black | grep -qf /tmp/savelist.white && continue
-				echo "$a" >> /tmp/$n/excludedfiles
-				done
 		fi
 		rm -f /tmp/savelist.white /tmp/savelist.black /tmp/includedfiles
 		sed -i 's|^/||' /tmp/$n/excludedfiles
@@ -275,6 +282,12 @@ else
 	echolog "[${red}FALSE!${default}] Umount: ROOT AUFS"	
 fi
 echolog "$(umount $(mount | egrep -v "tmpfs|zram|proc|sysfs" | awk  '{print $3}' | sort -r) 2>&1) "
+n=0
+while mount | egrep -v "tmpfs|zram|proc|sysfs" ; do
+	echolog "$(umount $(mount | egrep -v "tmpfs|zram|proc|sysfs" | awk  '{print $3}' | sort -r) 2>&1) "
+	sleep 0.3 ; n=$(( $n +1 )) 
+	[ $ne -ge 3 ] && break
+done
 
 #save changes to the modules
 [ $CHANGESMNT ] && rebuild
