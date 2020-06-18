@@ -16,19 +16,19 @@
 #Purple       0;35     Light Purple  1;35
 #Brown/Orange 0;33     Yellow        1;33
 #Light Gray   0;37     White         1;37
-
-black='\033[0;30m'
-red='\033[0;31m'
-green='\033[0;32m'
-yellow='\033[1;33m'
-brown='\033[0;33m'
-blue='\033[0;34m'
-light_blue='\033[1;34m'
-magenta='\033[1;35m'
-cyan='\033[0;36m'
-white='\033[0;37m'
-purple='\033[0;35m'
-default='\033[0m'
+	
+	black='\033[0;30m'
+	red='\033[0;31m'
+	green='\033[0;32m'
+	yellow='\033[1;33m'
+	brown='\033[0;33m'
+	blue='\033[0;34m'
+	light_blue='\033[1;34m'
+	magenta='\033[1;35m'
+	cyan='\033[0;36m'
+	white='\033[0;37m'
+	purple='\033[0;35m'
+	default='\033[0m'
 
 # BINARY
 BIN_BTFS=/sbin/btfs
@@ -196,7 +196,7 @@ debug_log() {
 #
 header() {
 if ! getpar $UIRD_SILENT >/dev/null ; then
-        echo -e "\\033[0;1m""$@""\\033[0;0m"
+        	echo -e "\\033[0;1m""$@""\\033[0;0m"
 fi
 }
 
@@ -226,6 +226,11 @@ if ! getpar $UIRD_SILENT >/dev/null ; then
 	key="$1"
 	shift
 	echo -e "$key" $@ >/dev/console 2>/dev/console
+	if plymouth --ping ; then 
+		#plymouth hide-message --text="$OLDMESSAGE"
+		plymouth display-message --text="$(echo -e "$key")"
+		#OLDMESSAGE="$(echo -e "$key")"
+	fi
 fi
 }
 
@@ -280,12 +285,14 @@ start_quickshell() {
 		ln -s /root/bashrc /root/.bashrc
 		ln -s /root/bash_profile /root/.bash_profile
 		mkdir -p /mnt
+        
 		automount
 		clear
 		cat /usr/share/uird.help/${LANG}/uird.quickshell.help 2>/dev/null || cat /usr/share/uird.help/uird.quickshell.help
 		setsid bash -c 'exec bash autologin < /dev/tty1 >/dev/tty1 2>&1'
 		cd /
 		umount /mnt/*
+		killall getty 
 		echo "continue...."
 	fi
 }
@@ -897,8 +904,9 @@ mount_device() {
 				echolog "Found keyfile:  $KEY "
 				cryptsetup open --type loopaes "$DEV" "$LOOPDEV" --key-file  "$KEY"
 			else
-				read -s -pPassword: >/dev/console </dev/console 2>/dev/console
-				echo $REPLY | cryptsetup open --type loopaes "$DEV" "$LOOPDEV" --key-file -
+				echo -n "Password:"
+				PASS=$(ask_pass "Password")
+				echo $PASS | cryptsetup open --type loopaes "$DEV" "$LOOPDEV" --key-file -
 			fi
 			mount -n -o ro "/dev/mapper/$LOOPDEV" "$2" >>/var/log/uird.dbg.log 2>&1
 			ERR=$?
@@ -933,8 +941,9 @@ if [ $ERR -ne 0 ] && [ -b "$DEV" ] && $BIN_BLKID "$DEV" -s TYPE | grep -q crypto
 					cryptsetup -d $KEY luksOpen "$DEV" "$LUKS_DEV"
 					log "$(umount /tmp/lukskey 2>&1)"
 				else
-					read -s -pPassword: >/dev/console </dev/console 2>/dev/console
-					echo $REPLY | cryptsetup luksOpen "$DEV" "$LUKS_DEV"
+					echo -n "Password"
+					PASS=$(ask_pass "Password")
+					echo $PASS | cryptsetup luksOpen "$DEV" "$LUKS_DEV"
 				fi
 			fi 
 			mount -n -o ro "/dev/mapper/$LUKS_DEV" "$2" >>/var/log/uird.dbg.log 2>&1
@@ -1650,8 +1659,8 @@ mount_data_source() {
 		rmdir $DST_DIR
 		echolog $red"$MOUNT_DATA_SOURCE_NOT_FOUND"$default
 		echo -ne $yellow"$MOUNT_DATA_SOURCE_ASK"$default"  "
-		read ASK
-		case "$ASK" in
+		ANS=$(ask_answer  "${MOUNT_DATA_SOURCE_NOT_FOUND}, $MOUNT_DATA_SOURCE_ASK")
+		case "$ANS" in
 		"S" | "s")
 			#shutdown
 			poweroff -f
@@ -1663,7 +1672,7 @@ mount_data_source() {
 		"T" | "t")
 			#Try again
 			echo -ne "Changing SOURCE  [ Hit enter for - ${green}${1}${default} ]: "
-			read SRC
+			SRC=$(ask_answer "Changing SOURCE  [ Hit enter for - ${1} ]")
 			[ "$SRC" == "" ] && SRC="$1"
 			mount_data_source "$SRC" "$2" "$3" $4 $5
 			;;
@@ -2470,10 +2479,10 @@ freemedia_old() {
 		cat /proc/mounts | grep -q $device && notfree="$notfree $device"
 	done
 	if [ $notfree ]; then
-		echo -e "Media:" $red"$notfree"$default "is not free!!!"
+		echolog "Media:" $red"$notfree"$default "is not free!!!"
 		echo -ne $yellow"(S)hutdown, (R)eboot, (C)ontinue"$default
-		read ASK
-		case "$ASK" in
+		ANS=$(ask_answer "(S)hutdown, (R)eboot, (C)ontinue")
+		case "$ANS" in
 		"S" | "s")
 			#shutdown
 			poweroff -f
@@ -2610,7 +2619,10 @@ mkimg() {
 			SIZE=512 ; FS=btrfs
 	else
 			ANS="y"
-			[  "$(getpar $UIRD_FORCE)_" == "enabled_" -o  "$FORCE" == "yes"   ]  ||	read -p  "$SOURCE was not found, create it? (Y/N): " ANS
+			if ! [  "$(getpar $UIRD_FORCE)_" == "enabled_" -o  "$FORCE" == "yes"   ]  ; then 
+				echo "$SOURCE was not found, create it? (Y/N):" 
+				ANS=$(ask_answer "$SOURCE was not found, create it? (Y/N):")
+			fi
 			if [ "$ANS" == "y" -o "$ANS" == "Y" ] ; then
 				if $(dirname $newimg |grep -q [[:alnum:]] ); then
 					DIR=$(find_data $(dirname $newimg) $MNT_DIR "")
@@ -2618,12 +2630,14 @@ mkimg() {
 					DIR="$(find $LAYER_BASE  -maxdepth 1 -type d |sort | tail -n1)"
 				fi
 				if ! [ "$FS" ] ; then
-					read -p "enter FS type (default ext4): " FS 
+					echo "enter FS type (default ext4): " 
+					FS=$(ask_answer "enter FS type (default ext4): ")
 					[ "$FS" == "" ] && FS='ext4'
 				fi
 				if ! [ "$SIZE" ] ; then
 					maxsize=$(df -m $DIR |tail -n1 |awk '{print $4}')
-					read -p "enter new image size Mb (default: 1024, max: $maxsize): " SIZE  
+					echo "enter new image size Mb (default: 1024, max: $maxsize): " 
+					SIZE=$(ask_answer "enter new image size Mb (default: 1024, max: $maxsize): ")
 					[ "$SIZE" == "" ] && SIZE='1024'
 				fi
 			fi
@@ -2651,7 +2665,8 @@ mkimg() {
 				if [ -f "$KEY" ] ; then
 					cryptsetup open --type loopaes "$FNAME"  uirdnewenc --key-file "$KEY"
 				else
-					read -p "enter PASSWORD:(default: linuxforever) " PASS 
+					echo "enter PASSWORD:(default: linuxforever) " 
+					PASS=$(ask_answer "enter PASSWORD:(default: linuxforever) ") 
 					[  -z "$PASS" ] && PASS='linuxforever'
 					echo "$PASS" | cryptsetup open --type loopaes "$FNAME"  uirdnewenc --key-file -
 				fi
@@ -2732,6 +2747,26 @@ unsquashfs() {
 	[ $? != 0 ] && echolog "ERROR: $0 $@"
 	umount  /tmp/tmpmntdir
 	rm -rf /tmp/tmpmntdir
+}
+
+ask_answer()  {
+	local ANSWER
+	if plymouth  --ping ; then
+		ANSWER=$(plymouth ask-question --prompt="$1")
+	else
+		read ANSWER 
+	fi
+	echo "$ANSWER"
+}
+
+ask_pass()  {
+	local ANSWER
+	if plymouth  --ping ; then
+		ANSWER=$(plymouth ask-for-password --prompt="$1")
+	else
+		read -s ANSWER 
+	fi
+	echo "$ANSWER"
 }
 
 

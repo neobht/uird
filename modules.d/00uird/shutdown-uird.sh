@@ -286,7 +286,7 @@ n=0
 while mount | egrep -v "tmpfs|zram|proc|sysfs" ; do
 	echolog "$(umount $(mount | egrep -v "tmpfs|zram|proc|sysfs" | awk  '{print $3}' | sort -r) 2>&1) "
 	sleep 0.3 ; n=$(( $n +1 )) 
-	[ $ne -ge 3 ] && break
+	[ $n -ge 3 ] && break
 done
 
 #save changes to the modules

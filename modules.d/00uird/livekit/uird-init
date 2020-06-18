@@ -4,7 +4,6 @@
 # Author: Anton Goroshkin <http://magos-linux.ru>
 # Author: Alexander Betkher <http://magos-linux.ru>
 
-
 [ -f /etc/initvars ] && . /etc/initvars
 [ "$SYSMNT" ] && MEMORY=$SYSMNT || MEMORY=/memory
 
@@ -69,6 +68,7 @@ BREAKSTEP="$(getpar $UIRD_BREAK 1 1)"
 
 # print help
 if cat /tmp/basecfg | grep -q help; then
+	plymouth quit 
 	echo ""
 	header "$HELP_SYSTEM"
 	echo ""
@@ -271,4 +271,5 @@ fi
 header "$HEADER_END $LIVEKITNAME"
 debug_shell
 MEMORY=${UNION}/${MEMORY} # need to cmdline_parameter
+getty -t 30 -n -l /bin/login 9600 tty12 linux &
 getpar qse >/dev/null && shell_cmd "shell"
