@@ -273,3 +273,4 @@ debug_shell
 MEMORY=${UNION}/${MEMORY} # need to cmdline_parameter
 getty -t 30 -n -l /bin/login 9600 tty12 linux &
 getpar qse >/dev/null && shell_cmd "shell"
+plymouth --ping && plymouth --newroot=$UNION

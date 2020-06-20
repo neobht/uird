@@ -904,8 +904,8 @@ mount_device() {
 				echolog "Found keyfile:  $KEY "
 				cryptsetup open --type loopaes "$DEV" "$LOOPDEV" --key-file  "$KEY"
 			else
-				echo -n "Password:"
-				PASS=$(ask_pass "Password")
+				echo "Password:" >/dev/console
+1				PASS=$(ask_pass "Password")
 				echo $PASS | cryptsetup open --type loopaes "$DEV" "$LOOPDEV" --key-file -
 			fi
 			mount -n -o ro "/dev/mapper/$LOOPDEV" "$2" >>/var/log/uird.dbg.log 2>&1
@@ -914,12 +914,13 @@ mount_device() {
 			if [ $ERR -ne 0 ]; then
 				echo incorrect! >/dev/console
 				cryptsetup close "$LOOPDEV"
-				times=$(expr $times - 1)
+				times=$(( $times - 1 ))
 			else
 				echo accepted! >/dev/console
 				umount "$2"
 				getpar fsck && fsck_device "/dev/mapper/$LOOPDEV"
 				mount -n -o $OPTIONS "/dev/mapper/$LOOPDEV" "$2" >>/var/log/uird.dbg.log 2>&1
+				ERR=$?
 				break
 			fi
 		done
@@ -941,24 +942,25 @@ if [ $ERR -ne 0 ] && [ -b "$DEV" ] && $BIN_BLKID "$DEV" -s TYPE | grep -q crypto
 					cryptsetup -d $KEY luksOpen "$DEV" "$LUKS_DEV"
 					log "$(umount /tmp/lukskey 2>&1)"
 				else
-					echo -n "Password"
+					echo "Please enter password:" >/dev/console
 					PASS=$(ask_pass "Password")
-					echo $PASS | cryptsetup luksOpen "$DEV" "$LUKS_DEV"
+					echo "$PASS" | cryptsetup luksOpen "$DEV" "$LUKS_DEV"
 				fi
 			fi 
 			mount -n -o ro "/dev/mapper/$LUKS_DEV" "$2" >>/var/log/uird.dbg.log 2>&1
-			ERR=$?
-			REPLY=
-			if [ $ERR -eq 0 ]; then
-				echo accepted! >/dev/console
+			if [ $? -eq 0 ]; then
+				echolog  accepted!
 				umount "$2"
 				getpar fsck && fsck_device "/dev/mapper/$LUKS_DEV"
 				mount -n -o $OPTIONS "/dev/mapper/$LUKS_DEV" "$2" >>/var/log/uird.dbg.log 2>&1
-				break
+				ERR=$?
+				[ "$ERR" -eq 0 ] && break
 			fi
-			echo incorrect! >/dev/console
-			cryptsetup luksClose "$LUKS_DEV"
-			times=$(expr $times - 1)
+				echolog "Mount - error!, try again"
+				umount $2 2>/dev/null
+				cryptsetup luksClose "$LUKS_DEV"
+				times=$(($times - 1))
+
 	done
 fi
 #########################################################
@@ -2505,6 +2507,7 @@ freemedia_old() {
 move_run() {
 	ismountpoint "${UNION}/run" && return
 	echo_green_star && echolog "$INITIALIZE /run/initramfs...."
+	mkdir "${UNION}/run" 2>/dev/null # if /run was removed
 	mount -o move /run "${UNION}/run"
 	mount -o remount,exec "${UNION}/run"
 	mkdir -p "${UNION}/run/initramfs"
