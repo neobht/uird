@@ -839,7 +839,7 @@ fumount() {
 # $5 = file with extended parameters
 mount_device() {
 	debug_log "mount_device" "$*"
-	local FS DEV LOOPDEV OPTIONS FILESYSTEM ERR OPTIONS LUKS_DEV KEY="" FSCK="no"
+	local FS DEV LOOPDEV OPTIONS FILESYSTEM ERR OPTIONS LUKS_DEV KEY="" FSCK="no" PASS=""
 	# make sure we have enough arguments
 	if [ "$2" = "" ]; then return 1; fi
 	if [ "$1" = "" ]; then
@@ -905,7 +905,7 @@ mount_device() {
 				cryptsetup open --type loopaes "$DEV" "$LOOPDEV" --key-file  "$KEY"
 			else
 				echo "Password:" >/dev/console
-1				PASS=$(ask_pass "Password")
+				PASS=$(ask_pass "Password")
 				echo $PASS | cryptsetup open --type loopaes "$DEV" "$LOOPDEV" --key-file -
 			fi
 			mount -n -o ro "/dev/mapper/$LOOPDEV" "$2" >>/var/log/uird.dbg.log 2>&1
@@ -932,36 +932,43 @@ if [ $ERR -ne 0 ] && [ -b "$DEV" ] && $BIN_BLKID "$DEV" -s TYPE | grep -q crypto
 	times=3
 	while [ $times -gt 0 ]; do
 			if ! [ -e "/dev/mapper/$LUKS_DEV" ] ; then
+				log "Initialization luks partition $LUKS_DEV"
 				if [ "$KEY"_ != "_" ] ; then
 					if ! [ -f $KEY ] ; then
 						KEY=$(find_data "$KEY" "/tmp/lukskey")
 					fi
+				elif [ "$PASS"_ != "_" ] ; then
+					[ "$PASS" == '//hardware//' ] && PASS=$(busybox lspci |md5sum |cut -f1 -d ' ')
 				fi
 				echolog "$MOUNT_DEVICE_ENC" "LUKS" $green"$DEV"$default
 				if [ -f "$KEY" ] ; then 
-					cryptsetup -d $KEY luksOpen "$DEV" "$LUKS_DEV"
+					cryptsetup -d $KEY luksOpen "$DEV" "$LUKS_DEV" 
 					log "$(umount /tmp/lukskey 2>&1)"
 				else
-					echo "Please enter password:" >/dev/console
-					PASS=$(ask_pass "Password")
-					echo "$PASS" | cryptsetup luksOpen "$DEV" "$LUKS_DEV"
+					if [ "$PASS"_ == "_" ] ; then
+						echo "Please enter password:" >/dev/console
+						PASS=$(ask_pass "Password")
+					fi
+					echo "$PASS" | cryptsetup luksOpen "$DEV" "$LUKS_DEV" && echolog  accepted!
 				fi
 			fi 
-			mount -n -o ro "/dev/mapper/$LUKS_DEV" "$2" >>/var/log/uird.dbg.log 2>&1
-			if [ $? -eq 0 ]; then
-				echolog  accepted!
-				umount "$2"
+			if [ -b "/dev/mapper/$LUKS_DEV" ] ; then
+				[ "$PASS"_ != "_" ] && echo "$PASS" |md5sum >> $SYSMNT/.luks_accepted_md5
+				[ "$KEY"_ != "_" ] 	&& cat 	"$KEY"  |md5sum >> $SYSMNT/.luks_accepted_md5
+				unset PASS KEY
+				chmod 0400 $SYSMNT/.luks_accepted_md5 2>/dev/null
 				getpar fsck && fsck_device "/dev/mapper/$LUKS_DEV"
 				mount -n -o $OPTIONS "/dev/mapper/$LUKS_DEV" "$2" >>/var/log/uird.dbg.log 2>&1
-				ERR=$?
-				[ "$ERR" -eq 0 ] && break
+				[ "$?" -eq 0 ] && break
 			fi
 				echolog "Mount - error!, try again"
+				unset PASS
 				umount $2 2>/dev/null
 				cryptsetup luksClose "$LUKS_DEV"
 				times=$(($times - 1))
 
 	done
+grep -q "/dev/mapper/$LUKS_DEV" /proc/mounts && ERR=0
 fi
 #########################################################
 
@@ -1640,6 +1647,7 @@ mount_data_source() {
 ##################################################################
 		[ -b "$DATA_FROM" ] && mount_device "$DATA_FROM" "$DST_DIR" "$MNT_OPTS"  ""  "$FPARS" # mount block device
 	fi
+	log "DATA_FROM - $DATA_FROM"
 	if [ -r "$DATA_FROM" ]; then
 		log "mount_device $DATA_FROM $DST_DIR  $MNT_OPTS"
 		[ -d "$DATA_FROM" ] && mount_device "$DATA_FROM" "$DST_DIR" "$MNT_OPTS"  "" "$FPARS"  # mount dir
