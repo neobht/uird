@@ -15,7 +15,9 @@ uird_freemedia() {
 	RULESDIR="${UNION}/run/udev/rules.d"
 	mkdir -p $RULESDIR
 	devs='' ; swaps=''
+	mapper_devs=''
 	if [ "$PARS" == "enabled" ] ; then
+		mapper_devs=$(egrep '/dev/mapper' /proc/mounts | cut -d " " -f 1 | sort -u)
 		devs=$(egrep '/dev/sd.*[[:digit:]]' /proc/mounts | cut -d " " -f 1 | sort -u)
 		swaps=$(egrep '/dev/sd.*[[:digit:]]' /proc/swaps | cut -d " " -f 1)
 	else 
@@ -29,6 +31,10 @@ uird_freemedia() {
 	fi
 	swapparts=$(echo -e $swaps |sort -u)
 	for s in $swapparts ; do swapoff $s ; done
+	for mdev in $mapper_devs ; do
+		umount $mdev
+		cryptsetup luksClose $(echo $mdev |sed 's:/dev/mapper/::') 
+	done
 	devices=$(echo -e $devs |sort -u)
 	echo "freemedia_devices="$(echo "$devices" |tr '\n' ' ' |sed -e 's/ /,/g' -e 's/^,//' -e 's/,$//') >> $UNION/etc/initvars
 	for dev in $devices; do

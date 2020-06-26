@@ -303,7 +303,7 @@ if [ -d $CFGPWD -a $log != 'no' ] ;then
 fi
 for a in $(ls -1 /dev/mapper) ; do
 	[ "$a" == 'control' ] && continue
-	umount /dev/mapper/$a
+	umount /dev/mapper/$a 2>/dev/null
 	cryptsetup luksClose $a 2>/dev/null
 done
 for mntp in $(mount | egrep -v "tmpfs|proc|sysfs" | awk  '{print $3}' | sort -r) ; do
