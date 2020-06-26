@@ -109,7 +109,9 @@ echo -e $black
 rebuild() {
 	BALLOON_COLOR="$green"
 	echolog "Remounting media for saves..."
-	echolog $(/remount 2>&1 && echo -e "[  ${green}OK${default}  ] Remount complete")
+	export SYSMNT
+	/remount 
+	[ $? == 0 ] || echo -e "[  ${green}OK${default}  ] Remount complete"
 	CFGPWD=$(dirname $CHANGESMNT)
 	export CFGPWD # maybe it is not necessary
 	if [ -f $CHANGESMNT ] ; then
@@ -231,7 +233,7 @@ rebuild() {
 			echolog "[  ${green}OK${default}  ]  $SAVETOMODULENAME  -- complete."
 			[ -f "$SAVETOMODULENAME" ] && mv -f "$SAVETOMODULENAME" "${SAVETOMODULENAME}.bak" 
 			mv -f "${SAVETOMODULENAME}.new" "$SAVETOMODULENAME" 
-			chmod 444 "$SAVETOMODULENAME"
+			chmod 400 "$SAVETOMODULENAME"
 		else
 			BALLOON_COLOR="$red" 
 			BALLOON_SPEED="0.05"
@@ -291,6 +293,7 @@ done
 
 #save changes to the modules
 [ $CHANGESMNT ] && rebuild
+sync
 
 # make the log
 if [ -d $CFGPWD -a $log != 'no' ] ;then
@@ -298,7 +301,11 @@ if [ -d $CFGPWD -a $log != 'no' ] ;then
 	[ -f $logname ] && mv -f $logname ${logname}.old
 	cd /tmp ; tar -czf $logname * ; cd /
 fi
-
+for a in $(ls -1 /dev/mapper) ; do
+	[ "$a" == 'control' ] && continue
+	umount /dev/mapper/$a
+	cryptsetup luksClose $a 2>/dev/null
+done
 for mntp in $(mount | egrep -v "tmpfs|proc|sysfs" | awk  '{print $3}' | sort -r) ; do
 	if umount $mntp ; then 
 		echolog "[  ${green}OK${default}  ] Umount: $mntp"

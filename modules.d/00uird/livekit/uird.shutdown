@@ -16,11 +16,37 @@ uird_shutdown() {
 	savesname=$CHANGESMNT
 	savesdir=$(dirname $savesname)
 	savesdev=$(df $savesdir |grep /dev |awk '{print $1}')
+	if echo $savesdev |grep -q /dev/mapper ; then
+		LUKSDEV=$(echo $savesdev |sed 's#/mapper##')
+		LUKSUUID=$($BIN_BLKID -s UUID | grep $LUKSDEV | cut -d " " -f 2 | cut -d "\"" -f2)
+	fi 
 	UUID=$($BIN_BLKID -s UUID | grep $savesdev | cut -d " " -f 2 | cut -d "\"" -f2)
 	MPOINT=$(grep $savesdev /proc/self/mountinfo |head -n1 | grep ".* / .*$savesdev" | cut -d " " -f 5 )
 	MNTOPTS=$(grep $savesdev /proc/mounts | head -n1 | cut -d " " -f 4)
 	RBIND=$(grep $savesdev /proc/self/mountinfo | sed 1d | awk '{print $4 "," $5}')
 	echo "#!/bin/ash" > "${UNION}/run/initramfs/remount"
+################################################################ 
+	if [ $LUKSDEV ] ; then
+		echo 'DEV=$(/sbin/blkid.real | grep -m1 $(echo ' " $LUKSUUID " ' ) | awk -F: '\'{print \$1}\'')' >> "${UNION}/run/initramfs/remount"
+		echo 'HARDPASS=$(busybox lspci |md5sum |cut -f1 -d " ")' >> "${UNION}/run/initramfs/remount"
+		echo 'LUKS_DEV=$(echo $DEV |sed "s#/dev/##" )' >> "${UNION}/run/initramfs/remount"
+		echo 'cat $SYSMNT/.luks_accepted_md5 |grep -q $(echo "$HARDPASS" |md5sum |cut -f1 -d " ") && PASS="$HARDPASS"' >> "${UNION}/run/initramfs/remount"
+		echo 'times=3' >> "${UNION}/run/initramfs/remount"
+		echo 'while [ $times -gt 0 ]; do' >> "${UNION}/run/initramfs/remount"
+		echo '	if ! [ $PASS ] ; then'	>> "${UNION}/run/initramfs/remount"
+		echo '		echo "Please enter password for LUKS partition:"' >> "${UNION}/run/initramfs/remount"
+		echo '		read PASS' >> "${UNION}/run/initramfs/remount"
+		echo '	fi' >> "${UNION}/run/initramfs/remount"
+		echo '	echo "$PASS" | cryptsetup luksOpen "$DEV" "$LUKS_DEV" & ' >> "${UNION}/run/initramfs/remount"
+		echo '	sleep 1 ; [ -b "/dev/mapper/$LUKS_DEV" ] || sleep 3'  >> "${UNION}/run/initramfs/remount"
+		echo '	[ -b "/dev/mapper/$LUKS_DEV" ] && break' >> "${UNION}/run/initramfs/remount"
+		echo '	echo "Luks setup - error!, try again"' >> "${UNION}/run/initramfs/remount"
+		echo '	unset PASS' >> "${UNION}/run/initramfs/remount"
+		echo '	cryptsetup luksClose "$LUKS_DEV" 2>/dev/null' >> "${UNION}/run/initramfs/remount"
+		echo '	times=$(expr $times - 1 )' >> "${UNION}/run/initramfs/remount"
+		echo 'done' >> "${UNION}/run/initramfs/remount"
+	fi	
+################################################################	
 	echo "mkdir -p $MPOINT" >> "${UNION}/run/initramfs/remount"
 	echo 'SAVESDEV=$(/sbin/blkid.real | grep -m1 $(echo ' " $UUID " ' ) | awk -F: '\'{print \$1}\'')' >> "${UNION}/run/initramfs/remount"
 	echo "mount  -o $MNTOPTS  "'$SAVESDEV'"  $MPOINT" >> "${UNION}/run/initramfs/remount"

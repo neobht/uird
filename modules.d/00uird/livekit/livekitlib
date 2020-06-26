@@ -225,11 +225,10 @@ if ! getpar $UIRD_SILENT >/dev/null ; then
 	local key
 	key="$1"
 	shift
-	echo -e "$key" $@ >/dev/console 2>/dev/console
-	if plymouth --ping ; then 
-		#plymouth hide-message --text="$OLDMESSAGE"
-		plymouth display-message --text="$(echo -e "$key")"
-		#OLDMESSAGE="$(echo -e "$key")"
+	if plymouth --ping 2>/dev/null; then 
+		plymouth display-message --text="$(echo -e "$key" "$@")"
+	else
+		echo -e "$key" $@ >/dev/console 2>/dev/console
 	fi
 fi
 }
