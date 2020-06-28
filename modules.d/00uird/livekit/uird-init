@@ -4,6 +4,8 @@
 # Author: Anton Goroshkin <http://magos-linux.ru>
 # Author: Alexander Betkher <http://magos-linux.ru>
 
+# getty -t 100 -n -l /bin/autologin 9600 tty11 linux & 
+
 [ -f /etc/initvars ] && . /etc/initvars
 [ "$SYSMNT" ] && MEMORY=$SYSMNT || MEMORY=/memory
 
@@ -248,7 +250,9 @@ else
     fi
 fi
 debug_shell
+
 mv /var/log/* $UNION/var/log/ 2>/dev/null
+LOGFILE=$UNION/var/log/uird.dbg.log
 
 #need for usable_root of dracut
 mkdir -p $UNION/proc $UNION/sys $UNION/dev $UNION/$MEMORY
@@ -268,9 +272,10 @@ if ! [ -x $UNION/sbin/init ]; then
 	ln -s ..${linkpath} $UNION/sbin/init && echolog "fix /sbin/init link to relative path"
 fi
 
+
+
 header "$HEADER_END $LIVEKITNAME"
 debug_shell
 MEMORY=${UNION}/${MEMORY} # need to cmdline_parameter
-getty -t 30 -n -l /bin/login 9600 tty12 linux &
 getpar qse >/dev/null && shell_cmd "shell"
-plymouth --ping && plymouth --newroot=$UNION
+#plymouth --ping && plymouth --newroot=$UNION

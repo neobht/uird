@@ -17,9 +17,9 @@ uird_freemedia() {
 	devs='' ; swaps=''
 	mapper_devs=''
 	if [ "$PARS" == "enabled" ] ; then
-		mapper_devs=$(egrep '/dev/mapper' /proc/mounts | cut -d " " -f 1 | sort -u)
-		devs=$(egrep '/dev/sd.*[[:digit:]]' /proc/mounts | cut -d " " -f 1 | sort -u)
-		swaps=$(egrep '/dev/sd.*[[:digit:]]' /proc/swaps | cut -d " " -f 1)
+		mapper_devs=$(tac /proc/mounts | grep '/dev/mapper' | cut -d " " -f2)
+		devs=$(egrep '/dev/sd.*[[:digit:]]' /proc/mounts | cut -d " " -f1 | sort -u)
+		swaps=$(egrep '/dev/sd.*[[:digit:]]' /proc/swaps | cut -d " " -f1)
 	else 
 		for a in $PARS ; do
 			par=$(getpar $UIRD_FREEMEDIA $a 1 |sed 's/[[:digit:]].*//')
@@ -31,10 +31,17 @@ uird_freemedia() {
 	fi
 	swapparts=$(echo -e $swaps |sort -u)
 	for s in $swapparts ; do swapoff $s ; done
-	for mdev in $mapper_devs ; do
-		umount $mdev
-		cryptsetup luksClose $(echo $mdev |sed 's:/dev/mapper/::') 
-	done
+	if [ -n "$mapper_devs" ] ; then
+		for mdev in $mapper_devs ; do
+			umount $mdev 
+			[ $? != 0 ] && 	echolog "Error umounting $mdev"  
+		done
+		for mdev in $(ls -1 /dev/mapper) ; do
+			[ "$mdev" == 'control' ] && continue
+			cryptsetup luksClose $mdev
+			[ $? != 0 ] && 	echolog "Error cryptsetup luksClose $mdev" 
+		done
+	fi
 	devices=$(echo -e $devs |sort -u)
 	echo "freemedia_devices="$(echo "$devices" |tr '\n' ' ' |sed -e 's/ /,/g' -e 's/^,//' -e 's/,$//') >> $UNION/etc/initvars
 	for dev in $devices; do

@@ -47,6 +47,7 @@ BIN_LOSETUP=/sbin/losetup.real
 
 FSCHECKED=""
 MOUNTBINDS=""
+LOGFILE=/var/log/uird.dbg.log
 
 f_gettext() {
 	local TEXT='' STR
@@ -216,7 +217,7 @@ fi
 
 # log - store given text in /var/log/uird.dbg.log
 log() {
-	echo "$@" 2>/dev/null >>/var/log/uird.dbg.log
+	echo "$@" 2>/dev/null >> $LOGFILE 
 }
 
 echolog() {
@@ -2262,7 +2263,7 @@ Copy_timer() {
 		echo -ne $green
 		traff="$(cat /proc/net/dev | grep ':' | grep -v lo: | tail -n1 | awk '{print $2}') "
 		iface="$(cat /proc/net/dev | grep ':' | grep -v lo: | tail -n1 | awk '{print $1}') "
-		if [ "$traff" == 0  ]; then
+		if [ "$traff" -eq 0 -o -z "$traff" ] ; then
 			iface=""
 			traff=""
 		else
