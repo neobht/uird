@@ -84,8 +84,7 @@ setup_toxzm_mode() {
 		notenumerated=$(cat "$CHANGESMNT" |egrep '^[[:space:]]*XZM.*[a-zA-Z]+.*=' |sed -e 's/^[[:space:]]*XZM//' -e 's/=.*$//')
 		for n in $(seq 0 $end) $notenumerated; do
 			eval XZM=\$XZM$n
-			[ -z "$XZM" ] && XZM=${MUID}.$EXT
-			[ "$XZM" == ".$EXT" ] && XZM=$(get_MUID).$EXT
+			[ -z "$XZM" ] && XZM=$(get_MUID).$EXT
 			MODNAME="$(dirname $CHANGESMNT)/$XZM"
 			[ -f $MODNAME ] || continue
 			eval MODE=\$MODE$n

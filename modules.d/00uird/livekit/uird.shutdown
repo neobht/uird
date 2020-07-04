@@ -25,10 +25,14 @@ uird_shutdown() {
 	MNTOPTS=$(grep $savesdev /proc/mounts | head -n1 | cut -d " " -f 4)
 	RBIND=$(grep $savesdev /proc/self/mountinfo | sed 1d | awk '{print $4 "," $5}')
 	echo "#!/bin/ash" > "${UNION}/run/initramfs/remount"
+	echo 'BUSYBOX=busybox'
+	echo 'which $BUSYBOX 2>/dev/null || BUSYBOX=busybox.static'
+	echo 'BLKID=blkid'
+	echo '[ -x /sbin/blkid.real ] && BLKID=/sbin/blkid.real'
 ################################################################ 
 	if [ $LUKSDEV ] ; then
-		echo 'DEV=$(/sbin/blkid.real | grep -m1 $(echo ' " $LUKSUUID " ' ) | awk -F: '\'{print \$1}\'')' >> "${UNION}/run/initramfs/remount"
-		echo 'HARDPASS=$(busybox lspci |md5sum |cut -f1 -d " ")' >> "${UNION}/run/initramfs/remount"
+		echo 'DEV=$($BLKID 2>/dev/null | grep -m1 $(echo ' " $LUKSUUID " ' ) | awk -F: '\'{print \$1}\'')' >> "${UNION}/run/initramfs/remount"
+		echo 'HARDPASS=$($BUSYBOX lspci |md5sum |cut -f1 -d " ")' >> "${UNION}/run/initramfs/remount"
 		echo 'LUKS_DEV=$(echo $DEV |sed "s#/dev/##" )' >> "${UNION}/run/initramfs/remount"
 		echo 'cat $SYSMNT/.luks_accepted_md5 |grep -q $(echo "$HARDPASS" |md5sum |cut -f1 -d " ") && PASS="$HARDPASS"' >> "${UNION}/run/initramfs/remount"
 		echo 'times=3' >> "${UNION}/run/initramfs/remount"
@@ -48,7 +52,7 @@ uird_shutdown() {
 	fi	
 ################################################################	
 	echo "mkdir -p $MPOINT" >> "${UNION}/run/initramfs/remount"
-	echo 'SAVESDEV=$(/sbin/blkid.real | grep -m1 $(echo ' " $UUID " ' ) | awk -F: '\'{print \$1}\'')' >> "${UNION}/run/initramfs/remount"
+	echo 'SAVESDEV=$($BLKID 2>/dev/null | grep -m1 $(echo ' " $UUID " ' ) | awk -F: '\'{print \$1}\'')' >> "${UNION}/run/initramfs/remount"
 	echo "mount  -o $MNTOPTS  "'$SAVESDEV'"  $MPOINT" >> "${UNION}/run/initramfs/remount"
 	echo '[ $? != 0 ] && ntfs-3g'"  -o $MNTOPTS  "'$SAVESDEV'"  $MPOINT" >> "${UNION}/run/initramfs/remount"
 	for mountstr in $RBIND; do
