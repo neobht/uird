@@ -953,8 +953,8 @@ if [ $ERR -ne 0 ] && [ -b "$DEV" ] && $BIN_BLKID "$DEV" -s TYPE | grep -q crypto
 				fi
 			fi 
 			if [ -b "/dev/mapper/$LUKS_DEV" ] ; then
-				[ "$PASS"_ != "_" ] && echo "$PASS" |md5sum >> $SYSMNT/.luks_accepted_md5
-				[ "$KEY"_ != "_" ] 	&& cat 	"$KEY"  |md5sum >> $SYSMNT/.luks_accepted_md5
+				#[ "$PASS"_ != "_" ] && echo "$PASS" |md5sum >> $SYSMNT/.luks_accepted_md5
+				#[ "$KEY"_ != "_" ] && cat 	"$KEY"  |md5sum >> $SYSMNT/.luks_accepted_md5
 				unset PASS KEY
 				chmod 0400 $SYSMNT/.luks_accepted_md5 2>/dev/null
 				getpar fsck && fsck_device "/dev/mapper/$LUKS_DEV"

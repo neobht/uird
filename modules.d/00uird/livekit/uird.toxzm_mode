@@ -65,7 +65,7 @@ setup_toxzm_mode() {
 		MUID=$(get_MUID)
 		CHANGESMNT=${DATA_FROM}/${MUID}.cfg
 		echo_blue_star
-		echolog "Toxzm  config name has not been set, using name $CHANGESMNT"
+		echolog "Toxzm  config name has not been set, using auto: $CHANGESMNT"
 	elif [ -f "$DATA_FROM" ] ; then
 		CHANGESMNT=$DATA_FROM
 	else
@@ -89,7 +89,7 @@ setup_toxzm_mode() {
 			if [ -z "$XZM" ] ; then 
 				XZM="$(get_MUID).$EXT"
 				echo_blue_star
-				echolog "Module name has not been set, using name $XZM"
+				echolog "Module name has not been set, using auto:  $XZM"
 			fi
 			MODNAME="$(dirname $CHANGESMNT)/$XZM"
 			[ -f $MODNAME ] || continue

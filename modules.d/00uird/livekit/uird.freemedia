@@ -68,6 +68,10 @@ uird_freemedia() {
 			echo "#!/bin/bash" >$BINDIR/$UUID
 			echo "systemctl status systemd-logind.service || exit " >>$BINDIR/$UUID
 			echo "sleep 3" >>$BINDIR/$UUID
+			echo 'if [ -x /run/initrumfs/remount ] ; then'  >>$BINDIR/$UUID
+			echo '	/run/initrumfs/remount' >>$BINDIR/$UUID
+			echo '	exit' >>$BINDIR/$UUID
+			echo 'fi' >>$BINDIR/$UUID
 			echo "mkdir -p $MPOINT" >>$BINDIR/$UUID
 			echo "mount  -o $MNTOPTS  --uuid $UUID  $MPOINT" >>$BINDIR/$UUID
 			for mountstr in $RBIND; do
