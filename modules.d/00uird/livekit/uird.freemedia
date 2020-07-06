@@ -65,24 +65,21 @@ uird_freemedia() {
 		if [ $? -eq 0 ]; then
 			eject $dev 2>/dev/null #may be cdrom
 			log "generate remount scripts to $dev"
-			echo "#!/bin/bash" >$BINDIR/$UUID
-			echo "systemctl status systemd-logind.service || exit " >>$BINDIR/$UUID
-			echo "sleep 3" >>$BINDIR/$UUID
-			echo 'if [ -x /run/initrumfs/remount ] ; then'  >>$BINDIR/$UUID
-			echo '	/run/initrumfs/remount' >>$BINDIR/$UUID
-			echo '	exit' >>$BINDIR/$UUID
-			echo 'fi' >>$BINDIR/$UUID
-			echo "mkdir -p $MPOINT" >>$BINDIR/$UUID
-			echo "mount  -o $MNTOPTS  --uuid $UUID  $MPOINT" >>$BINDIR/$UUID
+			echo "#!/bin/bash" >$BINDIR/remount_$UUID
+			echo "systemctl status systemd-logind.service || exit " >>$BINDIR/remount_$UUID
+			echo "sleep 3" >>$BINDIR/remount_$UUID
+			echo "mkdir -p $MPOINT" >>$BINDIR/remount_$UUID
+			echo "mount  -o $MNTOPTS  --uuid $UUID  $MPOINT" >>$BINDIR/remount_$UUID
 			for mountstr in $RBIND; do
 				mpoint=$(echo $mountstr | cut -d "," -f2 |sed 's:^/sysroot::')
-				echo "mkdir -p $mpoint" >>$BINDIR/$UUID
-				echo "mount --rbind $MPOINT$(echo $mountstr | cut -d "," -f1) " $mpoint >>$BINDIR/$UUID
+				echo "mkdir -p $mpoint" >>$BINDIR/remount_$UUID
+				echo "mount --rbind $MPOINT$(echo $mountstr | cut -d "," -f1) " $mpoint >>$BINDIR/remount_$UUID
 			done
-			[ $LOSETUP ] && echo "losetup '$(losetup -f)'  $(echo "$LOSETUP" |sed 's:^/sysroot::')" >>$BINDIR/$UUID
-			echo '' >>$BINDIR/$UUID
-			chmod +x $BINDIR/$UUID
-			echo "KERNEL==\"sd?\",  $SERIAL_ID,  ACTION==\"add\", RUN+=\"/run/bin/$UUID \"" >${RULESDIR}/00-${UUID}.rules
+			[ $LOSETUP ] && echo "losetup '$(losetup -f)'  $(echo "$LOSETUP" |sed 's:^/sysroot::')" >>$BINDIR/remount_$UUID
+			echo '[ -x /run/initrumfs/remount ] && /run/initrumfs/remount'  >>$BINDIR/remount_$UUID
+			echo '' >>$BINDIR/remount_$UUID
+			chmod +x $BINDIR/remount_$UUID
+			echo "KERNEL==\"sd?\",  $SERIAL_ID,  ACTION==\"add\", RUN+=\"/run/bin/remount_$UUID \"" >${RULESDIR}/00-${UUID}.rules
 		fi
 	done
 	for device in $(echo $devs | while read a; do echo $a | cut -c 1-8; done | sort | uniq); do
