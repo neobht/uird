@@ -26,7 +26,7 @@ uird_shutdown() {
 	RBIND=$(grep $savesdev /proc/self/mountinfo | sed 1d | awk '{print $4 "," $5}')
 	echo "#!/bin/ash" > "${UNION}/run/initramfs/remount"
 	echo 'BUSYBOX=busybox' >> "${UNION}/run/initramfs/remount"
-	echo 'which $BUSYBOX 2>/dev/null || BUSYBOX=busybox.static' >> "${UNION}/run/initramfs/remount"
+	echo 'which $BUSYBOX  >/dev/null || BUSYBOX=busybox.static' >> "${UNION}/run/initramfs/remount"
 	echo 'BLKID=blkid' >> "${UNION}/run/initramfs/remount"
 	echo '[ -x /sbin/blkid.real ] && BLKID=/sbin/blkid.real' >> "${UNION}/run/initramfs/remount"
 ################################################################ 

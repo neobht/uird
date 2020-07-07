@@ -46,7 +46,7 @@ setup_toxzm_mode() {
 		echo "# Section numbers must be in order from zero" >> $CHANGESMNT
 		echo "# XZM - module name" >> $CHANGESMNT
 		echo "# MODE - mode of use (copy, mount, mount+wh)" >> $CHANGESMNT
-		echo "# REBULID - rebuild the module (yes, no)" >> $CHANGESMNT
+		echo "# REBULID - rebuild the module (yes, no, once)" >> $CHANGESMNT
 		echo "# ADDFILTER - a list of files, dirs to save" >> $CHANGESMNT
 		echo "# DROPFILTER - a list of files,dirs to exclude from saves" >> $CHANGESMNT
 		echo "# SQFSOPT - additional options for mksquashfs" >> $CHANGESMNT

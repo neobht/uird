@@ -141,6 +141,10 @@ rebuild() {
 		eval ADDFILTER="\$ADDFILTER$n"
 		eval DROPFILTER="\$DROPFILTER$n"
 		eval SQFSOPT="\$SQFSOPT$n"
+		if [ "$REBUILD" == "once"  ] ; then
+			REBUILD=yes
+			sed -i "s/REBUILD$n.*/REBUILD$n='no'/" "$CHANGESMNT" 
+		fi	
 		[ "$REBUILD" != "yes"  ] && continue
 		SAVETOMODULEDIR="$(dirname $CHANGESMNT)"
 		[ -w $SAVETOMODULEDIR  ] || continue
@@ -164,11 +168,11 @@ rebuild() {
 		echo "/.wh..*" >> /tmp/$n/excludedfiles
 		#cut garbage
 		echo '#cut garbage#'  >> /tmp/$n/excludedfiles
+		echo "$SYSMNT" >> /tmp/$n/excludedfiles
 		echo "/.cache" >> /tmp/$n/excludedfiles
 		echo "/.dbus" >> /tmp/$n/excludedfiles
 		echo "/run" >> /tmp/$n/excludedfiles
 		echo "/tmp" >> /tmp/$n/excludedfiles
-		echo "/memory" >> /tmp/$n/excludedfiles
 		echo "/dev" >> /tmp/$n/excludedfiles # maybe it is not necessary
 		echo "/proc" >> /tmp/$n/excludedfiles # maybe it is not necessary
 		echo "/sys" >> /tmp/$n/excludedfiles # maybe it is not necessary
