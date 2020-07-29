@@ -110,6 +110,7 @@ rebuild() {
 	BALLOON_COLOR="$green"
 	echolog "Remounting media for saves..."
 	export SYSMNT
+	plymouth --quit 2>/dev/null
 	/remount 
 	[ $? == 0 ] || echo -e "[  ${green}OK${default}  ] Remount complete"
 	CFGPWD=$(dirname $CHANGESMNT)

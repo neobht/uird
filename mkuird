@@ -63,6 +63,20 @@ if ! depmod -A "$KERNEL" ; then
 	exit 2
 fi
 
+if [ -f /lib/modules/$KERNEL/build/.config ] ; then
+ 	KRNAUFS=$(egrep 'CONFIG_AUFS.*=[ym]' /lib/modules/$KERNEL/build/.config)
+	KRNSQFS=$(egrep 'CONFIG_SQUASHFS.*=[ym]' /lib/modules/$KERNEL/build/.config)
+	if [ $(echo "$KRNAUFS" |wc -l) -eq 1 ] ; then
+	    echo "$KERNEL built with no AUFS, continue?" 
+	    echo "(ENTER to continue or ctrl+c to abort)"
+	    read qqq
+	fi
+	echo -e "\n${KRNAUFS}\n\n${KRNSQFS}\n"
+	
+else
+	echo "Kernel config for $KERNEL not found" 
+fi
+
 EXCLUDE=$(echo "$EXCLUDE" |sed "s/,/|/g")
 
 if ! [ -f $WORKDIR/configs/uird_configs/$CFG ]; then
