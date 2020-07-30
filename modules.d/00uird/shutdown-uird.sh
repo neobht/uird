@@ -2,7 +2,8 @@
 # script must be started only once
 # if tmp dir exists, the script is run a second time
 [ -d /tmp ] && exit 0
- 
+
+clear 
 shell="no" ; ask="no" ; silent="no" ; haltonly="no" ; lowuptime="no" ; log='no'
 DEVNULL=''
 DEFSQFSOPT="-b 512K -comp lz4"
@@ -200,7 +201,7 @@ rebuild() {
 			fi
 		fi
 		if [ -n "$ADDFILTER" -o -n "$DROPFILTER" ] ;then
-			echo "Please wait. Preparing excludes for module ${SAVETOMODULENAME}....." 
+			echolog "Please wait. Preparing excludes for module ${SAVETOMODULENAME}....." 
 			# do not create list of all files from changes, if it already exists
 				if ! [ -f /tmp/allfiles -o -f /tmp/alldirs ] ; then
 					find $SRC/ -type l >/tmp/allfiles
