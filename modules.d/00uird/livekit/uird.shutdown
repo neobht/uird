@@ -29,7 +29,7 @@ uird_shutdown() {
 	echo 'which $BUSYBOX  >/dev/null || BUSYBOX=busybox.static' >> "${UNION}/run/initramfs/remount"
 	echo 'BLKID=blkid' >> "${UNION}/run/initramfs/remount"
 	echo '[ -x /sbin/blkid.real ] && BLKID=/sbin/blkid.real' >> "${UNION}/run/initramfs/remount"
-	echo 'ls /dev/sd? |while read a ; do eject -t "$a" 2>/dev/null ; done' >> "${UNION}/run/initramfs/remount"
+	echo 'for a in $(ls /dev/sd?) ; do (eject -t "$a" && partprobe "$a") 2>/dev/null ; done' >> "${UNION}/run/initramfs/remount"
 ################################################################ 
 	if [ $LUKSDEV ] ; then
 		echo 'DEV=$($BLKID 2>/dev/null | grep -m1 $(echo ' " $LUKSUUID " ' ) | awk -F: '\'{print \$1}\'')' >> "${UNION}/run/initramfs/remount"
