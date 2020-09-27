@@ -1138,7 +1138,7 @@ device_mountdir() {
 		if grep "^$1 " /proc/mounts |grep -qv subvol ; then
 			grep "^$1 " /proc/mounts | awk '{print $2}' | head -1 | tr -s /
 		elif grep -q "^${1}.*,subvol=/ " /proc/mounts ; then
-			grep "^${1}.*,subvol=/ " /proc/mounts | awk '{print $2}' |  tr -s /
+			grep "^${1}.*,subvol=/ " /proc/mounts | head -1 | awk '{print $2}' |  tr -s /
 		else
 			if [ "$2" = "" ]; then
 				echo "/$MOUNTDIR/$(basename "$1")" | tr -s /
@@ -1194,8 +1194,7 @@ find_filepath() {
 		PRESERVE=""
 	fi
 
-	FOUND=$(ls -A1d $DIR/$2 2>/dev/null | head -n 1 | tr -s '/')
-
+	FOUND=$(ls -A1d $DIR/$2 2>/dev/null | head -n 1 | tr -s '/')       
 	if [ "$SGN"_ != "_" ]; then
 		if [ -f "$DIR/$2/$SGN" ]; then
 			FOUND=$FOUND
@@ -1221,6 +1220,7 @@ find_filepath() {
 				return 2
 			fi
 		fi
+		log "RETURNFOUND=$FOUND"
 		echo "$FOUND"
 		return 0
 	fi
@@ -1290,7 +1290,7 @@ find_file() {
 		# try to find PATHPART only on the given device
 		PATHPART=$(echo "$FIND" | sed -r 's:^/dev/[^/]+(.*):\1:') #'
 		[ $PATHPART ] || PATHPART="/"
-		log "find_filepath "$DEVICE" "$PATHPART" "$2" "$3" "
+		log "find_filepath "$DEVPART" "$PATHPART" "$2" "$3" "
 		find_filepath "$DEVPART" "$PATHPART" "$2" "$3" 
 	fi
 }
