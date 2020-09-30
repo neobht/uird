@@ -953,12 +953,10 @@ if [ $ERR -ne 0 ] && [ -b "$DEV" ] && $BIN_BLKID "$DEV" -s TYPE | grep -q crypto
 				fi
 			fi 
 			if [ -b "/dev/mapper/$LUKS_DEV" ] ; then
-				#[ "$PASS"_ != "_" ] && echo "$PASS" |md5sum >> $SYSMNT/.luks_accepted_md5
-				#[ "$KEY"_ != "_" ] && cat 	"$KEY"  |md5sum >> $SYSMNT/.luks_accepted_md5
 				unset PASS KEY
 				chmod 0400 $SYSMNT/.luks_accepted_md5 2>/dev/null
 				getpar fsck && fsck_device "/dev/mapper/$LUKS_DEV"
-				mount -n -o $OPTIONS "/dev/mapper/$LUKS_DEV" "$2" >>/var/log/uird.dbg.log 2>&1
+				mount_device "/dev/mapper/$LUKS_DEV" "$2" "$3" "$4" "$5" >>/var/log/uird.dbg.log 2>&1
 				[ "$?" -eq 0 ] && break
 			fi
 				echolog "Mount - error!, try again"
