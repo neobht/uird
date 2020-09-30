@@ -882,7 +882,7 @@ mount_device() {
 		mount -n -o $OPTIONS $FS "$DEV" "$2" >>/var/log/uird.dbg.log 2>&1
 		ERR=$?
 	fi
-
+#LOOPAES####################################################
 	if [ $ERR -ne 0 ] && [ -f "$DEV" ] && echo "$DEV" | grep -q .enc$; then
 		echolog "$MOUNT_DEVICE_ENC" $green"$DEV"$default
 		OPTIONS=$(echo "$OPTIONS" | sed -r "s/,loop//g")
@@ -908,22 +908,20 @@ mount_device() {
 				PASS=$(ask_pass "Password")
 				echo $PASS | cryptsetup open --type loopaes "$DEV" "$LOOPDEV" --key-file -
 			fi
-			mount -n -o ro "/dev/mapper/$LOOPDEV" "$2" >>/var/log/uird.dbg.log 2>&1
-			ERR=$?
-			REPLY=
-			if [ $ERR -ne 0 ]; then
-				echo incorrect! >/dev/console
-				cryptsetup close "$LOOPDEV"
-				times=$(( $times - 1 ))
-			else
-				echo accepted! >/dev/console
-				umount "$2"
+			
+			if [ -b "/dev/mapper/$LOOPDEV" ]  ;  then
+				echolog "accepted!"
 				getpar fsck && fsck_device "/dev/mapper/$LOOPDEV"
-				mount -n -o $OPTIONS "/dev/mapper/$LOOPDEV" "$2" >>/var/log/uird.dbg.log 2>&1
+				mount_device "/dev/mapper/$LOOPDEV" "$2" "$3" "$4" "$5" >>/var/log/uird.dbg.log 2>&1
 				ERR=$?
-				break
+				[ "$?" -eq 0 ] && break
 			fi
+			echolog "Mounting ecrypted contaner - ERROR, try again"
+			cryptsetup close "$LOOPDEV"
+			unset PASS
+			times=$(( $times - 1 ))
 		done
+		grep -q "/dev/mapper/$LOOPDEV"  /proc/mounts  &&  ERR=0
 	fi
 	
 #LUKS####################################################
@@ -945,16 +943,16 @@ if [ $ERR -ne 0 ] && [ -b "$DEV" ] && $BIN_BLKID "$DEV" -s TYPE | grep -q crypto
 					cryptsetup -d $KEY luksOpen "$DEV" "$LUKS_DEV" 
 					log "$(umount /tmp/lukskey 2>&1)"
 				else
-					if [ "$PASS"_ == "_" ] ; then
+					if [ "$PASS"_ == "_" ]  ;  then
 						echo "Please enter password:" >/dev/console
 						PASS=$(ask_pass "Password")
 					fi
-					echo "$PASS" | cryptsetup luksOpen "$DEV" "$LUKS_DEV" && echolog  accepted!
+					echo "$PASS" | cryptsetup luksOpen "$DEV" "$LUKS_DEV" 
 				fi
 			fi 
 			if [ -b "/dev/mapper/$LUKS_DEV" ] ; then
+				echolog  accepted!
 				unset PASS KEY
-				chmod 0400 $SYSMNT/.luks_accepted_md5 2>/dev/null
 				getpar fsck && fsck_device "/dev/mapper/$LUKS_DEV"
 				mount_device "/dev/mapper/$LUKS_DEV" "$2" "$3" "$4" "$5" >>/var/log/uird.dbg.log 2>&1
 				[ "$?" -eq 0 ] && break
