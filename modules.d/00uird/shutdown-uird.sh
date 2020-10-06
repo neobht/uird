@@ -203,11 +203,10 @@ rebuild() {
 		if [ -n "$ADDFILTER" -o -n "$DROPFILTER" ] ;then
 			echolog "Please wait. Preparing excludes for module ${SAVETOMODULENAME}....." 
 			# do not create list of all files from changes, if it already exists
-				if ! [ -f /tmp/allfiles -o -f /tmp/alldirs ] ; then
-					find $SRC/ -type l >/tmp/allfiles
-					find $SRC/ -type f >>/tmp/allfiles
-					find $SRC/ -type c >>/tmp/allfiles
+				if ! [ -f /tmp/allfiles  ] ; then
+					find $SRC/  >/tmp/allfiles
 					sed -i 's|^'$SRC'||' /tmp/allfiles
+					sed -i '/^\/$/d' /tmp/allfiles
 				fi
 				>/tmp/savelist.black
 				for item in $DROPFILTER ; do 
@@ -226,9 +225,9 @@ rebuild() {
 					fi
 				done
 				grep -q . /tmp/savelist.white || echo '.' > /tmp/savelist.white
-				grep -f /tmp/savelist.white /tmp/allfiles | grep -vf /tmp/savelist.black > /tmp/includedfiles
-				grep -q . /tmp/savelist.black && grep -f /tmp/savelist.black /tmp/allfiles >> /tmp/$n/excludedfiles
-				grep -vf /tmp/savelist.white /tmp/allfiles >> /tmp/$n/excludedfiles
+				grep -f /tmp/savelist.white /tmp/allfiles > /tmp/includedfiles
+				grep -vf /tmp/includedfiles /tmp/allfiles >> /tmp/$n/excludedfiles
+				grep -q . /tmp/savelist.black && grep -f /tmp/savelist.black /tmp/includedfiles >> /tmp/$n/excludedfiles
 		fi
 		rm -f /tmp/savelist.white /tmp/savelist.black /tmp/includedfiles
 		sed -i 's|^/||' /tmp/$n/excludedfiles
