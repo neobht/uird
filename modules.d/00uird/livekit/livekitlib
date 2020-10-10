@@ -2750,7 +2750,7 @@ unsquashfs() {
 	fi
 	mkdir -p /tmp/tmpmntdir
 	mount_device  "$filexzm" /tmp/tmpmntdir
-	cp  -a"$force" /tmp/tmpmntdir/* ${destdir}/
+	cp  -a"$force" /tmp/tmpmntdir/. ${destdir}/
 	[ $? != 0 ] && echolog "ERROR: $0 $@"
 	umount  /tmp/tmpmntdir
 	rm -rf /tmp/tmpmntdir

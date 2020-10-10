@@ -224,10 +224,17 @@ rebuild() {
 						echo "$item" >> /tmp/savelist.white 
 					fi
 				done
+				
+
 				grep -q . /tmp/savelist.white || echo '.' > /tmp/savelist.white
-				grep -f /tmp/savelist.white /tmp/allfiles > /tmp/includedfiles
-				grep -vf /tmp/includedfiles /tmp/allfiles >> /tmp/$n/excludedfiles
-				grep -q . /tmp/savelist.black && grep -f /tmp/savelist.black /tmp/includedfiles >> /tmp/$n/excludedfiles
+				str=$(grep -f /tmp/savelist.white /tmp/allfiles |tee /tmp/includedfiles)
+				while echo "$str" |grep -q [[:alnum:]] ; do
+					str="$(echo "$str"  |sed  's#/[^\/]*$##' )"
+					#str="$(echo "$str" |xargs dirname)"
+					echo  "$str"
+				done | sort -u > /tmp/includeddirs
+				grep -vf /tmp/includedfiles /tmp/allfiles | grep -xvf /tmp/includeddirs >> /tmp/$n/excludedfiles
+				grep -q . /tmp/savelist.black && grep -f /tmp/savelist.black /tmp/allfiles >> /tmp/$n/excludedfiles
 		fi
 		rm -f /tmp/savelist.white /tmp/savelist.black /tmp/includedfiles
 		sed -i 's|^/||' /tmp/$n/excludedfiles
