@@ -16,11 +16,18 @@ uird_shutdown() {
 	savesname=$CHANGESMNT
 	savesdir=$(dirname $savesname)
 	savesdev=$(df $savesdir |grep /dev |awk '{print $1}')
-	if echo $savesdev |grep -q /dev/mapper ; then
-		LUKSDEV=$(echo $savesdev |sed 's#/mapper##')
+	
+	if [ "$(stat -L -c %t $savesdev)" == "fd" ] ; then
+	# Find LUKS mount point. It may be /dev/dm-0, or link in /dev/mapper/
+		for link in $(ls /dev/mapper/*); do
+			if [ "$(realpath $link)" == "$(realpath $savesdev)" ]; then
+				LUKSDEV=$(echo $link |sed 's#/mapper##')
+				break
+			fi
+		done
 		LUKSUUID=$($BIN_BLKID -s UUID | grep $LUKSDEV | cut -d " " -f 2 | cut -d "\"" -f2)
 	fi 
-	UUID=$($BIN_BLKID -s UUID | grep $savesdev | cut -d " " -f 2 | cut -d "\"" -f2)
+	UUID=$($BIN_BLKID -s UUID | grep ${link:-$savesdev} | cut -d " " -f 2 | cut -d "\"" -f2)
 	MPOINT=$(grep $savesdev /proc/self/mountinfo |head -n1 | grep ".* / .*$savesdev" | cut -d " " -f 5 )
 	MNTOPTS=$(grep $savesdev /proc/mounts | head -n1 | cut -d " " -f 4)
 	RBIND=$(grep $savesdev /proc/self/mountinfo | sed 1d | awk '{print $4 "," $5}')
