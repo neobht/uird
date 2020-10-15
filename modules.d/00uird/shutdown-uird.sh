@@ -203,40 +203,30 @@ rebuild() {
 		if [ -n "$ADDFILTER" -o -n "$DROPFILTER" ] ;then
 			echolog "Please wait. Preparing excludes for module ${SAVETOMODULENAME}....." 
 			# do not create list of all files from changes, if it already exists
-				if ! [ -f /tmp/allfiles  ] ; then
-					find $SRC/  >/tmp/allfiles
-					sed -i 's|^'$SRC'||' /tmp/allfiles
-					sed -i '/^\/$/d' /tmp/allfiles
+			[ -f /tmp/allfiles  ] || find $SRC/ | sed -e 's|^'$SRC'||' -e '/^\/$/d' > /tmp/allfiles
+			: > /tmp/savelist.black
+			: > /tmp/savelist.white
+			for item in $ADDFILTER ; do 
+				if [ -d "$SRC$item" ] ; then
+					echo "^$item" >> /tmp/savelist.white
+				else
+					echo "$item" >> /tmp/savelist.white 
 				fi
-				>/tmp/savelist.black
-				for item in $DROPFILTER ; do 
-					if [ -d "$SRC$item" ] ; then
-						echo "$item" >> /tmp/$n/excludedfiles
-					else
-						echo "$item" >> /tmp/savelist.black 
-					fi
-				done
-				>/tmp/savelist.white
-				for item in $ADDFILTER ; do 
-					if [ -d "$SRC$item" ] ; then
-						echo "^$item" >> /tmp/savelist.white
-					else
-						echo "$item" >> /tmp/savelist.white 
-					fi
-				done
-				
-
-				grep -q . /tmp/savelist.white || echo '.' > /tmp/savelist.white
-				str=$(grep -f /tmp/savelist.white /tmp/allfiles |tee /tmp/includedfiles)
-				while echo "$str" |grep -q [[:alnum:]] ; do
-					str="$(echo "$str"  |sed  's#/[^\/]*$##' )"
-					#str="$(echo "$str" |xargs dirname)"
-					echo  "$str"
-				done | sort -u > /tmp/includeddirs
-				grep -vf /tmp/includedfiles /tmp/allfiles | grep -xvf /tmp/includeddirs >> /tmp/$n/excludedfiles
-				grep -q . /tmp/savelist.black && grep -f /tmp/savelist.black /tmp/allfiles >> /tmp/$n/excludedfiles
+			done
+			grep -q . /tmp/savelist.white || echo '.' > /tmp/savelist.white
+			for item in $DROPFILTER ; do 
+				if [ -d "$SRC$item" ] ; then
+					echo "^$item" >> /tmp/savelist.black
+				else
+					echo "$item" >> /tmp/savelist.black 
+				fi
+			done
+			(cat /tmp/allfiles  | grep -f /tmp/savelist.white  \
+			| awk -F"/" '{ A = $1 ;{for (i=2; i<=NF; i++) { A = A "/" $i ; print A} } }'  \
+			| sort -u | cat - /tmp/allfiles  |sort |uniq -u
+			grep -q . /tmp/savelist.black && cat /tmp/allfiles  | grep -f /tmp/savelist.black ) \
+			|sort -u >> /tmp/$n/excludedfiles
 		fi
-		rm -f /tmp/savelist.white /tmp/savelist.black /tmp/includedfiles
 		sed -i 's|^/||' /tmp/$n/excludedfiles
 		echolog "Please wait. Saving changes to module ${SAVETOMODULENAME}....."
 		[ "$shell" = "yes" ] && shell_
@@ -331,4 +321,3 @@ done
 grep  /dev/sd /proc/mounts && sleep 5
 exit 0
 
- 
