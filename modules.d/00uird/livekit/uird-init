@@ -48,9 +48,6 @@ MOUNTDIR=$LAYER_BASE
 
 echo "0" >/proc/sys/kernel/printk
 
-header $HEADER_START
-header "[ $(cat /uird_version) $LANG]"
-
 debug_start
 debug_shell
 
@@ -67,6 +64,9 @@ cfg_parser_pre
 old_pars_compat
 short_pars_compat
 BREAKSTEP="$(getpar $UIRD_BREAK 1 1)"
+
+header $HEADER_START
+header "[ $(cat /uird_version) $LANG]"
 
 # print help
 if cat /tmp/basecfg | grep -q help; then
