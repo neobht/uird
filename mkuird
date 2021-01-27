@@ -106,7 +106,7 @@ mod=$2 ; type=$1
 if [ "$type" == "KM" -o "$type" == "FS" ] ;then
 		if echo $mod | egrep -q "^=" ; then 
 			return 0 
-		elif /sbin/modinfo $mod -k $KERNEL >/dev/null 2>&1 ; then
+		elif /sbin/modinfo $mod -k $KERNEL -n 2>/dev/null |grep -q $KERNEL >/dev/null 2>&1 ; then
 			return 0
 		elif for  a in $BUILTIN;do echo $a  ; done |grep -q $mod ; then
 			echo "Built in kernel: $type - $mod"
