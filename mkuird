@@ -65,7 +65,7 @@ fi
 
 if [ -f /lib/modules/$KERNEL/build/.config ] ;then
     KERNELCFG="/lib/modules/$KERNEL/build/.config"
-elif [ -f "/boot/config-$KERNEL" ; then
+elif [ -f "/boot/config-$KERNEL" ] ; then
     KERNELCFG="/boot/config-$KERNEL"
 fi
 
