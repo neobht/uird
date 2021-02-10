@@ -16,7 +16,7 @@ installkernel() {
 }
 
 bins="$UIRD_BINS"
-
+    
 install() {
 	local _i _progs _path _busybox _binaries
 	#uird
@@ -50,7 +50,11 @@ install() {
 	done
 	#busybox
 	#_busybox=$(type -p busybox.static || type -p busybox )
-	_busybox=./busybox/busybox
+	if [ "$BINBUSYBOX" ] ; then
+	    _busybox="$BINBUSYBOX"
+	else
+	    _busybox=./busybox/busybox
+	fi
 	inst $_busybox /usr/bin/busybox
 	_progs=""
 	for _i in $($_busybox --list); do

@@ -1,16 +1,19 @@
 #!/bin/bash
 WORKDIR=./
-CONFIG=${WORKDIR}mkuird.cfg
-[ -f $CONFIG ] || CONFIG=/etc/mkuird.cfg
-
+BINDRACUT="./dracut/dracut.sh"
+BINBUSYBOX="./busybox/busybox"
+DCONFIG="./dracut.conf"
 RUNPWD=$(pwd)
 OUTD=$RUNPWD
 CFG=legacy
 EXCLUDE=qqqqqqqqqqq
 BUILD=uird
-KERNEL=$(uname -r)
 ADDLOCALES=""
-DCONFIG=dracut.conf
+DRACUTMODDIR="${WORKDIR}/dracut/modules.d/"
+[ -x "$BINBUSYBOX" ] || BINBUSYBOX="$(which busybox)"
+CONFIG=${WORKDIR}mkuird.cfg
+[ -f $CONFIG ] || CONFIG=/etc/mkuird.cfg
+KERNEL=$(uname -r)
 date > ./not_found.log
 
 #find config for mkuird
@@ -24,6 +27,16 @@ do
 done
 
 . $CONFIG
+
+if ! [ -x "$BINBUSYBOX" ] ; then
+	echo "Busybox binary not found"
+	exit 1
+elif ! [ -x "$BINDRACUT" ] ; then
+	echo "Dracut executable not found"
+	exit 1
+else 
+	export BINBUSYBOX
+fi
 
 #find another parameters
 for arg in $@
@@ -91,9 +104,7 @@ if ! [ -f $WORKDIR/configs/uird_configs/$CFG ]; then
 fi
 
 
-cd ${WORKDIR}/dracut/modules.d
-ln -s ../../modules.d/* ../modules.d/ 2>/dev/null
-cd $RUNPWD
+ln -s $(realpath "$WORKDIR")/modules.d/* ${DRACUTMODDIR}/ 2>/dev/null
 
 
 notfound() {
@@ -115,7 +126,7 @@ if [ "$type" == "KM" -o "$type" == "FS" ] ;then
 elif [ "$type" == "BIN" ] ;then
 		which $mod >/dev/null 2>&1 && 	return 0
 elif [ "$type" == "DM" ] ;then
-		ls -1 ${WORKDIR}/dracut/modules.d |egrep -q "..${mod}$" && return 0
+		ls -1 ${DRACUTMODDIR}/ |egrep -q "..${mod}$" && return 0
 fi
 notfound $type  $mod 
 return 1
@@ -146,7 +157,7 @@ if [ "$BUILD" == "kmod" ] ; then
 	parser KM ; parser FS ; parser DM
 	echo "MAKE UIRD (Kernel modules only)...."
 	uirdfile=${OUTD}/uird.kmod.cpio.xz
-	./dracut/dracut.sh -l -N -f -m "$DM_base" \
+	$BINDRACUT -l -N -f -m "$DM_base" \
 	-d "$KM" \
 	--filesystems "$FS" \
 	--kernel-only \
@@ -154,14 +165,14 @@ if [ "$BUILD" == "kmod" ] ; then
 elif [ "$BUILD" == "addon" ] ; then
 	echo "MAKE UIRD addon.... "
 	uirdfile=${OUTD}/uird.addon.cpio.xz
-	./dracut/dracut.sh -l -N -f -m "$ExtraDM" \
+	$BINDRACUT -l -N -f -m "$ExtraDM" \
 	--no-kernel \
 	-c $DCONFIG -v -M $uirdfile $KERNEL >${RUNPWD}/dracut_addon.log 2>&1
 else
 	parser KM ; parser FS ; parser DM ; parser BIN
 	UIRD_BINS="$BIN"
 	export UIRD_BINS
-	echo "MAKE UIRD ${CFG}...."
+	echo "Making UIRD (${CFG}) using ${BINDRACUT}..."
 	uirdfile="${OUTD}/uird.$CFG.cpio.xz"
 	echo "-l -N --strip -f"		> ./dracut_run 
 	echo "-m \"$DM\""		>> ./dracut_run	
@@ -178,7 +189,7 @@ else
 	if [ $SHOW ] ; then
 		cat ./dracut_run	
 	else
-		cat ./dracut_run |xargs ./dracut/dracut.sh >${RUNPWD}/dracut_uird.log 2>&1
+		cat  ./dracut_run|xargs $BINDRACUT >${RUNPWD}/dracut_uird.log 2>&1
 	fi
 fi
 cd $RUNPWD

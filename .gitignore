@@ -1,3 +1,4 @@
 *.xz
 *.log
 *.pot
+dracut_run
