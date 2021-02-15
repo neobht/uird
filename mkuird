@@ -1,15 +1,13 @@
 #!/bin/bash
 WORKDIR=./
-BINDRACUT="./dracut/dracut.sh"
-BINBUSYBOX="./busybox/busybox"
-DCONFIG="./dracut.conf"
+BINBUSYBOX="${WORKDIR}/busybox/busybox"
+DRACUTMODDIR="${WORKDIR}/dracut/modules.d/"
 RUNPWD=$(pwd)
 OUTD=$RUNPWD
 CFG=legacy
 EXCLUDE=qqqqqqqqqqq
 BUILD=uird
 ADDLOCALES=""
-DRACUTMODDIR="${WORKDIR}/dracut/modules.d/"
 [ -x "$BINBUSYBOX" ] || BINBUSYBOX="$(which busybox)"
 CONFIG=${WORKDIR}mkuird.cfg
 [ -f $CONFIG ] || CONFIG=/etc/mkuird.cfg
@@ -27,12 +25,10 @@ do
 done
 
 . $CONFIG
+WORKDIR="$(realpath $WORKDIR)"
 
 if ! [ -x "$BINBUSYBOX" ] ; then
 	echo "Busybox binary not found"
-	exit 1
-elif ! [ -x "$BINDRACUT" ] ; then
-	echo "Dracut executable not found"
 	exit 1
 else 
 	export BINBUSYBOX
@@ -45,7 +41,6 @@ do
     "-s" | "--show" ) SHOW=yes;;
     "-c" | "--config" ) true;;
     "-o" | "--outdir" ) outdir=yes;;
-    "-d" | "--dracut-config" ) dconfig=yes;;
     "-e" | "--exclude" ) exclude=yes;;
     "-n" | "--name" ) name=yes;;
     "-k" | "--kernel" ) kernel=yes;;
@@ -55,13 +50,12 @@ do
     "--addon" ) BUILD=addon;;
     "-"*[A-Za-z]*) echo "$(basename "$0"): invalid option -- '$(echo ${arg} | tr -d '-')'" >&2; exit 1;;
     *) if [ "${exclude}" == "yes" ]; then EXCLUDE="${arg}"
-		elif [ "${dconfig}" == "yes" ]; then DCONFIG="${arg}"
 		elif [ "${outdir}" == "yes" ]; then OUTD="${arg}"
 		elif [ "${name}" == "yes" ]; then NAME="${arg}"
 		elif [ "${kernel}" == "yes" ]; then KERNEL="${arg}"
 		elif [ "${kmodpath}" == "yes" ]; then KMODPATH="${arg}"
 		else CFG="${arg}" ; fi
-        outdir="no" ; exclude="no"; name="no" ; kernel="no" ; kmodpath="no"; dconfig="no" ;;
+        outdir="no" ; exclude="no"; name="no" ; kernel="no" ; kmodpath="no" ;;
   esac
 done
 
@@ -152,7 +146,16 @@ done
 }
 
 BUILTIN=$(cat /lib/modules/$KERNEL/modules.builtin |while read a ; do basename $a ; done |sed 's/.ko$//')
-cd ${WORKDIR}
+
+cd ${WORKDIR} 
+if ! [ -x ./dracut/dracut.sh ] ; then
+    echo "local dracut dir for UIRD not found"
+    echo "You need to run ${WORKDIR}/make_dracut.sh to use git version" 
+    echo "or ${WORKDIR}/system_dracut.sh first to use system version"
+    cd $RUNPWD
+    exit
+fi
+
 if [ "$BUILD" == "kmod" ] ; then
 	parser KM ; parser FS ; parser DM
 	echo "MAKE UIRD (Kernel modules only)...."
@@ -175,6 +178,7 @@ else
 	echo "Making UIRD (${CFG}) using ${BINDRACUT}..."
 	uirdfile="${OUTD}/uird.$CFG.cpio.xz"
 	echo "-l -N --strip -f"		> ./dracut_run 
+	echo "--conf ./dracut.conf"	>> ./dracut_run
 	echo "-m \"$DM\""		>> ./dracut_run	
 	echo "-d \"$KM\""		>> ./dracut_run
 	echo "--filesystems \"$FS\""	>> ./dracut_run
@@ -183,13 +187,13 @@ else
 	echo "-i keys /"		>> ./dracut_run
 	echo "$ADDLOCALES"		>> ./dracut_run
 	echo "--kernel-cmdline \"uird.basecfg=/uird_configs/$CFG\""	>> ./dracut_run
-	echo "-c $DCONFIG -v -M $uirdfile $KERNEL"			>> ./dracut_run
+	echo "-v -M $uirdfile $KERNEL"	>> ./dracut_run
 	sed -i 's/"\ */"/g' ./dracut_run
 	sed -i '/^[[:space:]]*$/d'  ./dracut_run 
 	if [ $SHOW ] ; then
 		cat ./dracut_run	
 	else
-		cat  ./dracut_run|xargs $BINDRACUT >${RUNPWD}/dracut_uird.log 2>&1
+		cat  ./dracut_run|xargs ./dracut/dracut.sh  >${RUNPWD}/dracut_uird.log 2>&1
 	fi
 fi
 cd $RUNPWD
