@@ -46,6 +46,7 @@ do
     "-k" | "--kernel" ) kernel=yes;;
     "-m" | "--kmodpath" ) kmodpath=yes;;
     "-l" | "--i18n" ) ADDLOCALES="-i i18n /";;
+    "-f" | "--force" ) FORCE="yes";;
     "--kmod" ) BUILD=kmod;;
     "--addon" ) BUILD=addon;;
     "-"*[A-Za-z]*) echo "$(basename "$0"): invalid option -- '$(echo ${arg} | tr -d '-')'" >&2; exit 1;;
@@ -149,11 +150,17 @@ BUILTIN=$(cat /lib/modules/$KERNEL/modules.builtin |while read a ; do basename $
 
 cd ${WORKDIR} 
 if ! [ -x ./dracut/dracut.sh ] ; then
-    echo "local dracut dir for UIRD not found"
-    echo "You need to run ${WORKDIR}/make_dracut.sh to use git version" 
-    echo "or ${WORKDIR}/system_dracut.sh first to use system version"
-    cd $RUNPWD
-    exit
+    [ "$FORCE" ] && ./system_dracut.sh
+    if ! [ -x ./dracut/dracut.sh ] ; then
+        echo "Warninng! ${WORKDIR}/dracut directory - not found"
+        echo "Firs time you need to run:" 
+        echo "	${WORKDIR}/make_dracut.sh	- to use git darcut version" 
+        echo "or"
+        echo "	${WORKDIR}/system_dracut.sh	- to use system version"
+        echo -e "\n$(basename $0) can solve the problem automatically (add -f to $(basename $0) cmdline)"
+        cd $RUNPWD
+	exit
+    fi
 fi
 
 if [ "$BUILD" == "kmod" ] ; then
