@@ -187,8 +187,6 @@ debug_shell
 getpar $UIRD_CACHE >/dev/null && copy_to_ram $LAYER_CACHE "$COPY2RAM"
 debug_shell
 
-
-
 # init aufs filesystem
 init_aufs
 

@@ -182,7 +182,7 @@ else
 	parser KM ; parser FS ; parser DM ; parser BIN
 	UIRD_BINS="$BIN"
 	export UIRD_BINS
-	echo "Making UIRD (${CFG}) using ${BINDRACUT}..."
+	echo "Making UIRD (${CFG}) using $(realpath ./dracut/dracut.sh)..."
 	uirdfile="${OUTD}/uird.$CFG.cpio.xz"
 	echo "-l -N --strip -f"		> ./dracut_run 
 	echo "--conf ./dracut.conf"	>> ./dracut_run

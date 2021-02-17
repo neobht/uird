@@ -2159,13 +2159,19 @@ union_append_bundles() {
 	RO=$(echo $(getpar $UIRD_RO [[:digit:]]) | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/ /|/g')
 	CP=$(echo $(getpar $UIRD_CP [[:digit:]]) | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/ /|/g')
 	RUN=$(echo $(getpar $UIRD_RUN [[:digit:]]) | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/ /|/g')
-
+	CPDEST="$3"
+	
 	echo_green_star
 	echolog "$UNION_APPEND_BUNDLES" $brown$1$default
 	
 	UNION_FS="$(getpar $UIRD_UNION 1 1 )"
 	[ -z $UNION_FS ] && UNION_FS="aufs"
-
+	
+	if [ "$UNION_FS" = "overlay" ] ; then
+		mkdir -p "$OVERLAY/workdir" "$OVERLAY/changes"
+		CPDEST="$OVERLAY/changes"
+	fi
+	
 	add_bundle() {
 		BUNDLE=$1
 		shift
@@ -2188,7 +2194,7 @@ union_append_bundles() {
 			if [ "$CP" -a "$(echo $BUNDLE | egrep -i "$CP")" ]; then
                                 echolog "  $blue-->" $purple"$BUNDLE"$green" [CP mode] "$default
                                 mount -o $OPTIONS $FS "$BUNDLE" "$2/$BUN"
-				cp -a "$2/$BUN"/. $3 2>/dev/null
+				cp -a "$2/$BUN"/. "${CPDEST}/" 2>/dev/null
 				return
 			elif [ "$RUN" -a "$(echo $BUNDLE | egrep -i "$RUN")" ]; then
                                 echolog "  $blue-->" $purple"$BUNDLE"$yellow" [RUN mode] "$default
@@ -2224,7 +2230,6 @@ union_append_bundles() {
 	
 	if [ "$UNION_FS" = "overlay" ]; then
 		# OverlayFS
-		mkdir -p "$OVERLAY/workdir" "$OVERLAY/changes"
 		log ""mount -t overlay -o lowerdir="$LOWER_DIRS",upperdir="$OVERLAY/changes",workdir="$OVERLAY/workdir" overlay "$3"
 		mount -t overlay -o redirect_dir=on,metacopy=off,index=on,lowerdir="$LOWER_DIRS",upperdir="$OVERLAY/changes",workdir="$OVERLAY/workdir" overlay "$3"
 		mount --bind $OVERLAY/changes $CHANGES
