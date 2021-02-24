@@ -22,18 +22,19 @@ install() {
     dracut_install /usr/share/mc/hints/*
     dracut_install /usr/share/mc/skins/*
     dracut_install /usr/share/mc/syntax/*
-    dracut_install /usr/share/locale/LC_MESSAGES/ru/mc.mo
-    dracut_install /usr/share/locale/ru/LC_MESSAGES/mc.mo
     dracut_install /etc/mc/*
     dracut_install /etc/profile.d/mc.sh
-    dracut_install /usr/lib64/mc/*
-    dracut_install /usr/lib64/mc/ext.d/*
-    dracut_install /usr/lib64/mc/extfs.d/*
-    dracut_install /usr/lib64/mc/fish/*
-    dracut_install /usr/lib/mc/*
-    dracut_install /usr/lib/mc/ext.d/*
-    dracut_install /usr/lib/mc/extfs.d/*
-    dracut_install /usr/lib/mc/fish/*
+    [ -f /usr/share/locale/LC_MESSAGES/ru/mc.mo ] &&  dracut_install /usr/share/locale/LC_MESSAGES/ru/mc.mo
+    [ -f  /usr/share/locale/ru/LC_MESSAGES/mc.mo ] && dracut_install /usr/share/locale/ru/LC_MESSAGES/mc.mo
+    [ -d /usr/lib64/mc/ ] && dracut_install /usr/lib64/mc/*
+    [ -d /usr/lib64/mc/fish ] && dracut_install /usr/lib64/mc/fish/*
+    [ -d /usr/lib/mc ] &&  dracut_install /usr/lib/mc/*
+    [ -d /usr/lib/mc/fish ] && dracut_install /usr/lib/mc/fish/*
+	egrep -Rs '#![[:space:]]*/bin/.*sh' 	/usr/lib64/mc/ext.d/* /usr/lib64/mc/extfs.d/* \
+    /usr/lib/mc/ext.d/* /usr/lib/mc/extfs.d/* |sed 's/:.*$//' 2>/dev/null |while read script ; do
+	dracut_install $script
+	done
+
 
 #    dracut_install /usr/bin/mplayer    
 
