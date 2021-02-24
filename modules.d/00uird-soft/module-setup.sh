@@ -32,11 +32,8 @@ install() {
     [ -d /usr/lib/mc/fish ] && dracut_install /usr/lib/mc/fish/*
 	egrep -Rs '#![[:space:]]*/bin/.*sh' 	/usr/lib64/mc/ext.d/* /usr/lib64/mc/extfs.d/* \
     /usr/lib/mc/ext.d/* /usr/lib/mc/extfs.d/* |sed 's/:.*$//' 2>/dev/null |while read script ; do
-	dracut_install $script
+	cat $script |egrep -q '[/, ]python |[/, ]perl ' || dracut_install $script
 	done
-
-
-#    dracut_install /usr/bin/mplayer    
 
 
 #    dracut_install /usr/bin/ssh
