@@ -23,9 +23,9 @@ install() {
     dracut_install /usr/share/mc/skins/*
     dracut_install /usr/share/mc/syntax/*
     dracut_install /etc/mc/*
-    dracut_install /etc/profile.d/mc.sh
-    [ -f /usr/share/locale/LC_MESSAGES/ru/mc.mo ] &&  dracut_install /usr/share/locale/LC_MESSAGES/ru/mc.mo
-    [ -f  /usr/share/locale/ru/LC_MESSAGES/mc.mo ] && dracut_install /usr/share/locale/ru/LC_MESSAGES/mc.mo
+    [ -f /etc/profile.d/mc.sh ] && dracut_install /etc/profile.d/mc.sh
+    [ -f /usr/share/locale/LC_MESSAGES/ru/mc.mo ] && dracut_install /usr/share/locale/LC_MESSAGES/ru/mc.mo
+    [ -f /usr/share/locale/ru/LC_MESSAGES/mc.mo ] && dracut_install /usr/share/locale/ru/LC_MESSAGES/mc.mo
     [ -d /usr/lib64/mc/ ] && dracut_install /usr/lib64/mc/*
     [ -d /usr/lib64/mc/fish ] && dracut_install /usr/lib64/mc/fish/*
     [ -d /usr/lib/mc ] &&  dracut_install /usr/lib/mc/*
@@ -39,7 +39,7 @@ install() {
 #    dracut_install /usr/bin/mplayer    
 
 
-    dracut_install /usr/bin/ssh
+#    dracut_install /usr/bin/ssh
 
 #    inst /usr/bin/git
 #    inst_multiple \

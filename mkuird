@@ -1,14 +1,11 @@
 #!/bin/bash
 WORKDIR=./
-BINBUSYBOX="${WORKDIR}/busybox/busybox"
-DRACUTMODDIR="${WORKDIR}/dracut/modules.d/"
 RUNPWD=$(pwd)
 OUTD=$RUNPWD
 CFG=legacy
 EXCLUDE=qqqqqqqqqqq
 BUILD=uird
 ADDLOCALES=""
-[ -x "$BINBUSYBOX" ] || BINBUSYBOX="$(which busybox)"
 CONFIG=${WORKDIR}mkuird.cfg
 [ -f $CONFIG ] || CONFIG=/etc/mkuird.cfg
 KERNEL=$(uname -r)
@@ -26,6 +23,8 @@ done
 
 . $CONFIG
 WORKDIR="$(realpath $WORKDIR)"
+[ "$BINBUSYBOX" ] || BINBUSYBOX="${WORKDIR}/busybox/busybox"
+[ "$DRACUTMODDIR" ] || DRACUTMODDIR="${WORKDIR}/dracut/modules.d/"
 
 if ! [ -x "$BINBUSYBOX" ] ; then
 	echo "Busybox binary not found"
