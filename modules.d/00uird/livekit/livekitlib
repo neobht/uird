@@ -1916,7 +1916,7 @@ setup_changes() {
 			mount_data_source $CHANGESVAL $2 $1 "$FPARS"
 		else
 			mkdir -p $OVERLAY/changes
-			mount_data_source $CHANGESVAL $OVERLAY/changes  $1 "$FPARS"
+			mount_data_source $CHANGESVAL $OVERLAY  $1 "$FPARS"
 		fi
 	else
 		echo_green_star
