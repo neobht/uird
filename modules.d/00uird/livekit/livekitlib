@@ -257,7 +257,7 @@ debug_shell() {
 # start shell
 # if $1==help then start shell
 shell_cmd() {
-	plymouth quit
+	plymouth quit 2>/dev/null
 	ln -s /root/bashrc /root/.bashrc 2>/dev/null
 	ln -s /root/bash_profile /root/.bash_profile 2>/dev/null
 	echo
@@ -1916,7 +1916,7 @@ setup_changes() {
 			mount_data_source $CHANGESVAL $2 $1 "$FPARS"
 		else
 			mkdir -p $OVERLAY/changes
-			mount_data_source $CHANGESVAL $OVERLAY  $1 "$FPARS"
+			mount_data_source $CHANGESVAL $OVERLAY/changes  $1 "$FPARS"
 		fi
 	else
 		echo_green_star
@@ -2763,7 +2763,7 @@ unsquashfs() {
 
 ask_answer()  {
 	local ANSWER
-	if plymouth  --ping ; then
+	if plymouth  --ping 2>/dev/null ; then
 		ANSWER=$(plymouth ask-question --prompt="$1")
 	else
 		read ANSWER 
@@ -2773,7 +2773,7 @@ ask_answer()  {
 
 ask_pass()  {
 	local ANSWER
-	if plymouth  --ping ; then
+	if plymouth  --ping 2>/dev/null; then
 		ANSWER=$(plymouth ask-for-password --prompt="$1")
 	else
 		read -s ANSWER 
