@@ -164,19 +164,19 @@ fi
 
 if [ "$BUILD" == "kmod" ] ; then
 	parser KM ; parser FS ; parser DM
-	echo "MAKE UIRD (Kernel modules only)...."
+	echo "Making UIRD --kmod  $(realpath ./dracut/dracut.sh)..."
 	uirdfile=${OUTD}/uird.kmod.cpio.xz
-	$BINDRACUT -l -N -f -m "$DM_base" \
+	./dracut/dracut.sh -l -N -f -m "$DM_base" \
 	-d "$KM" \
 	--filesystems "$FS" \
 	--kernel-only \
-	-c $DCONFIG -v -M $uirdfile $KERNEL >${RUNPWD}/dracut_kmod.log 2>&1
+	--conf ./dracut.conf -v -M $uirdfile  $KERNEL >${RUNPWD}/dracut_kmod.log 2>&1
 elif [ "$BUILD" == "addon" ] ; then
-	echo "MAKE UIRD addon.... "
+	echo "Making UIRD --addon, using $(realpath ./dracut/dracut.sh)..."
 	uirdfile=${OUTD}/uird.addon.cpio.xz
-	$BINDRACUT -l -N -f -m "$ExtraDM" \
+	./dracut/dracut.sh -l -N -f -m "$ExtraDM" \
 	--no-kernel \
-	-c $DCONFIG -v -M $uirdfile $KERNEL >${RUNPWD}/dracut_addon.log 2>&1
+	--conf ./dracut.conf -v -M $uirdfile  $KERNEL >${RUNPWD}/dracut_addon.log 2>&1
 else
 	parser KM ; parser FS ; parser DM ; parser BIN
 	UIRD_BINS="$BIN"
