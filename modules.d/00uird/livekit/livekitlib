@@ -90,7 +90,7 @@ RESIZE_TMPFS=$($GETTEXT "Resizing TMPFS to -")
 SETUP_SYSCP=$($GETTEXT "Copying some UIRD files to system")
 
 INIT_IFCFG=$($GETTEXT "Initializing network services")
-UNION_APPEND_BUNDLES=$($GETTEXT "Mounting bundles to root:")
+PREPARING_BUNDLES=$($GETTEXT "Preparing layers for")
 COPY_TO_RAM=$($GETTEXT "Copy data to RAM, this may take a long time, waiting...")
 COPY_TO_CACHE=$($GETTEXT "Copy data to CACHE, this may take a long time, waiting...")
 
@@ -562,40 +562,94 @@ init_zswap() {
 	echo_green_star && echolog "$INITIALIZE Zswap" 
 }
 
-# load the AUFS kernel module if needed
-#
-init_aufs() {
-	debug_log "init_aufs" "$*"
-	# TODO maybe check here if aufs support is working at all
-	# and produce useful error message if user has no aufs
-	modprobe aufs 2>/dev/null
-}
-
-# Setup empty union
-# $1 = changes directory (ramfs or persistent changes)
-# $2 = union directory where to mount the union
-#
+# Mount squashfs filesystem bundles to aufs/ovelray union fs
+# LBASE = directory where to search for bundles
+# LBANDLES = directory where to mount bundles
+# LUNION = directory where union is mounted
+# LCP2RAM = directory where copy2ram
+# LCACHE = directory where layer-cache
+# LCHANGES = changes directory (ramfs or persistent changes)
 init_union() {
 	debug_log "init_union" "$*"
-
-	UNION_FS="$(getpar $UIRD_UNION 1 1)"
+	local BUN MOD RW RO CP FS OPTIONS PRESERVE MID_BUN BUNDLE
+	local LBASE='' LBUNDLES='' LUNION='' LCP2RAM='' LCACHE='' LCHANGES='' LOWER_DIRS=""
+	local BUN MOD RW RO CP FS OPTIONS PRESERVE MID_BUN BUNDLE
+	for par in  $@  ; do
+		local |grep -q "$(echo $par |cut  -f1 -d=)"   &&  eval $par 
+	done 
+	RW=$(echo $(getpar $UIRD_RW [[:digit:]]) | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/ /|/g')
+	RO=$(echo $(getpar $UIRD_RO [[:digit:]]) | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/ /|/g')
+	CP=$(echo $(getpar $UIRD_CP [[:digit:]]) | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/ /|/g')
+	RUN=$(echo $(getpar $UIRD_RUN [[:digit:]]) | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/ /|/g')
+	
+	UNION_FS="$(getpar $UIRD_UNION 1 1 )"
 	[ -z $UNION_FS ] && UNION_FS="aufs"
+	if [ "$UNION_FS" = "overlay" ] ; then
+		modprobe overlay 2>/dev/null
+		mkdir -p "$OVERLAY/workdir" "$OVERLAY/changes"
+		CPDEST="$OVERLAY/changes"
+	elif [ "$UNION_FS" = "aufs" ] ; then
+		modprobe aufs 2>/dev/null
+		CPDEST="$LCHANGES"
+	fi	
 	
 	echo_green_star
-	echolog "$INIT_UNION - $UNION_FS"
-	mkdir -p "$1"
-	mkdir -p "$2"
-	
-	if [ "$UNION_FS" = "overlay" ]; then
-		# OverlayFS
-		mkdir -p "$OVERLAY/lowerdir"
-		#mount -t overlay -o lowerdir="$OVERLAY",upperdir="$1" overlay "$2"
-	else
-		# AUFS
-		mount -t aufs -o nowarn_perm,xino="$MEMORY/.xino_union",trunc_xino,br="$1" aufs "$2"
-		#    mount -t aufs -o br="$1" aufs "$2"
-	fi
+	echolog "${PREPARING_BUNDLES}: $UNION_FS" $brown$LUNION$default
+		
+	add_bundle() {
+		BUNDLE=$1
+		BUN="$(basename "$BUNDLE")"
+		mkdir -p "$LBUNDLES/$BUN"
+		ismountpoint "$LBUNDLES/$BUN" && PRESERVE="true"
+		MID_BUN=${BUNDLE#*$LBASE}
+		[ -e "$LCACHE/$MID_BUN" -a "$(getpar $UIRD_COPY2CACHE 1 1)$(getpar $UIRD_COPY2CACHE 1 1)" ] && BUNDLE="$LCACHE/$MID_BUN"
+		[ -e "$LCP2RAM/$MID_BUN" ] && BUNDLE="$LCP2RAM/$MID_BUN"
+
+		FS="$(device_bestfs "$BUNDLE")"
+		OPTIONS="$(fs_options $FS mount)"
+
+		[ "$OPTIONS" = "bind" -a -f "$BUNDLE" ] && continue
+
+		if [ "$CP" -a "$(echo $BUNDLE | egrep -i "$CP")" ]; then
+			echolog "  $blue-->" $purple"$BUNDLE"$green" [CP mode] "$default
+			mount -o $OPTIONS $FS "$BUNDLE" "$LBUNDLES/$BUN"
+			cp -a "$LBUNDLES/$BUN"/. "${CPDEST}/" 2>/dev/null
+			return
+		elif [ "$RUN" -a "$(echo $BUNDLE | egrep -i "$RUN")" ]; then
+			echolog "  $blue-->" $purple"$BUNDLE"$yellow" [RUN mode] "$default
+			[ -x $BUNDLE ] && $BUNDLE
+			return
+		elif [ "$RW" -a "$(echo $BUNDLE | egrep -i "$RW")" ]; then
+			MOD=rw+wh
+		else
+			MOD=ro+wh
+		fi
+		echolog "  $blue-->" $purple"$BUNDLE"$default
+		mount -o $OPTIONS $FS "$BUNDLE" "$LBUNDLES/$BUN"
+		if [ "$UNION_FS" = "overlay" ]; then
+			LOWER_DIRS="$LBUNDLES/$BUN:$LOWER_DIRS"
+		elif [ "$UNION_FS" = "aufs" ]; then
+			LOWER_DIRS="$LBUNDLES/$BUN=$MOD:$LOWER_DIRS"
+		fi
+		LOWER_DIRS=$(echo $LOWER_DIRS |sed 's/\:[[:space:]]*$//') 
+	}
+
+	for BUNDLE in $(list_modules "$LBASE"); do
+		add_bundle $BUNDLE
+	done
+	echo_green_star
+	echolog "${INIT_UNION}: $UNION_FS"
+	if [ "$UNION_FS" = "overlay" ] ; then
+		log "mount -t overlay -o redirect_dir=on,metacopy=off,index=on,lowerdir=${LOWER_DIRS},upperdir=${OVERLAY}/changes,workdir=${OVERLAY}/workdir overlay $LUNION"
+		mount -t overlay -o redirect_dir=on,metacopy=off,index=on,lowerdir=${LOWER_DIRS},upperdir=${OVERLAY}/changes,workdir=${OVERLAY}/workdir overlay $LUNION
+		mount --bind ${OVERLAY}/changes $LCHANGES
+	elif [ "$UNION_FS" = "aufs" ] ; then
+		log "mount -t aufs -o nowarn_perm,xino=$MEMORY/.xino_union,trunc_xino,br=${LCHANGES}:${LOWER_DIRS} aufs $LUNION"
+		mount -t aufs -o nowarn_perm,xino=$MEMORY/.xino_union,trunc_xino,br=${LCHANGES}:${LOWER_DIRS} aufs $LUNION
+	fi	
 }
+
+
 
 # Make sure the part of a script after 'mutex_lock' call is atomic,
 # that means the 'locked' part of the script can never be execuetd
@@ -1915,7 +1969,7 @@ setup_changes() {
 		if [ "$UNION_FS" == 'aufs' ] ; then
 			mount_data_source $CHANGESVAL $2 $1 "$FPARS"
 		else
-			mkdir -p $OVERLAY/changes
+			mkdir -p $OVERLAY
 			mount_data_source $CHANGESVAL $OVERLAY  $1 "$FPARS"
 		fi
 	else
@@ -2142,99 +2196,6 @@ list_modules() {
 	done
 }
 
-# Mount squashfs filesystem bundles
-# and add them to union
-# $1 = directory where to search for bundles
-# $2 = directory where to mount bundles
-# $3 = directory where union is mounted
-# $4 = directory where copy2ram
-# $5 = directory where layer-cache
-union_append_bundles() {
-	debug_log "union_append_bundles" "$*"
-
-	local BUN MOD RW RO CP FS OPTIONS PRESERVE MID_BUN BUNDLE
-	LOWER_DIRS="$OVERLAY/lowerdir"
-
-	RW=$(echo $(getpar $UIRD_RW [[:digit:]]) | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/ /|/g')
-	RO=$(echo $(getpar $UIRD_RO [[:digit:]]) | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/ /|/g')
-	CP=$(echo $(getpar $UIRD_CP [[:digit:]]) | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/ /|/g')
-	RUN=$(echo $(getpar $UIRD_RUN [[:digit:]]) | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/ /|/g')
-	CPDEST="$3"
-	
-	echo_green_star
-	echolog "$UNION_APPEND_BUNDLES" $brown$1$default
-	
-	UNION_FS="$(getpar $UIRD_UNION 1 1 )"
-	[ -z $UNION_FS ] && UNION_FS="aufs"
-	
-	if [ "$UNION_FS" = "overlay" ] ; then
-		mkdir -p "$OVERLAY/workdir" "$OVERLAY/changes"
-		CPDEST="$OVERLAY/changes"
-	fi
-	
-	add_bundle() {
-		BUNDLE=$1
-		shift
-		BUN="$(basename "$BUNDLE")"
-		mkdir -p "$2/$BUN"
-
-		ismountpoint "$2/$BUN"
-		if [ $? -eq 0 ]; then
-			PRESERVE="true"
-		else
-			MID_BUN=${BUNDLE#*$1}
-			[ -e "$5/$MID_BUN" -a "$(getpar $UIRD_COPY2CACHE 1 1)$(getpar $UIRD_COPY2CACHE 1 1)" ] && BUNDLE="$5/$MID_BUN"
-			[ -e "$4/$MID_BUN" ] && BUNDLE="$4/$MID_BUN"
-
-			FS="$(device_bestfs "$BUNDLE")"
-			OPTIONS="$(fs_options $FS mount)"
-
-			[ "$OPTIONS" = "bind" -a -f "$BUNDLE" ] && continue
-
-			if [ "$CP" -a "$(echo $BUNDLE | egrep -i "$CP")" ]; then
-                                echolog "  $blue-->" $purple"$BUNDLE"$green" [CP mode] "$default
-                                mount -o $OPTIONS $FS "$BUNDLE" "$2/$BUN"
-				cp -a "$2/$BUN"/. "${CPDEST}/" 2>/dev/null
-				return
-			elif [ "$RUN" -a "$(echo $BUNDLE | egrep -i "$RUN")" ]; then
-                                echolog "  $blue-->" $purple"$BUNDLE"$yellow" [RUN mode] "$default
-                                [ -x $BUNDLE ] && $BUNDLE
-				return
-			elif [ "$RW" -a "$(echo $BUNDLE | egrep -i "$RW")" ]; then
-				MOD=rw+wh
-			else
-				MOD=ro+wh
-			fi
-                        echolog "  $blue-->" $purple"$BUNDLE"$default
-			mount -o $OPTIONS $FS "$BUNDLE" "$2/$BUN"
-			
-			if [ "$UNION_FS" = "overlay" ]; then
-				# OverlayFS
-				LOWER_DIRS="$2/$BUN:$LOWER_DIRS"
-			else
-				mount -o remount,add:1:"$2/$BUN"="$MOD" aufs "$3"
-			fi
-		fi
-	}
-
-	if getpar $UIRD_PARALLEL >/dev/null; then
-		for BUNDLE in $(list_modules "$1"); do	
-			(add_bundle $BUNDLE $@) &
-		done
-		wait
-	else
-		for BUNDLE in $(list_modules "$1"); do
-			add_bundle $BUNDLE $@
-		done
-	fi
-	
-	if [ "$UNION_FS" = "overlay" ]; then
-		# OverlayFS
-		log ""mount -t overlay -o lowerdir="$LOWER_DIRS",upperdir="$OVERLAY/changes",workdir="$OVERLAY/workdir" overlay "$3"
-		mount -t overlay -o redirect_dir=on,metacopy=off,index=on,lowerdir="$LOWER_DIRS",upperdir="$OVERLAY/changes",workdir="$OVERLAY/workdir" overlay "$3"
-		mount --bind $OVERLAY/changes $CHANGES
-	fi	
-}
 
 # Copy content of rootcopy directory to union
 # $1 = data directory
