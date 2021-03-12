@@ -572,8 +572,7 @@ init_zswap() {
 init_union() {
 	debug_log "init_union" "$*"
 	local BUN MOD RW RO CP FS OPTIONS PRESERVE MID_BUN BUNDLE
-	local LBASE='' LBUNDLES='' LUNION='' LCP2RAM='' LCACHE='' LCHANGES='' LOWER_DIRS=""
-	local BUN MOD RW RO CP FS OPTIONS PRESERVE MID_BUN BUNDLE
+	local LBASE='' LBUNDLES='' LUNION='' LCP2RAM='' LCACHE='' LCHANGES='' LOWER_DIRS=''
 	for par in  $@  ; do
 		local |grep -q "$(echo $par |cut  -f1 -d=)"   &&  eval $par 
 	done 
@@ -648,8 +647,6 @@ init_union() {
 		mount -t aufs -o nowarn_perm,xino=$MEMORY/.xino_union,trunc_xino,br=${LCHANGES}:${LOWER_DIRS} aufs $LUNION
 	fi	
 }
-
-
 
 # Make sure the part of a script after 'mutex_lock' call is atomic,
 # that means the 'locked' part of the script can never be execuetd

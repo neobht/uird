@@ -171,8 +171,8 @@ if [ "$(getpar $UIRD_MODE 1 1 )" == "clear" -o  "$(getpar $UIRD_MODE 1 1 )" == "
 	rm -rf ${CHANGES}/*
 	echo $(date) >${CHANGES}/cleared_by_uird
 fi
-
 debug_shell
+
 #setting up machines mode
 setup_machines $MACHINES $DATAMNT/machines $CHANGES $DATAMNT/changes
 debug_shell
