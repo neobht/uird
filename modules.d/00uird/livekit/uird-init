@@ -187,6 +187,12 @@ debug_shell
 getpar $UIRD_CACHE >/dev/null && copy_to_ram $LAYER_CACHE "$COPY2RAM"
 debug_shell
 
+#toxzm mode
+if [ "$(getpar $UIRD_MODE 1 1)" == "toxzm" ]  ; then
+	. /uird.toxzm_mode 
+	setup_toxzm_mode "$DATAMNT/xzmchanges" "$CHANGES" "$BUNDLES" "$UNION" "$COPY2RAM"
+fi
+
 # init aufs/overlay union
 init_union LCHANGES="$CHANGES" LUNION="$UNION" LBASE="$LAYER_BASE" LBUNDLES="$BUNDLES" LCP2RAM="$COPY2RAM" LCACHE="$LAYER_CACHE"
 debug_shell
@@ -194,11 +200,6 @@ debug_shell
 #mount binds
 mount_binds
 
-#toxzm mode
-if [ "$(getpar $UIRD_MODE 1 1)" == "toxzm" ]  ; then
-	. /uird.toxzm_mode 
-	setup_toxzm_mode "$DATAMNT/xzmchanges" "$CHANGES" "$BUNDLES" "$UNION" "$COPY2RAM"
-fi
 
 #setup homes by using aufs
 [ "$BREAKSTEP" = "set_homes" ] && shell_cmd "break"

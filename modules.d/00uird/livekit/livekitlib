@@ -636,6 +636,11 @@ init_union() {
 	for BUNDLE in $(list_modules "$LBASE"); do
 		add_bundle $BUNDLE
 	done
+	if [ -f /tmp/toxzm_modules ] ; then
+		for BUNDLE in $(cat /tmp/toxzm_modules) ; do
+			add_bundle $BUNDLE
+		done
+	fi	
 	echo_green_star
 	echolog "${INIT_UNION}: $UNION_FS"
 	if [ "$UNION_FS" = "overlay" ] ; then
