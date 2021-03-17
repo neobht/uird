@@ -135,7 +135,7 @@ rebuild() {
 	if [ -d ${SYSMNT}/ovl/changes ] ; then 
 		SRC=${SYSMNT}/ovl/changes 
 		SRCWORK=${SYSMNT}/ovl/workdir
-		UNION=overlay
+		UNIONFS=overlay
 	fi
 	for n in $(seq 0 $end) $notenumerated; do
 		eval REBUILD=\$REBUILD$n
@@ -189,10 +189,10 @@ rebuild() {
 				UNION=/tmp/UNION
 				mkdir -p $UNION ${UNION}-bundle
 				mount -o loop "$SAVETOMODULENAME" ${UNION}-bundle			
-				[ "$MODE" = "mount" -a "$UNION" = 'aufs' ] && mount -t aufs -o br:$SRC=rw:${UNION}-bundle=ro+wh aufs $UNION
-				[ "$MODE" = "mount" -a "$UNION" = 'overlay' ] && mount -t overlay -o redirect_dir=on,metacopy=off,index=on,lowerdir="${UNION}-bundle",upperdir="$SRC",workdir="$SRCWORK" overlay "$UNION"
-				[ "$MODE" = "mount+wh" -a "$UNION" = 'aufs' ] && mount -t aufs -o ro,shwh,br:$SRC=ro+wh:${UNION}-bundle=rr+wh aufs $UNION
-				if [ "$MODE" = "mount+wh" -a "$UNION" = 'overlay' ] ; then
+				[ "$MODE" = "mount" -a "$UNIONFS" = 'aufs' ] && mount -t aufs -o br:$SRC=rw:${UNION}-bundle=ro+wh aufs $UNION
+				[ "$MODE" = "mount" -a "$UNIONFS" = 'overlay' ] && mount -t overlay -o redirect_dir=on,metacopy=off,index=on,lowerdir="${UNION}-bundle",upperdir="$SRC",workdir="$SRCWORK" overlay "$UNION"
+				[ "$MODE" = "mount+wh" -a "$UNIONFS" = 'aufs' ] && mount -t aufs -o ro,shwh,br:$SRC=ro+wh:${UNION}-bundle=rr+wh aufs $UNION
+				if [ "$MODE" = "mount+wh" -a "$UNIONFS" = 'overlay' ] ; then
 					echo '"mount+wh" mode for overlayfs is not supported yet'
 					echo 'using "mount" mode'
 					mount -t overlay -o redirect_dir=on,metacopy=off,index=on,lowerdir="${UNION}-bundle",upperdir="$SRC",workdir="$SRCWORK" overlay "$UNION"
