@@ -136,11 +136,6 @@ setup_toxzm_mode() {
 					MODNAME="${5}/$(basename $MODNAME)"
 				fi
 				echo "$MODNAME" >> /tmp/toxzm_modules
-			elif [ "$MODE" = "none" ] ; then
-				grep -q "/$(basename "$MODNAME")" /proc/mounts && MODE="mount"
-				grep -q "lowerdir.*/$(basename "$MODNAME").*upperdir.*workdir" /proc/mounts && MODE="overlay"
-			elif [ "$MODE" = "none+wh" ] ; then
-				grep -q "/$(basename "$MODNAME")" /proc/mounts && MODE="mount+wh" 
 			else 
 				[ "$MODE" = "copy"  ] || echolog "$TOXZM_WRONG $MODE"
 			fi

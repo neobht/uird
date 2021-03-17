@@ -130,12 +130,14 @@ rebuild() {
 	end=$(( $(cat "$CHANGESMNT" |egrep '^[[:space:]]*XZM[[:digit:]]{,2}=' |wc -l) - 1 ))
 	# list of not enumerated sections
 	notenumerated=$(cat "$CHANGESMNT" |egrep '^[[:space:]]*XZM.*[a-zA-Z]+.*=' |sed -e 's/^[[:space:]]*XZM//' -e 's/=.*$//')
+	UNION=aufs
+	SRC=${SYSMNT}/changes
+	if [ -d ${SYSMNT}/ovl/changes ] ; then 
+		SRC=${SYSMNT}/ovl/changes 
+		SRCWORK=${SYSMNT}/ovl/workdir
+		UNION=overlay
+	fi
 	for n in $(seq 0 $end) $notenumerated; do
-		SRC=${SYSMNT}/changes
-		if [ -d ${SYSMNT}/ovl/changes ] ; then 
-			SRC=${SYSMNT}/ovl/changes 
-			SRCWORK=${SYSMNT}/ovl/workdir
-		fi
 		eval REBUILD=\$REBUILD$n
 		eval XZM=\$XZM$n
 		[ -z "$XZM" ] && XZM=$(get_MUID).xzm
@@ -164,9 +166,9 @@ rebuild() {
 	if [ "$REBUILD" == "yes"  ] ; then
 		SAVETOMODULENAME="${SAVETOMODULEDIR}/$XZM"
 		[ -z "$SQFSOPT" ] && SQFSOPT="$DEFSQFSOPT"
-		#cut aufs arefacts
+		#cut aufs artefacts
 		mkdir -p /tmp/$n
-		echo '#cut aufs arefacts#' > /tmp/$n/excludedfiles
+		echo '#cut aufs artefacts#' > /tmp/$n/excludedfiles
 		echo "/.wh..*" >> /tmp/$n/excludedfiles
 		#cut garbage
 		echo '#cut garbage#'  >> /tmp/$n/excludedfiles
@@ -184,18 +186,23 @@ rebuild() {
 		echolog "Old module exists..."
 			if [ "$MODE" = "mount+wh" -o "$MODE" = "mount" -o "$MODE" = "overlay" ] ; then
 				echolog "MODE=${MODE}, we have to concatenate $SAVETOMODULENAME and $SRC"
-				AUFS=/tmp/aufs
-				mkdir -p $AUFS ${AUFS}-bundle
-				mount -o loop "$SAVETOMODULENAME" ${AUFS}-bundle			
-				[ "$MODE" = "mount" ] && mount -t aufs -o br:$SRC=rw:${AUFS}-bundle=ro+wh aufs $AUFS
-				[ "$MODE" = "overlay" ] && mount -t overlay -o redirect_dir=on,metacopy=off,index=on,lowerdir="${AUFS}-bundle",upperdir="$SRC",workdir="$SRCWORK" overlay "$AUFS"
-				[ "$MODE" = "mount+wh" ] && mount -t aufs -o ro,shwh,br:$SRC=ro+wh:${AUFS}-bundle=rr+wh aufs $AUFS
-				SRC=$AUFS
+				UNION=/tmp/UNION
+				mkdir -p $UNION ${UNION}-bundle
+				mount -o loop "$SAVETOMODULENAME" ${UNION}-bundle			
+				[ "$MODE" = "mount" -a "$UNION" = 'aufs' ] && mount -t aufs -o br:$SRC=rw:${UNION}-bundle=ro+wh aufs $UNION
+				[ "$MODE" = "mount" -a "$UNION" = 'overlay' ] && mount -t overlay -o redirect_dir=on,metacopy=off,index=on,lowerdir="${UNION}-bundle",upperdir="$SRC",workdir="$SRCWORK" overlay "$UNION"
+				[ "$MODE" = "mount+wh" -a "$UNION" = 'aufs' ] && mount -t aufs -o ro,shwh,br:$SRC=ro+wh:${UNION}-bundle=rr+wh aufs $UNION
+				if [ "$MODE" = "mount+wh" -a "$UNION" = 'overlay' ] ; then
+					echo '"mount+wh" mode for overlayfs is not supported yet'
+					echo 'using "mount" mode'
+					mount -t overlay -o redirect_dir=on,metacopy=off,index=on,lowerdir="${UNION}-bundle",upperdir="$SRC",workdir="$SRCWORK" overlay "$UNION"
+				fi
+				SRC=$UNION
 			fi
 			#cut filtered files and .wh.* for mount+wh mode
 			echo '#cut filtered files and .wh.* for mount+wh mode#' >> /tmp/$n/excludedfiles
 			if [ "$MODE" == "mount+wh" ] ; then
-				wh_exclude $SRC ${AUFS}-bundle 
+				wh_exclude $SRC ${UNION}-bundle 
 				cat /tmp/wh_exclude >> /tmp/$n/excludedfiles
 				mv -f /tmp/wh_exclude /tmp/$n/
 			fi
@@ -243,10 +250,10 @@ rebuild() {
 			echo "          Changes dir is $SRC, you may try to save it manualy"
 			shell_
 		fi
-			umount $AUFS  2> /dev/null 
-			rmdir $AUFS 2> /dev/null
-			umount ${AUFS}-bundle 2> /dev/null
-			rmdir ${AUFS}-bundle 2> /dev/null
+			umount $UNION  2> /dev/null 
+			rmdir $UNION 2> /dev/null
+			umount ${UNION}-bundle 2> /dev/null
+			rmdir ${UNION}-bundle 2> /dev/null
 	fi
 	done
 }
@@ -268,22 +275,22 @@ fi
 SRC=/oldroot${SYSMNT}/changes
  
 #umount bundles
-IMAGES=/oldroot${SYSMNT}/bundles 
-egrep "$IMAGES" /proc/mounts | awk '{print $2}' | while read a ; do
-    mount -t aufs -o remount,del:"$a" aufs /oldroot 2> /dev/null
-	if umount $a  ; then
-		echolog "[  ${green}OK${default}  ] Umount: $a"
-	else
-		echolog "[${red}FALSE!${default}] Umount: $a"	
-	fi
-done
+#IMAGES=/oldroot${SYSMNT}/bundles 
+#egrep "$IMAGES" /proc/mounts | awk '{print $2}' | while read a ; do
+#    mount -t aufs -o remount,del:"$a" aufs /oldroot 2> /dev/null
+#	if umount $a  ; then
+#		echolog "[  ${green}OK${default}  ] Umount: $a"
+#	else
+#		echolog "[${red}FALSE!${default}] Umount: $a"	
+#	fi
+#done
 mkdir -p ${SYSMNT}
 mount -o move /oldroot${SYSMNT}  ${SYSMNT} 
 [ "$ACTION" = "reboot" -a "$haltonly" = "yes" ] && unset CHANGESMNT  
 if umount /oldroot  ; then
-	echolog "[  ${green}OK${default}  ] Umount: ROOT AUFS"
+	echolog "[  ${green}OK${default}  ] Umount: ROOTFS"
 else
-	echolog "[${red}FALSE!${default}] Umount: ROOT AUFS"	
+	echolog "[${red}FALSE!${default}] Umount: ROOTFS"	
 fi
 echolog "$(umount $(mount | egrep -v "tmpfs|zram|proc|sysfs" | awk  '{print $3}' | sort -r) 2>&1) "
 n=0
