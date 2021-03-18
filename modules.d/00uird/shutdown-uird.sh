@@ -189,22 +189,26 @@ rebuild() {
 				UNION=/tmp/UNION
 				mkdir -p $UNION ${UNION}-bundle
 				mount -o loop "$SAVETOMODULENAME" ${UNION}-bundle			
-				[ "$MODE" = "mount" -a "$UNIONFS" = 'aufs' ] && mount -t aufs -o br:$SRC=rw:${UNION}-bundle=ro+wh aufs $UNION
-				[ "$MODE" = "mount" -a "$UNIONFS" = 'overlay' ] && mount -t overlay -o redirect_dir=on,metacopy=off,index=on,lowerdir="${UNION}-bundle",upperdir="$SRC",workdir="$SRCWORK" overlay "$UNION"
-				[ "$MODE" = "mount+wh" -a "$UNIONFS" = 'aufs' ] && mount -t aufs -o ro,shwh,br:$SRC=ro+wh:${UNION}-bundle=rr+wh aufs $UNION
-				if [ "$MODE" = "mount+wh" -a "$UNIONFS" = 'overlay' ] ; then
-					echo '"mount+wh" mode for overlayfs is not supported yet'
-					echo 'using "mount" mode'
+				if [ "$MODE" = "mount" -a "$UNIONFS" = 'aufs' ] ; then
+					mount -t aufs -o br:$SRC=rw:${UNION}-bundle=ro+wh aufs $UNION
+					SRC="$UNION"
+				elif [ "$MODE" = "mount" -a "$UNIONFS" = 'overlay' ] ; then 
 					mount -t overlay -o redirect_dir=on,metacopy=off,index=on,lowerdir="${UNION}-bundle",upperdir="$SRC",workdir="$SRCWORK" overlay "$UNION"
+					SRC="$UNION"
+				elif [ "$MODE" = "mount+wh" -a "$UNIONFS" = 'aufs' ] ; then
+					mount -t aufs -o ro,shwh,br:$SRC=ro+wh:${UNION}-bundle=rr+wh aufs $UNION
+					SRC="$UNION"
+					echo '#cut filtered files and .wh.* for mount+wh mode#' >> /tmp/$n/excludedfiles
+					wh_exclude $SRC ${UNION}-bundle 
+					cat /tmp/wh_exclude >> /tmp/$n/excludedfiles
+					mv -f /tmp/wh_exclude /tmp/$n/
+				elif [ "$MODE" = "mount+wh" -a "$UNIONFS" = 'overlay' ] ; then
+					echolog 'Merging old module and session "changes", it may take a long time'
+					which rsync >/dev/null 2>&1 && \
+					rsync -aq --ignore-existing ${UNION}-bundle/* ${SRC}/ || \
+					cp -Rn ${UNION}-bundle/* ${SRC}/
 				fi
-				SRC=$UNION
-			fi
-			#cut filtered files and .wh.* for mount+wh mode
-			echo '#cut filtered files and .wh.* for mount+wh mode#' >> /tmp/$n/excludedfiles
-			if [ "$MODE" == "mount+wh" ] ; then
-				wh_exclude $SRC ${UNION}-bundle 
-				cat /tmp/wh_exclude >> /tmp/$n/excludedfiles
-				mv -f /tmp/wh_exclude /tmp/$n/
+				
 			fi
 		fi
 		if [ -n "$ADDFILTER" -o -n "$DROPFILTER" ] ;then
@@ -259,7 +263,7 @@ rebuild() {
 }
 
 mkdir -p /tmp
-echo "UIRD shutdown started!" > /tmp/uird.shutdown.log
+echolog "UIRD shutdown started!"
 date >> /tmp/uird.shutdown.log
 
 [ -f /oldroot/etc/initvars ] && . /oldroot/etc/initvars || BALLOON_COLOR="$red"
@@ -270,20 +274,10 @@ if ! [ -d "/oldroot$SYSMNT" ] ; then
 	unset CHANGESMNT
 	sleep 5
 fi 
-[ "$silent" = "yes" ] && DEVNULL=">/dev/null" 
+[ "$silent" = "yes" ] && DEVNULL=">/dev/null 2>&1" 
  
 SRC=/oldroot${SYSMNT}/changes
  
-#umount bundles
-#IMAGES=/oldroot${SYSMNT}/bundles 
-#egrep "$IMAGES" /proc/mounts | awk '{print $2}' | while read a ; do
-#    mount -t aufs -o remount,del:"$a" aufs /oldroot 2> /dev/null
-#	if umount $a  ; then
-#		echolog "[  ${green}OK${default}  ] Umount: $a"
-#	else
-#		echolog "[${red}FALSE!${default}] Umount: $a"	
-#	fi
-#done
 mkdir -p ${SYSMNT}
 mount -o move /oldroot${SYSMNT}  ${SYSMNT} 
 [ "$ACTION" = "reboot" -a "$haltonly" = "yes" ] && unset CHANGESMNT  

@@ -6,7 +6,7 @@
 # $4 = union dir
 # $5 = toram dir
 setup_toxzm_mode() {
-	local OPTIONS FS BUNDLE DATA_FROM DATA_FROM_DIR n end
+	local OPTIONS FS BUNDLE DATA_FROM DATA_FROM_DIR n end a TORAMLIST
 	local MODE='' REBUILD='' ADDFILTER='' DROPFILTER=''  SQFSOPT='' MAXCOPYSIZE='' EXT=''
 	debug_log "setup toxzm_mode" "$*"
 	
@@ -129,9 +129,7 @@ setup_toxzm_mode() {
 			fi
 			if [ "$MODE" = "mount" -o "$MODE" = "mount+wh" ] ; then
 				if [ "$(getpar toram)$(getpar $UIRD_COPY2RAM)" ] ; then
-					mkdir -p "$5"
-					cp "$MODNAME" "${5}/"
-					echolog $yellow"  toram $blue<- $purple$(basename "$MODNAME")"$default
+					TORAMLIST="$TORAMLIST $MODNAME"
 					MODNAME="${5}/$(basename $MODNAME)"
 				fi
 				echo "${MODNAME}#$MODE" >> /tmp/toxzm_modules
@@ -140,6 +138,15 @@ setup_toxzm_mode() {
 			fi
 			echo MODE$n=$MODE >> /tmp/toxzm.state
 		done
+		if [ "$TORAMLIST" ] ; then
+			mkdir -p "$5"
+			for a in $TORAMLIST ; do
+				echolog $yellow"  toram $blue<- $purple$(basename "$a")"$default
+				( cp "$a" "${5}/" ) &
+				PIDSS="$PIDSS /proc/$!"
+			done
+			Copy_timer "$5" $PIDSS
+		fi
 	else 	
 		add_section 0 $(basename $CHANGESMNT |sed "s/.cfg/.$EXT/")
 		echo_blue_star
