@@ -178,13 +178,13 @@ setup_machines $MACHINES $DATAMNT/machines $CHANGES $DATAMNT/changes
 debug_shell
 
 # sync data from BASE layer to CACHE layer
-copy_to_cache $LAYER_BASE "$LAYER_CACHE"
+copy_to_target $LAYER_BASE "$LAYER_CACHE" tocache $UIRD_COPY2CACHE
 debug_shell
 
 # sync data from BASE,CACHE layers to RAM
-copy_to_ram $LAYER_BASE "$COPY2RAM"
+copy_to_target $LAYER_BASE "$COPY2RAM" toram $UIRD_COPY2RAM
 debug_shell
-getpar $UIRD_CACHE >/dev/null && copy_to_ram $LAYER_CACHE "$COPY2RAM"
+getpar $UIRD_CACHE >/dev/null && copy_to_target $LAYER_CACHE "$COPY2RAM" toram $UIRD_COPY2RAM
 debug_shell
 
 #toxzm mode

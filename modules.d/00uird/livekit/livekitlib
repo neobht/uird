@@ -596,23 +596,29 @@ init_union() {
 	echolog "${PREPARING_BUNDLES}: $UNION_FS" $brown$LUNION$default
 		
 	add_bundle() {
-		BUNDLE=$1
+		local BUNDLE MODE BUN MID_BUN
+		BUNDLE="$1"
 		BUN="$(basename "$BUNDLE")"
 		mkdir -p "$LBUNDLES/$BUN"
 		ismountpoint "$LBUNDLES/$BUN" && PRESERVE="true"
-		MID_BUN=${BUNDLE#*$LBASE}
-		[ -e "$LCACHE/$MID_BUN" -a "$(getpar $UIRD_COPY2CACHE 1 1)$(getpar $UIRD_COPY2CACHE 1 1)" ] && BUNDLE="$LCACHE/$MID_BUN"
-		[ -e "$LCP2RAM/$MID_BUN" ] && BUNDLE="$LCP2RAM/$MID_BUN"
-
+		if [ "$2" ] ; then 
+			MODE="$2"
+		else
+			MID_BUN=${BUNDLE#*$LBASE}
+			[ -e "$LCACHE/$MID_BUN" -a "$(getpar $UIRD_COPY2CACHE 1 1)$(getpar $UIRD_COPY2CACHE 1 1)" ] && BUNDLE="$LCACHE/$MID_BUN"
+			[ -e "$LCP2RAM/$MID_BUN" ] && BUNDLE="$LCP2RAM/$MID_BUN"
+		fi
+		
 		FS="$(device_bestfs "$BUNDLE")"
 		OPTIONS="$(fs_options $FS mount)"
 
 		[ "$OPTIONS" = "bind" -a -f "$BUNDLE" ] && continue
 
-		if [ "$CP" -a "$(echo $BUNDLE | egrep -i "$CP")" ]; then
+		if [ "$CP" -a "$(echo $BUNDLE | egrep -i "$CP")" -o "$MODE" == "copy" ]; then
 			echolog "  $blue-->" $purple"$BUNDLE"$green" [CP mode] "$default
 			mount -o $OPTIONS $FS "$BUNDLE" "$LBUNDLES/$BUN"
 			cp -a "$LBUNDLES/$BUN"/. "${CPDEST}/" 2>/dev/null
+			umount "$LBUNDLES/$BUN" && rmdir "$LBUNDLES/$BUN" # it need to freemedia 
 			return
 		elif [ "$RUN" -a "$(echo $BUNDLE | egrep -i "$RUN")" ]; then
 			echolog "  $blue-->" $purple"$BUNDLE"$yellow" [RUN mode] "$default
@@ -637,12 +643,13 @@ init_union() {
 		add_bundle $BUNDLE
 	done
 	if [ -f /tmp/toxzm_modules ] ; then
-		for BUNDLE in $(cat /tmp/toxzm_modules) ; do
-			add_bundle $BUNDLE
+		for BUNDLE_MODE in $(cat /tmp/toxzm_modules)  ; do
+			add_bundle $(echo "$BUNDLE_MODE" |cut -f1 -d '#') $(echo "$BUNDLE_MODE" |cut -f2 -d '#')
 		done
 	fi	
 	echo_green_star
 	echolog "${INIT_UNION}: $UNION_FS"
+	log "lowerdir - $LOWER_DIRS"
 	if [ "$UNION_FS" = "overlay" ] ; then
 		log "mount -t overlay -o redirect_dir=on,metacopy=off,index=on,lowerdir=${LOWER_DIRS},upperdir=${OVERLAY}/changes,workdir=${OVERLAY}/workdir overlay $LUNION"
 		mount -t overlay -o redirect_dir=on,metacopy=off,index=on,lowerdir=${LOWER_DIRS},upperdir=${OVERLAY}/changes,workdir=${OVERLAY}/workdir overlay $LUNION
@@ -2264,17 +2271,17 @@ aria2_preload() {
 # $1 = data directory
 # $2 = target directory
 # $3 = target name
-# $4 = cmdline param
+# $4 = filter
 
 copy_to() {
 	debug_log "copy_to" "$*"
 	local C2PARAM MODNAME BUNDLE
+	C2PARAM="$4"
+	fullist=$(list_modules "$1")
 	c2() {
 		log "c2 $@"
-		C2PARAM=$4
-		MODULE=$5
+		MODULE=$3
 		MODNAME=$(echo $MODULE | cut -b ${#1}- | cut -b 2-)
-		[ "$C2PARAM" ] && ! [ "$(echo $MODNAME | egrep -i $C2PARAM)" ] && return
 		TARGET=$(dirname "$MODULE" | cut -b ${#1}- | cut -b 2-)
 		mkdir -p "$2/$TARGET"
 		if [ -f "$BIN_RSYNC" ]; then
@@ -2283,55 +2290,39 @@ copy_to() {
 			cp -fr $MODULE $2/${TARGET}
 		fi
 	}
-	C2PARAM="$(echo "$4" | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/,|;/|/g')"
-	fullist=$(list_modules "$1")
-	for aaa in $fullist; do
-		[ "$C2PARAM" ] && ! [ "$(echo $aaa | egrep -i "$C2PARAM")" ] && continue
-		echolog $yellow"  $3 $blue<- $purple$(basename "$aaa")"$green
-	done
-
-	for SOURCE in $(find "$1" -maxdepth 1 -mindepth 1); do
-		LAYER_LIST=$(echo $fullist | grep "$SOURCE")
-		(for BUNDLE in $LAYER_LIST; do
-			c2 "$1" "$2" "$3" "$C2PARAM" "$BUNDLE"
-		done) &
+	for BUNDLE in $fullist; do
+		[ "$C2PARAM" ] && ! [ "$(echo $BUNDLE | egrep -i "$C2PARAM")" ] && continue
+		echolog $yellow"  $3 $blue<- $purple$(basename "$BUNDLE")"$green
+		( c2 "$1" "$2" "$BUNDLE" ) &
 		PIDSS="$PIDSS /proc/$!"
 	done
 	Copy_timer $2 $PIDSS
 	#wait
 }
 
-# Copy modules to RAM directory
+
+# Copy modules to target directory
 # $1 = data directory
-# $2 = target directory in RAM
-#
-copy_to_ram() {
-	debug_log "copy_to_ram" "$*"
-	if [ "$(getpar toram)$(getpar $UIRD_COPY2RAM)" ]; then
-		[ "$2" = "" ] && return
+# $2 = target directory 
+# $3 = short name (it shows in boot log, and using as alias to $4 in cmdline)
+# $4 = cmdline par
+copy_to_target() {
+	debug_log "copy_to_target" "$*"
+	if [ "$(getpar $3)$(getpar $4)" ]; then
 		echo_green_star
-		echolog "$COPY_TO_RAM"
-		log "$(getpar $UIRD_COPY2RAM)$(getpar toram)"
-		TORAM="$(getpar $UIRD_COPY2RAM 1 1)$(getpar toram 1 1)"
-		[ "$(getpar $UIRD_COPY2RAM)" == "enabled" -o "$TORAM" == '*' ] && TORAM='.'
-		log "copy_to $1 $2 RAM "$TORAM""
-		copy_to $1 $2 RAM "$TORAM"
+		echolog "$COPY_TO $3"
+		log "$(getpar $3)$(getpar $4)"
+		FILTER="$(getpar $3 1 1)$(getpar $4 1 1)"
+		if [ "$(getpar $4)" == "enabled" -o "$FILTER" == '*' ] ; then
+			FILTER='.'
+		else
+			FILTER=$(echo $(getpar $4 [[:digit:]]) | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/ /|/g')
+		fi
+		log "copy_to $1 $2 $3 "$FILTER""
+		copy_to $1 $2 $3 "$FILTER"
 	fi
 }
 
-# Copy modules to CACHE directory
-# $1 = data directory
-# $2 = target directory in CACHE
-#
-copy_to_cache() {
-	debug_log "copy_to_cache" "$*"
-	if getpar $UIRD_COPY2CACHE >/dev/null ; then
-		[ "$2" = "" ] && return
-		echo_green_star
-		echolog "$COPY_TO_CACHE"
-		copy_to $1 $2 CACHE "$(getpar $UIRD_COPY2CACHE 1 1)"
-	fi
-}
 
 # Create empty fstab properly
 # $1 = root directory

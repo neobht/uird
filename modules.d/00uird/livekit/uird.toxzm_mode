@@ -98,8 +98,7 @@ setup_toxzm_mode() {
 			[ -z $MAXCOPYSIZE ] && MAXCOPYSIZE=$(df -m $MEMORY |tail -n1 |awk '{print $4}')
 			if [ "$MODE" = "copy" ] ; then
 				if [ $(du -m $MODNAME |cut -f1) -lt "$MAXCOPYSIZE" ] ; then
-					unsquashfs -f -d "$2" "$MODNAME" # >/dev/null 2>&1
-					[ $? -eq 0 ] && echolog "  $blue-->" $purple"$MODNAME"$green" [$MODE mode] "$default
+					echo "${MODNAME}#$MODE" >> /tmp/toxzm_modules
 				else
 					MODE=mount
 					if echo $XZM |grep -q '_20' ; then
@@ -132,10 +131,10 @@ setup_toxzm_mode() {
 				if [ "$(getpar toram)$(getpar $UIRD_COPY2RAM)" ] ; then
 					mkdir -p "$5"
 					cp "$MODNAME" "${5}/"
-					echolog $yellow"  RAM $blue<- $purple$(basename "$MODNAME")"$default
+					echolog $yellow"  toram $blue<- $purple$(basename "$MODNAME")"$default
 					MODNAME="${5}/$(basename $MODNAME)"
 				fi
-				echo "$MODNAME" >> /tmp/toxzm_modules
+				echo "${MODNAME}#$MODE" >> /tmp/toxzm_modules
 			else 
 				[ "$MODE" = "copy"  ] || echolog "$TOXZM_WRONG $MODE"
 			fi
