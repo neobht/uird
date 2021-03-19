@@ -130,14 +130,15 @@ rebuild() {
 	end=$(( $(cat "$CHANGESMNT" |egrep '^[[:space:]]*XZM[[:digit:]]{,2}=' |wc -l) - 1 ))
 	# list of not enumerated sections
 	notenumerated=$(cat "$CHANGESMNT" |egrep '^[[:space:]]*XZM.*[a-zA-Z]+.*=' |sed -e 's/^[[:space:]]*XZM//' -e 's/=.*$//')
-	UNION=aufs
-	SRC=${SYSMNT}/changes
-	if [ -d ${SYSMNT}/ovl/changes ] ; then 
-		SRC=${SYSMNT}/ovl/changes 
-		SRCWORK=${SYSMNT}/ovl/workdir
+	UNIONFS=aufs
+	DEFSRC=${SYSMNT}/changes
+	if [ -d ${SYSMNT}/ovl/changes ] ; then
 		UNIONFS=overlay
+		SRCWORK=${SYSMNT}/ovl/workdir
+		DEFSRC=${SYSMNT}/ovl/changes
 	fi
 	for n in $(seq 0 $end) $notenumerated; do
+		SRC=${DEFSRC}
 		eval REBUILD=\$REBUILD$n
 		eval XZM=\$XZM$n
 		[ -z "$XZM" ] && XZM=$(get_MUID).xzm
@@ -185,7 +186,7 @@ rebuild() {
 		if [ -f "$SAVETOMODULENAME" ]; then
 		echolog "Old module exists..."
 			if [ "$MODE" = "mount+wh" -o "$MODE" = "mount" -o "$MODE" = "overlay" ] ; then
-				echolog "MODE=${MODE}, we have to concatenate $SAVETOMODULENAME and $SRC"
+				echolog 'Merging old module and session "changes", it may take a long time'
 				UNION=/tmp/UNION
 				mkdir -p $UNION ${UNION}-bundle
 				mount -o loop "$SAVETOMODULENAME" ${UNION}-bundle			
@@ -203,7 +204,6 @@ rebuild() {
 					cat /tmp/wh_exclude >> /tmp/$n/excludedfiles
 					mv -f /tmp/wh_exclude /tmp/$n/
 				elif [ "$MODE" = "mount+wh" -a "$UNIONFS" = 'overlay' ] ; then
-					echolog 'Merging old module and session "changes", it may take a long time'
 					which rsync >/dev/null 2>&1 && \
 					rsync -aq --ignore-existing ${UNION}-bundle/* ${SRC}/ || \
 					cp -Rn ${UNION}-bundle/* ${SRC}/
