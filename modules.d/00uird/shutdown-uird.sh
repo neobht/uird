@@ -194,7 +194,8 @@ rebuild() {
 					mount -t aufs -o br:$SRC=rw:${UNION}-bundle=ro+wh aufs $UNION
 					SRC="$UNION"
 				elif [ "$MODE" = "mount" -a "$UNIONFS" = 'overlay' ] ; then 
-					mount -t overlay -o redirect_dir=on,metacopy=off,index=on,lowerdir="${UNION}-bundle",upperdir="$SRC",workdir="$SRCWORK" overlay "$UNION"
+					#mount -t overlay -o redirect_dir=on,metacopy=off,index=on,lowerdir="${UNION}-bundle",upperdir="$SRC",workdir="$SRCWORK" overlay "$UNION"
+					mount -t overlay -o redirect_dir=on,metacopy=off,index=off,lowerdir="$SRC":"${UNION}-bundle" overlay "$UNION"
 					SRC="$UNION"
 				elif [ "$MODE" = "mount+wh" -a "$UNIONFS" = 'aufs' ] ; then
 					mount -t aufs -o ro,shwh,br:$SRC=ro+wh:${UNION}-bundle=rr+wh aufs $UNION

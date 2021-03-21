@@ -600,7 +600,10 @@ init_union() {
 		BUNDLE="$1"
 		BUN="$(basename "$BUNDLE")"
 		mkdir -p "$LBUNDLES/$BUN"
-		ismountpoint "$LBUNDLES/$BUN" && PRESERVE="true"
+		if ismountpoint "$LBUNDLES/$BUN" ; then 
+			echolog "  $blue-->" $purple"$BUNDLE"$red" - has alredy been procesed! "$default
+			return
+		fi
 		if [ "$2" ] ; then 
 			MODE="$2"
 		else
