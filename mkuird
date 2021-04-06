@@ -152,7 +152,7 @@ if ! [ -x ./dracut/dracut.sh ] ; then
     [ "$FORCE" ] && ./system_dracut.sh
     if ! [ -x ./dracut/dracut.sh ] ; then
         echo "Warninng! ${WORKDIR}/dracut directory - not found"
-        echo "Firs time you need to run:" 
+        echo "Firs time you must run:" 
         echo "	${WORKDIR}/make_dracut.sh	- to use git darcut version" 
         echo "or"
         echo "	${WORKDIR}/system_dracut.sh	- to use system version"
