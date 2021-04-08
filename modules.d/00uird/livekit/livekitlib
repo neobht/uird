@@ -1676,7 +1676,7 @@ init_nbd() {
 # $4 = file with ext parameters
 mount_data_source() {
 	local SOURCE DST_DIR MNT_DIR SGN_CHECK MNT_OPTS par iPARS FPARS SRC FORCE
-	local CHECKSPACE='no'
+	local CHECKSPACE='0'
 	debug_log "mount_data_source" "$*"
 	MNT_OPTS='' ; FORCE='' 
 	SOURCE=$1
@@ -1728,7 +1728,7 @@ mount_data_source() {
 			fi
 		fi
 ####################################################################	
-		if [ "$CHECKSPACE" != 'no' -a "$(df $DST_DIR -m |tail -n1 |awk '{print $4}')" -lt "$CHECKSPACE" ] ; then
+		if [ "$CHECKSPACE" -ne '0' -a "$(df $DST_DIR -m |tail -n1 |awk '{print $4}')" -lt "$CHECKSPACE" ] ; then
 			echolog $red"$FREE_SPACE_LESS_THEN_CHECK"$default
 			echo -ne $yellow"$FREE_SPACE_LESS_THEN_CHECK_ASK"$default"  "
 			ANS=$(ask_answer  "${FREE_SPACE_LESS_THEN_CHECK}, $FREE_SPACE_LESS_THEN_CHECK_ASK")
