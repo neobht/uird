@@ -205,11 +205,11 @@ rebuild() {
 					cat /tmp/wh_exclude >> /tmp/$n/excludedfiles
 					mv -f /tmp/wh_exclude /tmp/$n/
 				elif [ "$MODE" = "mount+wh" -a "$UNIONFS" = 'overlay' ] ; then
+					mount -o remount,rw ${SYSMNT} # need if uird.rootfs=zram
 					which rsync >/dev/null 2>&1 && \
 					rsync -aq --ignore-existing ${UNION}-bundle/* ${SRC}/ || \
 					cp -Rn ${UNION}-bundle/* ${SRC}/
 				fi
-				
 			fi
 		fi
 		if [ -n "$ADDFILTER" -o -n "$DROPFILTER" ] ;then
@@ -281,6 +281,7 @@ SRC=/oldroot${SYSMNT}/changes
  
 mkdir -p ${SYSMNT}
 mount -o move /oldroot${SYSMNT}  ${SYSMNT} 
+
 [ "$ACTION" = "reboot" -a "$haltonly" = "yes" ] && unset CHANGESMNT  
 if umount /oldroot  ; then
 	echolog "[  ${green}OK${default}  ] Umount: ROOTFS"
