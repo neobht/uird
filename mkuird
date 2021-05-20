@@ -11,6 +11,12 @@ CONFIG=${WORKDIR}mkuird.cfg
 KERNEL=$(uname -r)
 date > ./not_found.log
 
+getHash() {
+python3 -c "import random,string,crypt;
+randomsalt = ''.join(random.sample(string.ascii_letters,8));
+print(crypt.crypt('"$1"', '\$6\${}\$'.format(randomsalt)))"
+}
+
 #find config for mkuird
 for arg in $@
 do
@@ -34,29 +40,26 @@ else
 fi
 
 #find another parameters
-for arg in $@
-do
-  case "${arg}" in
+until [ -z $1 ] ; do
+  case "$1" in
     "-s" | "--show" ) SHOW=yes;;
     "-c" | "--config" ) true;;
-    "-o" | "--outdir" ) outdir=yes;;
-    "-e" | "--exclude" ) exclude=yes;;
-    "-n" | "--name" ) name=yes;;
-    "-k" | "--kernel" ) kernel=yes;;
-    "-m" | "--kmodpath" ) kmodpath=yes;;
-    "-l" | "--i18n" ) ADDLOCALES="-i i18n /";;
+    "-o" | "--outdir" ) shift; OUTD="$1";;
+    "-e" | "--exclude" ) shift; EXCLUDE="$1";;
+    "-n" | "--name" ) shift; NAME="$1";;
+    "-k" | "--kernel" ) shift ; KERNEL="$1";;
+    "-m" | "--kmodpath" ) shift; KMODPATH="$1";;
     "-f" | "--force" ) FORCE="yes";;
     "--kmod" ) BUILD=kmod;;
     "--addon" ) BUILD=addon;;
-    "-"*[A-Za-z]*) echo "$(basename "$0"): invalid option -- '$(echo ${arg} | tr -d '-')'" >&2; exit 1;;
-    *) if [ "${exclude}" == "yes" ]; then EXCLUDE="${arg}"
-		elif [ "${outdir}" == "yes" ]; then OUTD="${arg}"
-		elif [ "${name}" == "yes" ]; then NAME="${arg}"
-		elif [ "${kernel}" == "yes" ]; then KERNEL="${arg}"
-		elif [ "${kmodpath}" == "yes" ]; then KMODPATH="${arg}"
-		else CFG="${arg}" ; fi
-        outdir="no" ; exclude="no"; name="no" ; kernel="no" ; kmodpath="no" ;;
+    "-l" | "--i18n" ) ADDLOCALES="-i i18n /";;
+    "--passwd" ) shift 
+                 SECURE="-i secure /" ; 
+                 PASSWD="$1";;
+    "-"*[A-Za-z]*) echo "$(basename "$0"): invalid option -- '$(echo $1 | tr -d '-')'" >&2; exit 1;;
+    *)  CFG="$1";;
   esac
+  shift
 done
 
 [ -d  $(realpath ${KMODPATH}/$KERNEL 2>/dev/null) ] && ln -s $(realpath ${KMODPATH}/$KERNEL) /lib/modules/$KERNEL
@@ -74,6 +77,14 @@ if [ -f /lib/modules/$KERNEL/build/.config ] ;then
     KERNELCFG="/lib/modules/$KERNEL/build/.config"
 elif [ -f "/boot/config-$KERNEL" ] ; then
     KERNELCFG="/boot/config-$KERNEL"
+fi
+
+if [ $PASSWD ] ; then
+	hash=$(getHash "$PASSWD")
+	[ -z "$hash" ] && exit ${LINENO}
+	sed -i /^root:/d ${WORKDIR}/secure/etc/shadow
+	echo "root:$hash:16704:0:99999:7:::" >> ${WORKDIR}/secure/etc/shadow
+	sed -i s/root:[!]*:/root:x:/ ${WORKDIR}/secure/etc/passwd
 fi
 
 if [ $KERNELCFG ] ; then
@@ -192,6 +203,7 @@ else
 	echo "-i configs /"		>> ./dracut_run
 	echo "-i keys /"		>> ./dracut_run
 	echo "$ADDLOCALES"		>> ./dracut_run
+	echo "$SECURE"          >> ./dracut_run
 	echo "--kernel-cmdline \"uird.basecfg=/uird_configs/$CFG\""	>> ./dracut_run
 	echo "-v -M $uirdfile $KERNEL"	>> ./dracut_run
 	sed -i 's/"\ */"/g' ./dracut_run

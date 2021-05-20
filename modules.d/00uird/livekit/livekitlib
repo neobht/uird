@@ -1,5 +1,4 @@
 #!/bin/sh
-
 # Functions library :: for Linux Live Kit scripts & UIRD init
 # Author: Tomas M. <http://www.linux-live.org>
 #
@@ -135,11 +134,12 @@ FREE_SPACE_LESS_THEN_CHECK_ASK="    $($GETTEXT "[S]hutdown, [R]eboot, [C]ontinue
 # устаревший: uird.zram      - использовать zram вместо tmpfs
 # uird.rootfs=               - zram/tmpfs тип фс для /memory
 # uird.preinit               - обработка ини файла задданного в uird.config
-# uird.shutdown          - создание /run/initramfs
+# uird.shutdown              - создание /run/initramfs
 # quickshell, qs 	     	 - консоль на начальном этапе работы uird-init
 # qse 			     		 - консоль в конце работы uird-init
 # debug 		     		 - подробный вывод и приостановка uird-init на нескольких этапах работы
-# uird.silent                 - no output
+# uird.silent                - no output
+# uird.hide                  - не перемонтировать $SYSMNT из rootfs initrd в системный rootfs
 [ -f "/uird_configs/uird_aliases" ] && . /uird_configs/uird_aliases
 
 [ -z $UIRD_BASECFG ] && UIRD_BASECFG=uird.basecfg
@@ -179,6 +179,7 @@ FREE_SPACE_LESS_THEN_CHECK_ASK="    $($GETTEXT "[S]hutdown, [R]eboot, [C]ontinue
 [ -z $UIRD_PREINIT ] && UIRD_PREINIT=uird.preinit
 [ -z $UIRD_ROOTFS ] && UIRD_ROOTFS=uird.rootfs
 [ -z $UIRD_SILENT ] && UIRD_SILENT=uird.silent
+[ -z $UIRD_HIDE ] && UIRD_HIDE=uird.hide
 
 # =================================================================
 # debug and output functions
@@ -359,7 +360,12 @@ echodebug() {
 
 cfg_parser_pre() {
 getcmdline >/tmp/cmdline
-eval echo $(cat /proc/cmdline /tmp/cmdline 2>/dev/null | tr -s ";" ",") >/tmp/cmdline
+if [ -f /secure ] ; then
+	#do not "eval cmdline" in secure mode
+	echo $(cat /proc/cmdline /tmp/cmdline 2>/dev/null | tr -s ";" ",") >/tmp/cmdline
+else
+	eval echo $(cat /proc/cmdline /tmp/cmdline 2>/dev/null | tr -s ";" ",") >/tmp/cmdline
+fi
 BASECFG=$(echo -n " " | cat - /tmp/cmdline 2>/dev/null | egrep -m1 -o "(^|[[:space:]])uird.basecfg=[^[:space:]]+" | cut -d "=" -f 2- | head -n1)
 [ -f "$BASECFG" -o "$BASECFG" == "help" ] || BASECFG=/uird_configs/$BASECFG
 if ! [ -f "$BASECFG" -o "$BASECFG" == "help" ]; then
@@ -582,8 +588,9 @@ init_union() {
 	RW=$(echo $(getpar $UIRD_RW [[:digit:]]) | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/ /|/g')
 	RO=$(echo $(getpar $UIRD_RO [[:digit:]]) | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/ /|/g')
 	CP=$(echo $(getpar $UIRD_CP [[:digit:]]) | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/ /|/g')
-	RUN=$(echo $(getpar $UIRD_RUN [[:digit:]]) | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/ /|/g')
-	
+	if [ ! -f /secure ] ; then
+		RUN=$(echo $(getpar $UIRD_RUN [[:digit:]]) | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/ /|/g')
+	fi
 	UNION_FS="$(getpar $UIRD_UNION 1 1 )"
 	[ -z $UNION_FS ] && UNION_FS="aufs"
 	if [ "$UNION_FS" = "overlay" ] ; then
