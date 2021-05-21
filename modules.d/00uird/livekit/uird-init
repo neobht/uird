@@ -8,6 +8,12 @@
 
 [ -f /etc/initvars ] && . /etc/initvars
 [ "$SYSMNT" ] && MEMORY=$SYSMNT || MEMORY=/memory
+if [ -f /secure ] ; then
+	SECLEVEL=$(cat /secure)
+	echo "SECLEVEL=$SECLEVEL" >> /etc/initvars
+else
+	SECLEVEL=0
+fi
 
 #lang and fonts
 export TEXTDOMAIN="uird"

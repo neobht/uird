@@ -9,7 +9,6 @@ ADDLOCALES=""
 CONFIG=${WORKDIR}mkuird.cfg
 [ -f $CONFIG ] || CONFIG=/etc/mkuird.cfg
 KERNEL=$(uname -r)
-date > ./not_found.log
 
 getHash() {
 python3 -c "import random,string,crypt;
@@ -17,20 +16,80 @@ randomsalt = ''.join(random.sample(string.ascii_letters,8));
 print(crypt.crypt('"$1"', '\$6\${}\$'.format(randomsalt)))"
 }
 
-#find config for mkuird
-for arg in $@
-do
-  case "${arg}" in
-    "-c" | "--config" ) config=yes;;
-    *) [ "${config}" == "yes" ] && CONFIG="${arg}"
-        config="no"
+HLP() {
+echo "$(basename $0) - script for build UIRD
+USAGE: 
+	$(basename $0) <internal config file name> <parameters>
+PARAMETERS:
+    \"-h | --help\" - this help 
+    \"-s | --show\" - show dracut cmdline, but not run dracut
+    \"-c | --config\" - mkuird conf file
+    \"-o | --outdir\" - dir for uird
+    \"-e | --exclude\"  - exclude from uird (see mkuird.cfg)
+    \"-n | --name\"  - uird name
+    \"-k | --kernel\" - kernel name, to build uird for it
+    \"-m | --kmodpath\" - kernel modules dir path (/lib/modules) 
+    \"-f | --force\" - start system_dracut.sh automaticaly (need only with OS dracut) 
+    \"--kmod\" - build uird with kernelmodules only
+    \"--addon\" - build uird with addon only (see mkuird.cfg, ExtraDM line
+    \"-l | --i18n\" - add locales (use with -e plymouth)
+    \"-p | --passwd\" - add password for uird root user
+    \"--secure\" - secure level, from 0 to 5 (paranoic)
+    0 - default lavel, allow all
+    1 - deny: eval cmdline
+    2 - 1 + deny: uird.run
+    3 - 2 + deny: internal shells (qs, qse, etc)
+    4 - reserved
+    5 - 4 + deny: uird cmdline parameters except uird.basecfg" 
+    exit
+}
+
+#parameters
+until [ -z $1 ] ; do
+  case "$1" in
+    "-h" | "--help" ) HLP ;;
+    "-c" | "--config" ) shift ; CONFIG="$1";;
+    "-o" | "--outdir" ) shift; OUTD="$1";;
+    "-e" | "--exclude" ) shift; EXCLUDE="$1";;
+    "-n" | "--name" ) shift; NAME="$1";;
+    "-k" | "--kernel" ) shift ; KERNEL="$1";;
+    "-m" | "--kmodpath" ) shift; KMODPATH="$1";;
+    "-s" | "--show" ) SHOW=yes;;
+    "-f" | "--force" ) FORCE="yes";;
+    "--kmod" ) BUILD=kmod;;
+    "--addon" ) BUILD=addon;;
+    "-l" | "--i18n" ) ADDLOCALES="-i i18n /";;
+    "-p" | "--passwd" ) shift 
+                 SECURE="-i secure /" ; 
+                 PASSWD="$1";;
+    "--secure" ) shift 
+                 SECLEVEL="$1" ;
+                 SECURE="-i secure /" ;;
+    "-"*[A-Za-z]*) echo "$(basename "$0"): invalid option -- '$(echo $1 | tr -d '-')'" >&2; exit 1;;
+    *)  CFG="$1";;
   esac
+  shift
 done
 
+date > ./not_found.log
 . $CONFIG
+
 WORKDIR="$(realpath $WORKDIR)"
 [ "$BINBUSYBOX" ] || BINBUSYBOX="${WORKDIR}/busybox/busybox"
 [ "$DRACUTMODDIR" ] || DRACUTMODDIR="${WORKDIR}/dracut/modules.d/"
+echo "
+CONFIG=$CONFIG
+WORKDIR=$WORKDIR
+BINBUSYBOX=$BINBUSYBOX
+DRACUTMODDIR=$DRACUTMODDIR
+PASSWD=$PASSWD
+SECLEVEL=$SECLEVEL
+EXCLUDE=$EXCLUDE
+OUTD=$OUTD
+NAME=$NAME
+KERNEL=$KERNEL
+KMODPATH=$KMODPATH
+"
 
 if ! [ -x "$BINBUSYBOX" ] ; then
 	echo "Busybox binary not found"
@@ -38,29 +97,6 @@ if ! [ -x "$BINBUSYBOX" ] ; then
 else 
 	export BINBUSYBOX
 fi
-
-#find another parameters
-until [ -z $1 ] ; do
-  case "$1" in
-    "-s" | "--show" ) SHOW=yes;;
-    "-c" | "--config" ) true;;
-    "-o" | "--outdir" ) shift; OUTD="$1";;
-    "-e" | "--exclude" ) shift; EXCLUDE="$1";;
-    "-n" | "--name" ) shift; NAME="$1";;
-    "-k" | "--kernel" ) shift ; KERNEL="$1";;
-    "-m" | "--kmodpath" ) shift; KMODPATH="$1";;
-    "-f" | "--force" ) FORCE="yes";;
-    "--kmod" ) BUILD=kmod;;
-    "--addon" ) BUILD=addon;;
-    "-l" | "--i18n" ) ADDLOCALES="-i i18n /";;
-    "--passwd" ) shift 
-                 SECURE="-i secure /" ; 
-                 PASSWD="$1";;
-    "-"*[A-Za-z]*) echo "$(basename "$0"): invalid option -- '$(echo $1 | tr -d '-')'" >&2; exit 1;;
-    *)  CFG="$1";;
-  esac
-  shift
-done
 
 [ -d  $(realpath ${KMODPATH}/$KERNEL 2>/dev/null) ] && ln -s $(realpath ${KMODPATH}/$KERNEL) /lib/modules/$KERNEL
 if ! [ -d /lib/modules/$KERNEL -o -L /lib/modules/$KERNEL  ] ; then
@@ -85,6 +121,14 @@ if [ $PASSWD ] ; then
 	sed -i /^root:/d ${WORKDIR}/secure/etc/shadow
 	echo "root:$hash:16704:0:99999:7:::" >> ${WORKDIR}/secure/etc/shadow
 	sed -i s/root:[!]*:/root:x:/ ${WORKDIR}/secure/etc/passwd
+fi
+
+if [ "$SECURE" ] ; then
+	if [ "$SECLEVEL" ] ; then
+		echo "$SECLEVEL" > ${WORKDIR}/secure/secure
+	else
+		echo '0' > ${WORKDIR}/secure/secure
+	fi
 fi
 
 if [ $KERNELCFG ] ; then

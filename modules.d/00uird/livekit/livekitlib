@@ -261,6 +261,7 @@ debug_shell() {
 # start shell
 # if $1==help then start shell
 shell_cmd() {
+	[ "$SECLEVEL" -gt 2 ] && return
 	plymouth quit 2>/dev/null
 	ln -s /root/bashrc /root/.bashrc 2>/dev/null
 	ln -s /root/bash_profile /root/.bash_profile 2>/dev/null
@@ -284,12 +285,12 @@ shell_cmd() {
 # start quickshell
 start_quickshell() {
 	if getpar qs  > /dev/null ; then
+		[ "$SECLEVEL" -gt 2 ] && return
 		plymouth quit
 		#sleep 2
 		ln -s /root/bashrc /root/.bashrc
 		ln -s /root/bash_profile /root/.bash_profile
 		mkdir -p /mnt
-        
 		automount
 		clear
 		cat /usr/share/uird.help/${LANG}/uird.quickshell.help 2>/dev/null || cat /usr/share/uird.help/uird.quickshell.help
@@ -360,8 +361,7 @@ echodebug() {
 
 cfg_parser_pre() {
 getcmdline >/tmp/cmdline
-if [ -f /secure ] ; then
-	#do not "eval cmdline" in secure mode
+if [ "$SECLEVEL" -gt 0 ] ; then
 	echo $(cat /proc/cmdline /tmp/cmdline 2>/dev/null | tr -s ";" ",") >/tmp/cmdline
 else
 	eval echo $(cat /proc/cmdline /tmp/cmdline 2>/dev/null | tr -s ";" ",") >/tmp/cmdline
@@ -374,7 +374,7 @@ if ! [ -f "$BASECFG" -o "$BASECFG" == "help" ]; then
 fi
 echo $(cat  $BASECFG |grep -v "^[[:space:]]*\#"  2>/dev/null | tr -s ";" ",") >/tmp/basecfg
 echo '' >>/tmp/basecfg
-echo $(cat  /tmp/cmdline  | tr -s ";" "," |sed 's/ /\n/g' | sort -u ) >>/tmp/basecfg
+[ "$SECLEVEL" -lt 5 ] && echo $(cat  /tmp/cmdline  | tr -s ";" "," |sed 's/ /\n/g' | sort -u ) >>/tmp/basecfg
 echo '' >>/tmp/basecfg
 cfg_parser
 }
@@ -442,6 +442,7 @@ old_pars_compat() {
 }
 
 short_pars_compat() {
+	[ "$SECLEVEL" -gt 4 ] && return
 	local par
 	cat /proc/cmdline | egrep -q " -|^-" || return 
 	for par in $(cat /proc/cmdline | sed 's/^.* -//' |cut -d " " -f 1 |fold -w 1) ; do
@@ -588,9 +589,7 @@ init_union() {
 	RW=$(echo $(getpar $UIRD_RW [[:digit:]]) | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/ /|/g')
 	RO=$(echo $(getpar $UIRD_RO [[:digit:]]) | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/ /|/g')
 	CP=$(echo $(getpar $UIRD_CP [[:digit:]]) | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/ /|/g')
-	if [ ! -f /secure ] ; then
-		RUN=$(echo $(getpar $UIRD_RUN [[:digit:]]) | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/ /|/g')
-	fi
+	[ "$SECLEVEL" -lt 2 ] && RUN=$(echo $(getpar $UIRD_RUN [[:digit:]]) | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/ /|/g')
 	UNION_FS="$(getpar $UIRD_UNION 1 1 )"
 	[ -z $UNION_FS ] && UNION_FS="aufs"
 	if [ "$UNION_FS" = "overlay" ] ; then
