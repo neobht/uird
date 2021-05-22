@@ -2,3 +2,5 @@
 *.log
 *.pot
 dracut_run
+secure/secure
+secure/etc/shadow
