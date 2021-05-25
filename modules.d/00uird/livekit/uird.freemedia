@@ -1,4 +1,6 @@
 #!/bin/sh
+# Author: Alexander Betkher <http://magos-linux.ru>
+# Author: Anton Goroshkin <http://magos-linux.ru>
 uird_freemedia() {
 	local  UUID MPOINT MNTOPTS RBIND part PARS devices devs swaps
 	FREEMEDIA_BEGIN=$($GETTEXT "Starting freemedia....")

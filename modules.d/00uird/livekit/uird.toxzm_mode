@@ -1,5 +1,6 @@
 #!/bin/sh
-# toxzm mode
+# Author: Alexander Betkher <http://magos-linux.ru>
+
 # $1 = xzmchanges mount directory
 # $2 = changes directory
 # $3 = bundles dir

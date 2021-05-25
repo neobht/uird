@@ -1,4 +1,6 @@
 #!/bin/bash
+# Author: Alexander Betkher <http://magos-linux.ru>
+# Author: Anton Goroshkin <http://magos-linux.ru>
 WORKDIR=./
 RUNPWD=$(pwd)
 OUTD=$RUNPWD

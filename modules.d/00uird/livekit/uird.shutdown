@@ -1,4 +1,6 @@
 #!/bin/sh
+# Author: Alexander Betkher <http://magos-linux.ru>
+
 uird_shutdown() {
 	local  UUID MPOINT MNTOPTS RBIND savesdir savesname savesdev ARR_CFG
 	move_run

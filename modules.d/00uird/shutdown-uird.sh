@@ -1,4 +1,6 @@
 #!/bin/sh
+# Author: Alexander Betkher <http://magos-linux.ru>
+# Author: Anton Goroshkin <http://magos-linux.ru>
 # script must be started only once
 # if tmp dir exists, the script is run a second time
 [ -d /tmp ] && exit 0

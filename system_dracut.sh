@@ -1,4 +1,5 @@
 #!/bin/bash 
+# Author: Alexander Betkher <http://magos-linux.ru>
 WORKDIR="$(dirname $0)"
 [ $1 ] && WORKDIR=$(realpath "$1")
 if [ -d ${WORKDIR}/dracut ] ; then
