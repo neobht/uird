@@ -2144,7 +2144,7 @@ setup_homes() {
 
 	echo_green_star
 	echolog "$SETUP_HOMES" $brown"$(basename $LAYER_HOMES)" " -> " "$MNT_HOME"$default
-
+	
 	if [ "$HOMES" ]; then
 		for d_dirs in "$LAYER_HOMES"/*; do
 			if [ -z $HOMES_BR ]; then
@@ -2153,8 +2153,19 @@ setup_homes() {
 				HOMES_BR="$HOMES_BR:$d_dirs=rw+wh"
 			fi
 		done
-		#   mount -t aufs -o xino="/tmp/.xino",trunc_xino,br="$1" aufs "$2"
-		mount -t aufs -o nowarn_perm,xino="$MEMORY/.xino",trunc_xino,br=$HOMES_BR aufs $MNT_HOME
+		
+		UNION_FS="$(getpar $UIRD_UNION 1 1 )"
+		[ -z $UNION_FS ] && UNION_FS="aufs"
+		if [ "$UNION_FS" == 'aufs' ] ; then
+			#   mount -t aufs -o xino="/tmp/.xino",trunc_xino,br="$1" aufs "$2"
+			mount -t aufs -o nowarn_perm,xino="$MEMORY/.xino",trunc_xino,br=$HOMES_BR aufs $MNT_HOME
+		else
+			# Overlayfs mount
+			# WARNING!!!!!NOT TESTED!!!!!!!!!!!!!!!
+			mkdir -p ${OVERLAY}/homes 
+			mkdir -p ${OVERLAY}/homes_workdir
+			mount -t overlay -o redirect_dir=on,metacopy=off,index=on,lowerdir=${HOMES_BR},upperdir=${OVERLAY}/homes,workdir=${OVERLAY}/homes_workdir overlay $MNT_HOME
+		fi
 	else
 		HOMES_BR="$LAYER_HOMES"/0
 		mount -o bind $HOMES_BR $MNT_HOME
