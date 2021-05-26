@@ -67,7 +67,7 @@
     * uird.union=overlay         - использовать overlayfs вместо aufs
     * uird.shutdown              - создать каталог /run/initramfs, который использует systemd при выключении системы, передавая туда управление
     * uird.preinit               - включить обработку ini файла, заданного в uird.config
-    * uird.hide			 - включить режим сокрытия точки монтирования MEMORY (полезно для режима kiosk)
+    * uird.hide	                 - включить режим сокрытия точки монтирования MEMORY (полезно для режима kiosk)
     * quickshell, qs             - консоль на начальном этапе работы uird-init
     * qse                        - консоль в конце работы uird-init
     * debug                      - подробный вывод и приостановка uird-init на нескольких этапах работы
