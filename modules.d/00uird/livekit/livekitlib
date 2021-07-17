@@ -233,7 +233,7 @@ if ! getpar $UIRD_SILENT >/dev/null ; then
 	if plymouth --ping 2>/dev/null; then 
 		plymouth display-message --text="$(echo -e "$key" "$@")"
 	else
-		echo -e "$key" $@ >/dev/console 2>/dev/console
+		echo -e "$key" $@  >/dev/console 2>&1
 	fi
 fi
 }
@@ -1072,7 +1072,7 @@ fi
 mount_btfs() {
 	debug_log "mount_btfs" "$*"
 	mkdir -p $2
-	$BIN_BTFS "$1" $2 || return
+	$BIN_BTFS "$1" "$2" 1>&2 || return
 	if [ -f $2/$(basename $1) ]; then
 		echo $2/$(basename $1)
 	else
@@ -1086,9 +1086,8 @@ mount_btfs() {
 #
 mount_httpfs() {
 	debug_log "mount_httpfs" "$*"
-
-	mkdir -p $2
-	$BIN_HTTPFS $1 $2 || return
+	mkdir -p $2 1>&2
+	$BIN_HTTPFS $1 $2 1>&2 || return
 	if [ -f $2/$(basename $1) ]; then
 		echo $2/$(basename $1)
 	else
@@ -1169,13 +1168,14 @@ mount_nfs() {
 mount_cifs() {
 	debug_log "mount_cifs" "$*"
 	OPTIONS=""
+	[ $3 ] && OPTIONS=$3
 	getpar $UIRD_NETFSOPT >/dev/null && OPTIONS="$(getpar $UIRD_NETFSOPT 1 1)"
 	mkdir -p $2
-	modprobe cifs
+	modprobe cifs 1>&2
 	local SHARE=$(echo $1 | sed s-^cifs://--)
-	if mount -t cifs $SHARE $2 -o $OPTIONS 2>/dev/null; then
+	if mount -t cifs $SHARE $2 -o $OPTIONS 2>/dev/null 1>&2; then
 		echo $2
-	elif mount -t cifs $(dirname $SHARE) $2 -o $OPTIONS 2>/dev/null; then
+	elif mount -t cifs $(dirname $SHARE) $2 -o $OPTIONS 2>/dev/null 1>&2 ; then
 		echo $2/$(basename $SHARE)
 	fi
 }
@@ -1186,6 +1186,7 @@ mount_cifs() {
 mount_rsync() {
 	debug_log "mount_rsync" "$*"
 	OPTIONS="--progress -a"
+	[ $3 ] && OPTIONS="$3"
 	getpar $UIRD_NETFSOPT >/dev/null && OPTIONS="$(getpar $UIRD_NETFSOPT)"
 	mkdir -p $2
 	#    local SHARE=`echo $1 | sed s-^cifs://-- `
@@ -1375,7 +1376,7 @@ find_file() {
 # $3 = extended pars in file
 find_data() {
 	debug_log "find_data" "$*"
-	local RESULT FPARS TIMEOUT=''
+	local RESULT FPARS TIMEOUT='' NET_MOUNT
 	FPARS=$3
 	if [ "$FPARS" ] ; then
 			for str in  $(cat $FPARS |sed -n '2,$p')  ; do
@@ -1385,15 +1386,30 @@ find_data() {
 	[ "$TIMEOUT" ] || TIMEOUT=$(getpar scantimeout 1 1 | sed -r 's/[^0-9]*([0-9]+).*/\1/')
 	if [ "$TIMEOUT" = "" ]; then TIMEOUT=5; fi
 	log "find_file "$1" "$2" "$3" "
-	RESULT=$(find_file "$1" "$2" "$3" )
-
+	if echo "$1" | grep -q "://" ; then
+		echolog $(init_ifcfg)
+		NET_MOUNT=yes
+	fi
 	while [ $TIMEOUT -gt 0 -a "$RESULT" = "" ]; do
-		echo -ne "." >&2
-		sleep 1
-		TIMEOUT=$((TIMEOUT - 1))
 		log "find_file "$1" "$2" "$3" "
-		RESULT=$(find_file "$1" "$2" "$3")
+		if [ $NET_MOUNT ]  ; then
+			echo $1 | grep -iq ^"http://"	&& RESULT=$(mount_httpfs $1 $2 $MNT_OPTS)
+			echo $1 | grep -iq ^"nfs://"	&& RESULT=$(mount_nfs $1 $2 $MNT_OPTS)
+			echo $1 | grep -iq ^"cifs://"	&& RESULT=$(mount_cifs $1 $2 $MNT_OPTS)
+			echo $1 | grep -iq ^"ssh://"	&& RESULT=$(mount_sshfs $1 $2 $MNT_OPTS)
+			echo $1 | grep -iq ^"ftp://"	&& RESULT=$(mount_curlftpfs $1 $2 $MNT_OPTS)
+			echo $1 | grep -iq ^"rsync://"	&& mount_rsync $1 $2 && RESULT=$2
+		else
+			RESULT=$(find_file "$1" "$2" "$3")
+		fi
+		if [ -z "$RESULT" ] ; then
+			log "find_data:(${TIMEOUT}): $RESULT"
+			TIMEOUT=$((TIMEOUT - 1))
+			sleep 1
+			echo -ne "." >&2
+		fi
 	done
+	log "data_from RESULT - $RESULT"
 	echo $RESULT
 }
 
@@ -1699,26 +1715,15 @@ mount_data_source() {
 	echolog "$MOUNT_DATA_SOURCE" $yellow"$SOURCE"$default
 
 	mkdir -p $DST_DIR
-
-	if [ "$(echo $SOURCE | grep "://")" != "" ]; then
-		init_ifcfg
-		echo $SOURCE | grep -iq ^"http://" && DATA_FROM=$(mount_httpfs $SOURCE $MNT_DIR $MNT_OPTS)
-		echo $SOURCE | grep -iq ^"nfs://" && DATA_FROM=$(mount_nfs $SOURCE $MNT_DIR $MNT_OPTS)
-		echo $SOURCE | grep -iq ^"cifs://" && DATA_FROM=$(mount_cifs $SOURCE $MNT_DIR $MNT_OPTS)
-		echo $SOURCE | grep -iq ^"ssh://" && DATA_FROM=$(mount_sshfs $SOURCE $MNT_DIR $MNT_OPTS)
-		echo $SOURCE | grep -iq ^"ftp://" && DATA_FROM=$(mount_curlftpfs $SOURCE $MNT_DIR $MNT_OPTS)
-		echo $SOURCE | grep -iq ^"rsync://" && mount_rsync $SOURCE $MNT_DIR && DATA_FROM=$MNT_DIR
-	else
-		log "find_data $SOURCE $MNT_DIR  $FPARS"
-		DATA_FROM=$(find_data "$SOURCE" "$MNT_DIR" "$FPARS" )
+	log "find_data $SOURCE $MNT_DIR  $FPARS"
+	DATA_FROM=$(find_data "$SOURCE" "$MNT_DIR" "$FPARS" )
 ##################################################################
 		if ! [ -e "$DATA_FROM" ] ; then 
 			echo $FPARS |egrep -q 'uird.home|uird.changes' && mkimg $SOURCE $MNT_DIR $FPARS
 			log "mkimg maked DATA_FROM - $DATA_FROM"
 		fi
 ##################################################################
-		[ -b "$DATA_FROM" ] && mount_device "$DATA_FROM" "$DST_DIR" "$MNT_OPTS"  ""  "$FPARS" # mount block device
-	fi
+	[ -b "$DATA_FROM" ] && mount_device "$DATA_FROM" "$DST_DIR" "$MNT_OPTS"  ""  "$FPARS" # mount block device
 	log "DATA_FROM - $DATA_FROM"
 	if [ -r "$DATA_FROM" ]; then
 		log "mount_device $DATA_FROM $DST_DIR  $MNT_OPTS"
