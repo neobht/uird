@@ -1587,7 +1587,9 @@ init_network_dev() {
 
 	# If we are here, none of the above specified modules worked.
 	# As a last chance, try to modprobe everything.
-	find /lib/modules/ | xargs -n 1 modprobe
+	find /lib/modules/ -type f |while read a ;do
+		echo $(basename $a) |sed 's/\..*$//' |xargs modprobe
+	done
 	cat /proc/net/dev | grep : | grep -v lo: | cut -d : -f 1 | tr -d " " | head -n 1
 }
 
