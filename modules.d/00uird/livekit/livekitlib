@@ -2321,7 +2321,7 @@ aria2_preload() {
 	echolog "Aria2c preload media" $green${ARIA_IN} " -> " $brown$1$default
 	aria2c -q --no-netrc --seed-time=0 $ARIA_IN -d $1/data >/dev/null 2>&1 &
 	PiD=/proc/$!
-	echo "Copy_timer $PiD $1 "
+	log "Copy_timer $PiD $1 "
 	Copy_timer $1 $PiD
 	#hack to find_file
 	mkdir $1/mount_bind
