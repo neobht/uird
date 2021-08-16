@@ -1,5 +1,6 @@
-#!/bin/bash 
+#!/bin/bash
 # Author: Alexander Betkher <http://magos-linux.ru>
+# Author: Deep, мать его, seek...
 
 # Если передан аргумент, используем его как имя папки, иначе "dracut"
 if [ -n "$1" ]; then
@@ -16,11 +17,9 @@ WORKDIR="$(pwd)/${DIR_NAME}"
 # Проверяем, существует ли уже папка
 if [ -d "${WORKDIR}" ] ; then
     if [ "$FORCE" = true ]; then
-        # Если $1 указан - удаляем без вопросов
         echo "Removing existing ${WORKDIR}..."
         rm -rf "${WORKDIR}"
     else
-        # Если $1 не указан - спрашиваем
         echo "${WORKDIR} already exists"
         echo "Enter (a/A) to abort, or another key to continue"
         read qqq
@@ -32,14 +31,50 @@ fi
 # Создаем структуру каталогов
 mkdir -p "${WORKDIR}/dracut.conf.d" "${WORKDIR}/modules.d"
 
+# Определяем режим создания ссылок
+USE_RELATIVE="${USE_RELATIVE:-false}"
+
+case "$USE_RELATIVE" in
+    'yes'|'true'|'on'|'1')
+        USE_RELATIVE='yes'
+        ;;
+    *)
+        USE_RELATIVE='no'
+        ;;
+esac
+
+# Функция для создания ссылок с realpath
+create_link() {
+    local target="$1"
+    local link_dir="$2"
+    
+    if [ "$USE_RELATIVE" = 'yes' ]; then
+        # Вычисляем относительный путь с помощью realpath
+        local relative_path=$(realpath --relative-to="$link_dir" "$target" 2>/dev/null)
+        ln -s "$relative_path" "${link_dir}/"
+    else
+        ln -s "$target" "${link_dir}/"
+    fi
+}
+
 # Создаем ссылки на файлы dracut
 for a in init logger functions ; do
-    ln -s /usr/lib/dracut/dracut-${a}.sh ${WORKDIR}/
+    create_link "/usr/lib/dracut/dracut-${a}.sh" "${WORKDIR}"
 done
 
-ln -s "$(which dracut-install)" ${WORKDIR}/dracut-install
-ln -s "$(which dracut)" ${WORKDIR}/dracut.sh
+create_link "$(which dracut-install)" "${WORKDIR}"
+create_link "$(which dracut)" "${WORKDIR}"
 
 # Создаем ссылки на модули
-ln -s ${WORKDIR}/../modules.d/* "${WORKDIR}/modules.d/" 2>/dev/null || true
-ln -s /usr/lib/dracut/modules.d/* "${WORKDIR}/modules.d/"
+# Сначала системные модули
+for module in /usr/lib/dracut/modules.d/*; do
+    [ -e "$module" ] && create_link "$module" "${WORKDIR}/modules.d/"
+done
+
+# Затем локальные модули (переопределяют системные при совпадении имен)
+for module in ${WORKDIR}/../modules.d/*; do
+    [ -e "$module" ] && create_link "$module" "${WORKDIR}/modules.d/"
+done 2>/dev/null || true
+
+echo "Done! Links created in ${WORKDIR}"
+echo "Link mode: $([ "$USE_RELATIVE" = 'yes' ] && echo "RELATIVE" || echo "ABSOLUTE")"
