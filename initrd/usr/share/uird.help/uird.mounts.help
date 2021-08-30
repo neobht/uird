@@ -26,13 +26,15 @@ uird.mounts=cifs://server/path/...  - CIFS source
 Subvalues:
 MNT=/mount/point   - mount point for source
 MNT_OPTS=ro+noexec - additional mount options (use "+" instead of comma)
+INIT=yes           - if the source is epmty, UIRD will copy all files from the mout point to the source
+                     before mounting bind.
 TIMEOUT=2          - number of attemts to find source
 FORCE=yes          - do not stop UIRD then source is not found (equivalent of {} )
 KEY=/file.key      - key file for LUKS partition
 SGN=file.sgn       - file - label, source is considered to be found if this file is in its root
 
 Example:
-uird.mounts=/dev/sda3/MagOS-Data/opt::/opt;/MagOS-Data/myfolder::/opt/myfolder
+uird.mounts=/dev/sda3/MagOS-Data/opt::MNT=/opt;/MagOS-Data/myfolder::MNT=/opt/myfolder
 This string means: mount /MagOS-Data/opt directory from device /dev/sda3 to /opt dir,
 find /MagOS-Data/myfolder in all available physical disks and mount it to /opt/myfolder
 *******************************************************************************************************

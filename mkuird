@@ -248,6 +248,7 @@ else
 	echo "-i initrd /"		>> ./dracut_run
 	echo "-i configs /"		>> ./dracut_run
 	echo "-i keys /"		>> ./dracut_run
+#	echo "-i /etc/pki/tls/cert.pem /etc/pki/tls/"	>> ./dracut_run
 	echo "$ADDLOCALES"		>> ./dracut_run
 	echo "$SECURE"          >> ./dracut_run
 	echo "--kernel-cmdline \"uird.basecfg=/uird_configs/$CFG\""	>> ./dracut_run
@@ -263,3 +264,6 @@ fi
 cd $RUNPWD
 [ "$KMODPATH" -a -L "/lib/modules/$KERNEL"  ]  && rm /lib/modules/$KERNEL
 [ "$NAME" ] && mv "$uirdfile" "$NAME"
+
+
+#	

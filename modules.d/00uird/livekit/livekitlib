@@ -63,6 +63,7 @@ f_gettext() {
 # Messages
 INIT_UNION=$($GETTEXT "Initializing filesystem")
 INIT_LAYER=$($GETTEXT "Initializing:")
+BINDING_TO_UNION=$($GETTEXT "Binding to union rootfs")
 
 MOUNT_DATA_SOURCE=$($GETTEXT "Searching and initializing source:")
 MOUNT_DATA_SOURCE_USING="    "$($GETTEXT "using source:")
@@ -1833,13 +1834,14 @@ init_layer() {
 	debug_log "init_layer" "$*"
 	echo_green_star
 	echolog "$INIT_LAYER" $brown$(basename $2) " -> " $1$default
-	local NUM_SUBL FROM CMD_PARAM   DATAFROM MNT DATA DATAMNTM   FPARS
+	local NUM_SUBL FROM CMD_PARAM DATAFROM MNT INIT DATA DATAMNTM FPARS
 	NUM_SUBL=0
 	CMD_PARAM=$3
 	for PARNUM in $(getpar $CMD_PARAM) ; do
 		FPARS="/tmp/parameters/$CMD_PARAM/$PARNUM"
 		DATAFROM=$(getpar $CMD_PARAM $PARNUM 1)
-		MNT='' 
+		MNT=''
+		INIT='no' 
 		for str in  $(cat $FPARS |sed -n '2,$p')  ; do
 			local |grep -q "$(echo $str |cut  -f1 -d=)"   && 	eval $str 
 		done 
@@ -1848,7 +1850,7 @@ init_layer() {
 			DATAMNTM=$1/$NUM_SUBL
 			mount_data_source "$DATAFROM" "$DATA" "$DATAMNTM"  "$FPARS"
 			if [ "$MNT" ]; then
-				MOUNTBINDS="${MOUNTBINDS} ${DATA};$MNT"
+				MOUNTBINDS="${MOUNTBINDS} ${DATA};${MNT};${INIT}"
 				log "MOUNTBINDS: $MOUNTBINDS"
 			fi
 		fi
@@ -1857,11 +1859,23 @@ init_layer() {
 }
 
 mount_binds() {
-	local str
+	local str INIT SOURCE DEST
 	if [ "$MOUNTBINDS" ]; then
+	echo_green_star
+	echolog "${BINDING_TO_UNION}:"$default
 		for str in ${MOUNTBINDS}; do
-			mkdir -p $UNION/$(echo $str | cut -f2 -d ";")
-			mount -o bind $(echo $str | cut -f1 -d ";") ${UNION}/$(echo $str | cut -f2 -d ";") >>/var/log/uird.dbg.log 2>&1
+			SOURCE=$(echo $str | cut -f1 -d ";")
+			DEST=${UNION}$(echo $str | cut -f2 -d ";")
+			INIT=$(echo $str | cut -f3 -d ";")
+			mkdir -p $DEST
+			echo_blue_star
+			if [ "$INIT" != 'no' -a  "$(ls -1A $SOURCE |wc -l)" -eq 0 ] ; then
+				cp -fa ${DEST}/. ${SOURCE}/ >>/var/log/uird.dbg.log 2>&1
+				echolog "Binding"$brown" $SOURCE --> $DEST"$yellow" --> Initialized"$default
+			else
+				echolog "Binding"$brown" $SOURCE --> $DEST"$default
+			fi
+			mount -o bind $SOURCE $DEST >>/var/log/uird.dbg.log 2>&1
 		done
 	fi
 }
