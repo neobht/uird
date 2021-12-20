@@ -229,12 +229,12 @@ echolog() {
 log "$@"
 if ! getpar $UIRD_SILENT >/dev/null ; then
 	local key
-	key="$1"
-	shift
+	#key="$1"
+	#shift
 	if plymouth --ping 2>/dev/null; then 
-		plymouth display-message --text="$(echo -e "$key" "$@")"
+		plymouth display-message --text="$(echo -e  "$@")"
 	else
-		echo -e "$key" $@  >/dev/console 2>&1
+		echo -e "$@"  >/dev/console 2>&1
 	fi
 fi
 }
