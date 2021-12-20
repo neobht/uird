@@ -2,7 +2,7 @@
 git submodule init
 git submodule update
 cd busybox
-make -j $(( $(nproc) + 1 )) defconfig
-make
+make  defconfig
+make -j $(( $(nproc) + 1 ))
 # make install
 cd ..
