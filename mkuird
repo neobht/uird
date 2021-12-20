@@ -178,6 +178,8 @@ elif [ "$type" == "BIN" ] ;then
 		which $mod >/dev/null 2>&1 && 	return 0
 elif [ "$type" == "DM" ] ;then
 		ls -1 ${DRACUTMODDIR}/ |egrep -q "..${mod}$" && return 0
+elif [ $type == "INST" ] ;then
+		[ -f "$mod" ] && return 0
 fi
 notfound $type  $mod 
 return 1
@@ -235,7 +237,7 @@ elif [ "$BUILD" == "addon" ] ; then
 	--no-kernel \
 	--conf ./dracut.conf -v -M $uirdfile  $KERNEL >${RUNPWD}/dracut_addon.log 2>&1
 else
-	parser KM ; parser FS ; parser DM ; parser BIN
+	parser KM ; parser FS ; parser DM ; parser BIN ; parser INST
 	UIRD_BINS="$BIN"
 	export UIRD_BINS
 	echo "Making UIRD (${CFG}) using $(realpath ./dracut/dracut.sh)..."
@@ -244,11 +246,11 @@ else
 	echo "--conf ./dracut.conf"	>> ./dracut_run
 	echo "-m \"$DM\""		>> ./dracut_run	
 	echo "-d \"$KM\""		>> ./dracut_run
+	echo "-I \"$INST\""		>> ./dracut_run
 	echo "--filesystems \"$FS\""	>> ./dracut_run
 	echo "-i initrd /"		>> ./dracut_run
 	echo "-i configs /"		>> ./dracut_run
 	echo "-i keys /"		>> ./dracut_run
-#	echo "-i /etc/pki/tls/cert.pem /etc/pki/tls/"	>> ./dracut_run
 	echo "$ADDLOCALES"		>> ./dracut_run
 	echo "$SECURE"          >> ./dracut_run
 	echo "--kernel-cmdline \"uird.basecfg=/uird_configs/$CFG\""	>> ./dracut_run
