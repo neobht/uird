@@ -104,8 +104,13 @@ FREE_SPACE_LESS_THEN_CHECK="    $($GETTEXT "Free space less then CHECKSPASE")"
 FREE_SPACE_LESS_THEN_CHECK_ASK="    $($GETTEXT "[S]hutdown, [R]eboot, [C]ontinue, [E]rase-and-continue ?")"
 
 ENC_PASS=$($GETTEXT "Password for encrypted FS:")
-LUKS_PASS$($GETTEXT "Password for LUKS partition:")
+LUKS_PASS=$($GETTEXT "Password for LUKS partition:")
 
+TRY_CREATE=$($GETTEXT "Trying to create")
+NOT_FOUND_CREATE=$($GETTEXT "was not found, create it?")
+ENTER_FS_TYPE=$($GETTEXT "enter FS type")
+ENTER_SIZE=$($GETTEXT "enter new image size Mb")
+ENTER_PASSWORD=$($GETTEXT "enter password")
 
 ##### UIRD cmdline parameters aliases
 
@@ -2657,7 +2662,7 @@ mkimg() {
 	fi
 	log "mkimg: $FS $SIZE"
 	echo '' ; echo_green_star
-	echolog "Trying to create $SOURCE $FS ${SIZE}"
+	echolog "$TRY_CREATE $SOURCE $FS ${SIZE}"
 	if $(dirname $newimg |grep -q ^$SYSMNT ) ; then
 			DIR=$(dirname $newimg)
 			mkdir -p $DIR
@@ -2665,8 +2670,8 @@ mkimg() {
 	else
 			ANS="y"
 			if ! [  "$(getpar $UIRD_FORCE)_" == "enabled_" -o  "$FORCE" == "yes"   ]  ; then 
-				echo "$SOURCE was not found, create it? (Y/N):" 
-				ANS=$(ask_answer "$SOURCE was not found, create it? (Y/N):")
+				echo "$SOURCE $NOT_FOUND_CREATE (Y/N):" 
+				ANS=$(ask_answer "$SOURCE  $NOT_FOUND_CREATE (Y/N):")
 			fi
 			if [ "$ANS" == "y" -o "$ANS" == "Y" ] ; then
 				if $(dirname $newimg |grep -q [[:alnum:]] ); then
@@ -2675,14 +2680,14 @@ mkimg() {
 					DIR="$(find $LAYER_BASE  -maxdepth 1 -type d |sort | tail -n1)"
 				fi
 				if ! [ "$FS" ] ; then
-					echo "enter FS type (default ext4): " 
-					FS=$(ask_answer "enter FS type (default ext4): ")
+					echo "$ENTER_FS_TYPE (default ext4): " 
+					FS=$(ask_answer "$ENTER_FS_TYPE (default ext4): ")
 					[ "$FS" == "" ] && FS='ext4'
 				fi
 				if ! [ "$SIZE" ] ; then
 					maxsize=$(df -m $DIR |tail -n1 |awk '{print $4}')
-					echo "enter new image size Mb (default: 1024, max: $maxsize): " 
-					SIZE=$(ask_answer "enter new image size Mb (default: 1024, max: $maxsize): ")
+					echo "$ENTER_SIZE  (default: 1024, max: $maxsize): " 
+					SIZE=$(ask_answer "$ENTER_SIZE (default: 1024, max: $maxsize): ")
 					[ "$SIZE" == "" ] && SIZE='1024'
 				fi
 			fi
@@ -2710,8 +2715,8 @@ mkimg() {
 				if [ -f "$KEY" ] ; then
 					cryptsetup open --type loopaes "$FNAME"  uirdnewenc --key-file "$KEY"
 				else
-					echo "enter PASSWORD:(default: linuxforever) " 
-					PASS=$(ask_answer "enter PASSWORD:(default: linuxforever) ") 
+					echo "$ENTER_PASSWORD (default: linuxforever) " 
+					PASS=$(ask_answer "$ENTER_PASSWORD:(default: linuxforever) ") 
 					[  -z "$PASS" ] && PASS='linuxforever'
 					echo "$PASS" | cryptsetup open --type loopaes "$FNAME"  uirdnewenc --key-file -
 				fi
