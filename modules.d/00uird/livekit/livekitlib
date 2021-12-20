@@ -103,6 +103,9 @@ INITIALIZE=$($GETTEXT "initializing")
 FREE_SPACE_LESS_THEN_CHECK="    $($GETTEXT "Free space less then CHECKSPASE")"
 FREE_SPACE_LESS_THEN_CHECK_ASK="    $($GETTEXT "[S]hutdown, [R]eboot, [C]ontinue, [E]rase-and-continue ?")"
 
+ENC_PASS=$($GETTEXT "Password for encrypted FS:")
+LUKS_PASS$($GETTEXT "Password for LUKS partition:")
+
 
 ##### UIRD cmdline parameters aliases
 
@@ -202,7 +205,9 @@ debug_log() {
 #
 header() {
 if ! getpar $UIRD_SILENT >/dev/null ; then
-        	echo -e "\\033[0;1m""$@""\\033[0;0m"
+	echo ''
+	echolog "\\033[0;1m""$@""\\033[0;0m"
+	echo ''
 fi
 }
 
@@ -226,13 +231,12 @@ log() {
 }
 
 echolog() {
-log "$@"
+local text
+text="$(echo "$@" |sed 's:\\\033\[[[:digit:]];*[[:digit:]]*m::g')"
+log "$text"
 if ! getpar $UIRD_SILENT >/dev/null ; then
-	local key
-	#key="$1"
-	#shift
 	if plymouth --ping 2>/dev/null; then 
-		plymouth display-message --text="$(echo -e  "$@")"
+		plymouth display-message --text="$text"
 	else
 		echo -e "$@"  >/dev/console 2>&1
 	fi
@@ -981,7 +985,7 @@ mount_device() {
 				cryptsetup open --type loopaes "$DEV" "$LOOPDEV" --key-file  "$KEY" >> $LOGFILE 2>&1
 			else
 				echo "Password:" >/dev/console
-				PASS=$(ask_pass "Password")
+				PASS=$(ask_pass "$ENC_PASS")
 				echo $PASS | cryptsetup open --type loopaes "$DEV" "$LOOPDEV" --key-file -
 			fi
 			
@@ -1021,7 +1025,7 @@ if [ $ERR -ne 0 ] && [ -b "$DEV" ] && $BIN_BLKID "$DEV" -s TYPE | grep -q crypto
 				else
 					if [ "$PASS"_ == "_" ]  ;  then
 						echo "Please enter password:" >/dev/console
-						PASS=$(ask_pass "Password")
+						PASS=$(ask_pass "$LUKS_PASS")
 					fi
 					echo "$PASS" | cryptsetup luksOpen "$DEV" "$LUKS_DEV" >> $LOGFILE 2>&1
 				fi
