@@ -984,7 +984,7 @@ mount_device() {
 				echolog "Found keyfile:  $KEY "
 				cryptsetup open --type loopaes "$DEV" "$LOOPDEV" --key-file  "$KEY" >> $LOGFILE 2>&1
 			else
-				echo "Password:" >/dev/console
+				echo "$ENC_PASS" >/dev/console
 				PASS=$(ask_pass "$ENC_PASS")
 				echo $PASS | cryptsetup open --type loopaes "$DEV" "$LOOPDEV" --key-file -
 			fi
@@ -1024,7 +1024,7 @@ if [ $ERR -ne 0 ] && [ -b "$DEV" ] && $BIN_BLKID "$DEV" -s TYPE | grep -q crypto
 					log "$(umount /tmp/lukskey 2>&1)"
 				else
 					if [ "$PASS"_ == "_" ]  ;  then
-						echo "Please enter password:" >/dev/console
+						echo "$LUKS_PASS" >/dev/console
 						PASS=$(ask_pass "$LUKS_PASS")
 					fi
 					echo "$PASS" | cryptsetup luksOpen "$DEV" "$LUKS_DEV" >> $LOGFILE 2>&1
