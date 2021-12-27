@@ -372,9 +372,9 @@ echodebug() {
 cfg_parser_pre() {
 getcmdline >/tmp/cmdline
 if [ "$SECLEVEL" -gt 0 ] ; then
-	echo $(cat /proc/cmdline /tmp/cmdline 2>/dev/null | tr -s ";" ",") >/tmp/cmdline
+	echo $(cat /proc/cmdline /tmp/cmdline 2>/dev/null |sed 's/(.*)//' | tr -s ";" ",") >/tmp/cmdline
 else
-	eval echo $(cat /proc/cmdline /tmp/cmdline 2>/dev/null | tr -s ";" ",") >/tmp/cmdline
+	eval echo $(cat /proc/cmdline /tmp/cmdline 2>/dev/null |sed 's/(.*)//' | tr -s ";" ",") >/tmp/cmdline
 fi
 BASECFG=$(echo -n " " | cat - /tmp/cmdline 2>/dev/null | egrep -m1 -o "(^|[[:space:]])uird.basecfg=[^[:space:]]+" | cut -d "=" -f 2- | head -n1)
 [ -f "$BASECFG" -o "$BASECFG" == "help" ] || BASECFG=/uird_configs/$BASECFG
