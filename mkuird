@@ -142,12 +142,13 @@ if [ $KERNELCFG ] ; then
 	    read qqq
 	fi
 	echo -e "\n${KRNAUFS}\n\n${KRNSQFS}\n"
-	
+
 else
 	echo "Kernel config for $KERNEL not found" 
 fi
 
 EXCLUDE=$(echo "$EXCLUDE" |sed "s/,/|/g")
+OMIT=$(echo "$EXCLUDE" |sed "s/|/ /g")
 
 if ! [ -f $WORKDIR/configs/uird_configs/$CFG ]; then
 	echo "$WORKDIR/configs/uird_configs/$CFG is not exist"
@@ -248,6 +249,7 @@ else
 	echo "-d \"$KM\""		>> ./dracut_run
 	echo "-I \"$INST\""		>> ./dracut_run
 	echo "--filesystems \"$FS\""	>> ./dracut_run
+	echo "--omit-drivers \"$OMIT\""	>> ./dracut_run
 	echo "-i initrd /"		>> ./dracut_run
 	echo "-i configs /"		>> ./dracut_run
 	echo "-i keys /"		>> ./dracut_run
