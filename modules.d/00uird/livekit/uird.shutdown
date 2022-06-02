@@ -56,7 +56,7 @@ uird_shutdown() {
 		echo '    for a in $(seq 15) ; do ' >> "${UNION}/run/initramfs/remount"
     		echo '       [ -b "/dev/mapper/$LUKS_DEV" ] && break ' >> "${UNION}/run/initramfs/remount"
     		echo '       sleep 2 ' >> "${UNION}/run/initramfs/remount"
-    		echo '       dmsetup mknodes  "$LUKS_DEV"' >> "${UNION}/run/initramfs/remount"
+    		echo '       [ $a -ge 13 ] && dmsetup mknodes  "$LUKS_DEV"' >> "${UNION}/run/initramfs/remount"
     		echo '       echo -n . ' >> "${UNION}/run/initramfs/remount"
 		echo '    done ' >> "${UNION}/run/initramfs/remount"
 		echo '	[ -b "/dev/mapper/$LUKS_DEV" ] && break' >> "${UNION}/run/initramfs/remount"
@@ -64,7 +64,7 @@ uird_shutdown() {
 		echo '	times=$(expr $times - 1 )' >> "${UNION}/run/initramfs/remount"
 		echo '	echo "Luks setup - error!, try again ($times try)"' >> "${UNION}/run/initramfs/remount"
 		echo 'done' >> "${UNION}/run/initramfs/remount"
-	fi	
+	fi
 ################################################################	
 	echo "mkdir -p $MPOINT" >> "${UNION}/run/initramfs/remount"
 	echo 'SAVESDEV=$($BLKID 2>/dev/null | grep -m1 $(echo ' " $UUID " ' ) | awk -F: '\'{print \$1}\'')' >> "${UNION}/run/initramfs/remount"
