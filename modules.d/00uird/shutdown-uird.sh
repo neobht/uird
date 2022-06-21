@@ -303,16 +303,18 @@ done
 sync
 
 # make the log
-if [ -d $CFGPWD -a $log != 'no' ] ;then
+if [ -d "$CFGPWD" -a "$log" != 'no' ] ;then
 	logname=$(echo $CHANGESMNT | sed 's/.cfg$/_log.tar.gz/')
 	[ -f $logname ] && mv -f $logname ${logname}.old
 	cd /tmp ; tar -czf $logname * ; cd /
 fi
+
 for a in $(ls -1 /dev/mapper) ; do
 	[ "$a" == 'control' ] && continue
-	umount /dev/mapper/$a 2>/dev/null
-	cryptsetup luksClose $a 2>/dev/null
-done
+	umount /dev/mapper/$a && cryptsetup luksClose $a &
+	sync
+done 2>/dev/null
+
 for mntp in $(mount | egrep -v "tmpfs|proc|sysfs" | awk  '{print $3}' | sort -r) ; do
 	if umount $mntp ; then 
 		echolog "[  ${green}OK${default}  ] Umount: $mntp"
