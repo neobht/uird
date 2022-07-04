@@ -247,6 +247,7 @@ else
 fi
 debug_shell
 
+mkdir -p $UNION/var/log
 mv /var/log/* $UNION/var/log/ 2>/dev/null
 LOGFILE=$UNION/var/log/uird.dbg.log
 

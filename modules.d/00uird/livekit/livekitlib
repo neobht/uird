@@ -96,6 +96,7 @@ COPY_TO_CACHE=$($GETTEXT "Copy data to CACHE, this may take a long time, waiting
 
 FIND_DATA=" - "$($GETTEXT "waiting, it is searching and mounting source\r")
 FSCK_DEVICE=$($GETTEXT "Checking filesystem:")
+EXPAND_DEVICE=$($GETTEXT "Expand partition:")
 MOUNT_DEVICE_ENC=$($GETTEXT "Mounting encrypted filesystem:")
 NOT_ENOUGH_MEMORY=$($GETTEXT "not enough memory.")
 
@@ -954,7 +955,7 @@ mount_device() {
 	OPTIONS=$(echo "$OPTIONS" | sed -r "s/^,+//")
 	if [ "$FS" = "-t ntfs-3g" ]; then
 		[ $FSCK == "yes" ] && fsck_device "$DEV" ntfs
-		ntfsmount "$DEV" "$2" -o $OPTIONS >>/var/log/uird.dbg.log 2>&1
+		ntfsmount "$DEV" "$2" -o $OPTIONS >>$LOGFILE 2>&1
 		ERR=$?
 	else
 		if [ $FSCK == "yes" ] ; then
@@ -964,7 +965,13 @@ mount_device() {
 			fi
 		fi
 		log "mount -n -o $OPTIONS $FS "$DEV" "$2" "
-		mount -n -o $OPTIONS $FS "$DEV" "$2" >>/var/log/uird.dbg.log 2>&1
+		mount -n -o $OPTIONS $FS "$DEV" "$2" >>$LOGFILE 2>&1
+		ERR=$?
+	fi
+	if [ -f ${2}/EXPAND_ME ] ; then
+		umount $2
+		expand_part $DEV 
+		mount -n -o $OPTIONS $FS "$DEV" "$2" #>>$LOGFILE 2>&1
 		ERR=$?
 	fi
 #LOOPAES####################################################
@@ -1879,12 +1886,12 @@ mount_binds() {
 			mkdir -p $DEST
 			echo_blue_star
 			if [ "$INIT" != 'no' -a  "$(ls -1A $SOURCE |wc -l)" -eq 0 ] ; then
-				cp -fa ${DEST}/. ${SOURCE}/ >>/var/log/uird.dbg.log 2>&1
+				cp -fa ${DEST}/. ${SOURCE}/ >>$LOGFILE 2>&1
 				echolog "Binding"$brown" $SOURCE --> $DEST"$yellow" --> Initialized"$default
 			else
 				echolog "Binding"$brown" $SOURCE --> $DEST"$default
 			fi
-			mount -o bind $SOURCE $DEST >>/var/log/uird.dbg.log 2>&1
+			mount -o bind $SOURCE $DEST >>$LOGFILE 2>&1
 		done
 	fi
 }
@@ -2819,4 +2826,30 @@ ask_pass()  {
 	echo "$ANSWER"
 }
 
-
+expand_part() {
+    local device partition TYPE
+    which parted >/dev/null 2>&1 || return
+    [ $1 ] && DEV=$1 || return
+    [ -b $DEV ] || return
+    eval $($BIN_BLKID -s TYPE $DEV |cut -f2 -d ' ')
+    device=$(echo "$DEV" | sed -r "s/p*[0-9]+\$//g")
+    partition=$(echo $DEV | sed 's/^.*[^[:digit:]]//')
+    echo_green_star
+    echolog "$EXPAND_DEVICE" $green"$DEV "$default >/dev/console 2>/dev/console
+    parted -a optimal -s $device resizepart $partition 100% || return 
+    # partprobe $device
+    mkdir /tmp/tmpmnt
+    case $TYPE in
+	ext* )
+	    resize2fs ${device}$partition
+	    mount -o rw ${device}$partition /tmp/tmpmnt  ;;
+	btrfs )
+	    mount -o rw ${device}$partition /tmp/tmpmnt
+	    btrfs filesystem resize max /tmp/tmpmnt ;;
+	*) return ;;
+    esac
+	rm -f /tmp/tmpmnt/EXPAND_ME 
+	umount /tmp/tmpmnt
+	rmdir /tmp/tmpmnt
+	return 0
+}
