@@ -16,7 +16,6 @@ installkernel() {
 }
 
 bins="$UIRD_BINS"
-    
 install() {
 	local _i _progs _path _busybox _binaries
 	#uird
@@ -57,8 +56,9 @@ install() {
 	fi
 	inst $_busybox /usr/bin/busybox
 	_progs=""
+	_filter="bash sh lsmod insmod modprobe rmmod modinfo depmod"
 	for _i in $($_busybox --list); do
-		[ "_i" != "bash" -a "_i" != "sh" ] && _progs="$_progs $_i"
+		echo $_filter |grep -wq $_i || _progs="$_progs $_i"
 	done
 
 	for _i in $_progs; do
