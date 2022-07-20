@@ -1587,7 +1587,7 @@ init_network_dev() {
 	debug_log "init_network_dev" "$*"
 	local MODULE ETH
 
-	for MODULE in 3c59x acenic de4x5 e1000 e1000e e100 epic100 hp100 \
+	for MODULE in virtio_net 3c59x acenic de4x5 e1000 e1000e e100 epic100 hp100 \
 		ne2k-pci pcnet32 8139too 8139cp tulip via-rhine r8169 atl1e yellowfin \
 		tg3 dl2k ns83820 atl1 b44 bnx2 skge sky2 tulip depca 3c501 3c503 \
 		3c505 3c507 3c509 3c515 ac3200 at1700 cosa cs89x0 de600 de620 e2100 \
@@ -1604,9 +1604,9 @@ init_network_dev() {
 
 	# If we are here, none of the above specified modules worked.
 	# As a last chance, try to modprobe everything.
-	find /lib/modules/ -type f |while read a ;do
+	find /lib/modules/ -type f -name '*.ko.*' |while read a ;do
 		echo $(basename $a) |sed 's/\..*$//' |xargs modprobe
-	done
+	done 2>/dev//null 
 	cat /proc/net/dev | grep : | grep -v lo: | cut -d : -f 1 | tr -d " " | head -n 1
 }
 

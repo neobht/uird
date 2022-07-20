@@ -3,12 +3,13 @@
 # This file is distributed under the same license as the PACKAGE package.
 # Anton Goroshkin <neobht@gmail.com>, 2015.
 #
+
 #, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: 1.1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-12-21 01:13+0700\n"
+"POT-Creation-Date: 2022-07-20 09:28+0300\n"
 "PO-Revision-Date: 2015-10-20 00:00+0700\n"
 "Last-Translator: Anton Goroshkin <neobht@gmail.com>\n"
 "Language-Team: Russian <http://magos-linux.ru>\n"
@@ -136,119 +137,123 @@ msgid "Checking filesystem:"
 msgstr "Идёт проверка файловой системы:"
 
 #: стандартный ввод:99
+msgid "Expand partition:"
+msgstr "Увеличение размера раздела:"
+
+#: стандартный ввод:100
 msgid "Mounting encrypted filesystem:"
 msgstr "Подключение шифрованной файловой системы:"
 
-#: стандартный ввод:100
+#: стандартный ввод:101
 msgid "not enough memory."
 msgstr "недостаточно памяти."
 
-#: стандартный ввод:102
+#: стандартный ввод:103
 msgid "initializing"
 msgstr "Инициализируем"
 
-#: стандартный ввод:103
+#: стандартный ввод:104
 msgid "Free space less then CHECKSPASE"
 msgstr "Свободное дискового пространство меньше чем установлено в CHECKSPASE"
 
-#: стандартный ввод:104
+#: стандартный ввод:105
 msgid "[S]hutdown, [R]eboot, [C]ontinue, [E]rase-and-continue ?"
 msgstr ""
 "[S]hutdown (завершить), [R]eboot (перезагрузить), [C]ontinue (продолжить), "
 "[E]rase (стереть все и продолжить) ?"
 
-#: стандартный ввод:106
+#: стандартный ввод:107
 msgid "Password for encrypted FS:"
 msgstr "Пароль для шифрованной ФС:"
 
-#: стандартный ввод:107
+#: стандартный ввод:108
 msgid "Password for LUKS partition:"
 msgstr "Пароль для раздела LUKS:"
 
-#: стандартный ввод:109
+#: стандартный ввод:110
 msgid "Trying to create"
 msgstr "Пробуем создать"
 
-#: стандартный ввод:110
+#: стандартный ввод:111
 msgid "was not found, create it?"
 msgstr "не найден, создать?"
 
-#: стандартный ввод:111
+#: стандартный ввод:112
 msgid "enter FS type"
 msgstr "введите тип ФС"
 
-#: стандартный ввод:112
+#: стандартный ввод:113
 msgid "enter new image size Mb"
 msgstr "введите размер образа в Mb"
 
-#: стандартный ввод:113
+#: стандартный ввод:114
 msgid "enter password"
 msgstr "введите пароль"
 
-#: стандартный ввод:2828
+#: стандартный ввод:2861
 msgid "Starting freemedia...."
 msgstr "Отключаются источники (freemedia)..."
 
-#: стандартный ввод:2829
+#: стандартный ввод:2862
 msgid "Media"
 msgstr "Ресурс"
 
-#: стандартный ввод:2830
+#: стандартный ввод:2863
 msgid "is not free"
 msgstr "не удалось отключить"
 
-#: стандартный ввод:2831
+#: стандартный ввод:2864
 msgid "add the udev rules to remount sources"
 msgstr "создаются правила UDEV для повторного монтирования источников"
 
-#: стандартный ввод:2832
+#: стандартный ввод:2865
 msgid "Can't unmount"
 msgstr "Невозможно размонтировать"
 
-#: стандартный ввод:2972
+#: стандартный ввод:3005
 msgid "Starting UIRD init <http://magos-linux.ru>"
 msgstr "Запускается UIRD init <http://magos-linux.ru>"
 
-#: стандартный ввод:2973
+#: стандартный ввод:3006
 msgid "UIRD init is finished, starting"
 msgstr "UIRD init завершил работу, запускается"
 
-#: стандартный ввод:2974
+#: стандартный ввод:3007
 msgid "Updating directory /mnt"
 msgstr "Обновление директории /mnt"
 
-#: стандартный ввод:2975
+#: стандартный ввод:3008
 msgid "UIRD help system"
 msgstr "Справка по UIRD"
 
-#: стандартный ввод:2976
+#: стандартный ввод:3009
 msgid "No modules found for current kernel"
 msgstr "Модули для текущего ядра не найдены"
 
-#: стандартный ввод:2977
+#: стандартный ввод:3010
 msgid "RAM disk size"
 msgstr "Размер RAM диска"
 
-#: стандартный ввод:3457
+#: стандартный ввод:3495
 msgid "Seting up CHANGES to XZM mode"
 msgstr "Включение режима сохранения в модуль \"toxzm\""
 
-#: стандартный ввод:3458
+#: стандартный ввод:3496
 msgid "File or dir for toxzm mode not found"
 msgstr "Файл или каталог для режима \"toxzm\" не найден"
 
-#: стандартный ввод:3459
+#: стандартный ввод:3497
 msgid "Toxzm  mode disabled!!!"
 msgstr "Режим \"toxzm\" отключен!!!"
 
-#: стандартный ввод:3460
+#: стандартный ввод:3498
 msgid "Parsing"
 msgstr "Разбирается"
 
-#: стандартный ввод:3461
+#: стандартный ввод:3499
 msgid "wrong value - "
 msgstr "неверное значение - "
 
-#: стандартный ввод:3462
+#: стандартный ввод:3500
 msgid "created, trying to setting up CHANGES to XZM mode again"
 msgstr "создан, повторная попытка включения режима \"toxzm\""

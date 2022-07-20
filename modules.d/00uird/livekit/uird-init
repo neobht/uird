@@ -117,8 +117,12 @@ debug_shell
 sed -i "s:LIVEKITNAME.*:LIVEKITNAME=$LIVEKITNAME:" /etc/initvars
 
 #Waits partitions initialization. It need for  cardreaders with some empty slots
+SCANTIMES=$(getpar scantimeout 1 1 | sed -r 's/[^0-9]*([0-9]+).*/\1/')
+[ -z "SCANTIMES"  ] && "SCANTIMES"=10
 while [ "$(cat /proc/partitions | tail -n1 | awk '{print $1}')0" -le 10 ]; do
 	sleep 0.3
+	SCANTIMES=$(($SCANTIMES - 1))
+	[ "$SCANTIMES" -lt '1' ] && break  
 done
 
 #start uird.scan
