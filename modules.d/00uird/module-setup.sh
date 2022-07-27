@@ -61,13 +61,15 @@ install() {
 		echo $_filter |grep -wq $_i || _progs="$_progs $_i"
 	done
 
-	for _i in $_progs; do
+    for _i in $_progs; do
 		_path=$(find_binary "$_i")
 		[ -z "$_path" -o "$_path" = "$_i" ] && _path=/bin/$_i
 		[[ -x $initdir/$_path ]] && continue
 		ln_r /usr/bin/busybox "$_path"
 	done
-
+    for _m in $_filter ; do
+	ln_r /bin/kmod "/sbin/$_m"
+    done
 	echo "version: $(date +%Y%m%d), built for kernel: $kernel" >$initdir/uird_version
 	inst_hook cmdline 95 "$moddir/parse-root-uird.sh"
 	inst_hook mount 99 "$moddir/mount-uird.sh"
