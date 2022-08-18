@@ -55,15 +55,13 @@
     * uird.basecfg=              - расположение базового конфигурационного файла basecfg.ini
     * uird.config=               - расположение конфигурационного файла системы MagOS.ini
     * uird.sgnfiles[+]=          - перечисление файлов-маркеров для поиска источников указанных в uird.from= в соответсвии с их порядком перечисления
-    * uird.ramsize=              - размер RAM
     * uird.ip=                   - IP:GW:MASK, если не указан, то используется DHCP
     * uird.netfsopt[+]=          - дополнительные опции монтирования сетевых ФС: sshfs,nfs,curlftpfs,cifs
     * uird.aria2ram=             - список источников, которые нужно скопировать из сети в RAM до начала поиска uird.from
     * uird.freemedia             - освободить (размонтировать) источники, используется совместно с uird.copy2ram
     * uird.force                 - продолжать загрузку, не задавая вопросов, если источник не найден
-    * uird.parallel              - подключение модулей в параллельном режиме
     * uird.run[+]=               - запуск внешних исполняемых файлов
-    * uird.zram                  - использовать zram вместо tmpfs
+    * uird.rootfs                - размер и тип roots (tmpfs/zram)
     * uird.union=overlay         - использовать overlayfs вместо aufs
     * uird.shutdown              - создать каталог /run/initramfs, который использует systemd при выключении системы, передавая туда управление
     * uird.preinit               - включить обработку ini файла, заданного в uird.config
