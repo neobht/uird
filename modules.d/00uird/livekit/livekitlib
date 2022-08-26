@@ -150,8 +150,9 @@ ENTER_PASSWORD=$($GETTEXT "enter password")
 # debug 		     		 - подробный вывод и приостановка uird-init на нескольких этапах работы
 # uird.silent                - no output
 # uird.hide                  - не перемонтировать $SYSMNT из rootfs initrd в системный rootfs
-[ -f "/uird_configs/uird_aliases" ] && . /uird_configs/uird_aliases
+# uird.mntlinks              - coздавать ссылки live, livemedia, livedata в /mnt  
 
+[ -f "/uird_configs/uird_aliases" ] && . /uird_configs/uird_aliases
 [ -z $UIRD_BASECFG ] && UIRD_BASECFG=uird.basecfg
 [ -z $UIRD_CONFIG ] && UIRD_CONFIG=uird.config
 [ -z $UIRD_SGNFILES ] && UIRD_SGNFILES=uird.sgnfiles
@@ -190,6 +191,7 @@ ENTER_PASSWORD=$($GETTEXT "enter password")
 [ -z $UIRD_ROOTFS ] && UIRD_ROOTFS=uird.rootfs
 [ -z $UIRD_SILENT ] && UIRD_SILENT=uird.silent
 [ -z $UIRD_HIDE ] && UIRD_HIDE=uird.hide
+[ -z $UIRD_MNTLINKS ] && UIRD_MNTLINKS=uird.mntlinks
 
 # =================================================================
 # debug and output functions
@@ -369,7 +371,6 @@ echodebug() {
 	fi
 }
 
-
 cfg_parser_pre() {
 getcmdline >/tmp/cmdline
 if [ "$SECLEVEL" -gt 0 ] ; then
@@ -410,7 +411,7 @@ for par in $(cat  /tmp/basecfg) ; do
 			for value in $(echo "$val" | sed 's/::/ /g') ; do
 				[ ! -e /tmp/parameters/$parDir/$NUM_PAR ] && 	value=$(uuid_label_to_dev "$value")
 	            echo "$value" >> /tmp/parameters/$parDir/$NUM_PAR
-			done
+		done
 		NUM_PAR=$((NUM_PAR + 1))
 		done
 		
@@ -476,22 +477,29 @@ short_pars_compat() {
 
 #$1 - uird.par
 #$2 - number of value
-#$3 - number of subvalue 
+#$3 - number of field
+# getpar $UIRD_PAR  для флага &&  exitcode 0, stdout "enabled" || exitcode 1
+# getpar $UIRD_PAR  для параметра && exitcode 0, stdout: "список подпараметров $UIRD_PAR" || exitcode 1
+# getpar $UIRD_PAR N && exitcode 0, stdout: все поля подпараметра N || exitcode 2
+# getpar $UIRD_PAR [[:digit:]] && exitcode 0, stdout: все поля всех подпараметров || exitcode 2
+# getpar $UIRD_PAR N M  && exitcode 0, stdout: поле М подпараметра N || exitcode 3
+# getpar $UIRD_PAR N '2,4' && exitcode 0, stdout: поля с 2 по 4 подпараметра N || exitcode 3
 getpar() {
 [ "$1" == "$BREAKSTEP"  -a "$DEBUG_IS_ENABLED" != "1" ]   && shell_cmd "break"
 tdir=/tmp/parameters
 if [ $3 ] ; then
-	cat  $tdir/$1/$2 2>/dev/null |sed -n "${3}p" 
-	return
+	cat  $tdir/$1/$2 2>/dev/null |sed -n "${3}p"  && return
+	return 3
 elif [ $2 ] ; then
-	cat  $tdir/$1/$2 2>/dev/null  ; return
+	cat  $tdir/$1/$2 2>/dev/null  && return
+	return 2
 else
 	if  [ -f  "$tdir/$1/enabled" ] ; then
 		echo "enabled" && 	return
 	elif [ -f  "$tdir/$1/1" ] ; then
-		ls "$tdir/$1" && 	return 
+		ls "$tdir/$1" && 	return
 	fi
-	return 2
+	return 1
 fi
 }
 
@@ -1940,7 +1948,7 @@ setup_config() {
 	local INIFILE
 	debug_log "setup config" "$*"
 	INIFILE=$(getpar $UIRD_CONFIG 1 1)
-	[ -z $INIFILE ] && return
+	check_true $INIFILE || return
 	echo_green_star
 	echolog "$SETUP_CONFIG" $brown"$INIFILE"$default
 	for n in $(ls -1 $LAYER_BASE |sort -r) ; do
@@ -2648,7 +2656,7 @@ done
 fi
 #run preinit scripts
 [ -f /tmp/exec ] && . /tmp/exec
-if getpar $UIRD_PREINIT >/dev/null ; then
+if getpar $UIRD_PREINIT && check_true  $(getpar $UIRD_PREINIT 1 1) ; then
 	for NUMPAR in $(getpar $UIRD_PREINIT ) ;do 
 		runscript="$(getpar $UIRD_PREINIT $NUMPAR 1)"
 		[ -x "$runscript" ]  && /bin/bash $runscript
@@ -2851,5 +2859,17 @@ expand_part() {
 	rm -f /tmp/tmpmnt/EXPAND_ME 
 	umount /tmp/tmpmnt
 	rmdir /tmp/tmpmnt
+	return 0
+}
+
+# check $1  to false value (no, 0, false, disable)
+# if $1 empty return 0
+check_true() {
+	[ -z "$1" ] && return
+	[ "$1" ] || return
+	[ "$1" == 'no' ] && return 1
+	[ "$1" == 'false' ] && return 1
+	[ "$1" == 'disable' ] && return 1
+	[ "$1" -eq 0 ] && return 1
 	return 0
 }
