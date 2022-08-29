@@ -140,6 +140,9 @@ debug_shell
 getpar $UIRD_SWAP  && check_true  $(getpar $UIRD_SWAP 1 1) && init_swap  
 debug_shell
 
+# unionfs driver selection and modprobe it for 
+UNION_FS=$(setup_union)
+ 
 setup_rootfs
 debug_shell
 
