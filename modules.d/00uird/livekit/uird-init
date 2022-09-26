@@ -137,7 +137,7 @@ resume_from_suspend
 debug_shell
 
 #init swap
-getpar $UIRD_SWAP  && check_true  $(getpar $UIRD_SWAP 1 1) && init_swap  
+[ "$(getpar $UIRD_SWAP)" ] && init_swap  
 debug_shell
 
 # unionfs driver selection and modprobe it for 
@@ -197,7 +197,7 @@ debug_shell
 # sync data from BASE,CACHE layers to RAM
 copy_to_target $LAYER_BASE "$COPY2RAM" toram $UIRD_COPY2RAM
 debug_shell
-getpar $UIRD_CACHE >/dev/null && copy_to_target $LAYER_CACHE "$COPY2RAM" toram $UIRD_COPY2RAM
+copy_to_target $LAYER_CACHE "$COPY2RAM" toram $UIRD_COPY2RAM
 debug_shell
 
 #toxzm mode
@@ -228,7 +228,7 @@ rmdir $UNION/mnt/* 2>/dev/null
 debug_shell
 
 # old compatibility to linuxlive init
-if getpar $UIRD_MNTLINKS && check_true  $(getpar $UIRD_MNTLINKS 1 1) ; then
+if getpar $UIRD_MNTLINKS >/dev/null && check_true  $(getpar $UIRD_MNTLINKS 1 1) ; then
 	mkdir -p $UNION/mnt/live/memory
 	[ -d "$MEMORY/data/from/0" -a ! -d $UNION/mnt/livemedia ] && ln -sf $MEMORY/data/from/0 $UNION/mnt/livemedia
 	[ -d "$MEMORY/data/from/1" -a ! -d $UNION/mnt/livedata ] && ln -sf $MEMORY/data/from/1 $UNION/mnt/livedata
@@ -238,14 +238,14 @@ debug_shell
 fi
 
 # copy some files to system
-getpar $UIRD_SYSCP && check_true  $(getpar $UIRD_UIRD_SYSCP 1 1) && syscp  $UNION
+getpar $UIRD_SYSCP >/dev/null && check_true  $(getpar $UIRD_UIRD_SYSCP 1 1) && syscp  $UNION
 [ -f "/etc/initvars" ] && cat /etc/initvars | sort | uniq >$UNION/etc/initvars
 
 cd $UNION
 
 echo_green_star
 echolog "$INITIALIZE preinit actions"
-if getpar $UIRD_PREINIT && check_true  $(getpar $UIRD_PREINIT 1 1) ; then
+if getpar $UIRD_PREINIT  >/dev/null && check_true  $(getpar $UIRD_PREINIT 1 1) ; then
 	setup_preinit
 else
     if [ -x "usr/lib/magos/rc.d/rc.preinit" ] ;then
@@ -263,9 +263,9 @@ LOGFILE=$UNION/var/log/uird.dbg.log
 #need for usable_root of dracut
 mkdir -p $UNION/proc $UNION/sys $UNION/dev $UNION/$MEMORY
 
-getpar $UIRD_SHUTDOWN && check_true  $(getpar $UIRD_SHUTDOWN 1 1) && . /uird.shutdown && uird_shutdown
-getpar $UIRD_FREEMEDIA && check_true  $(getpar $UIRD_FREEMEDIA 1 1) && . /uird.freemedia && uird_freemedia
-getpar $UIRD_HIDE && check_true  $(getpar $UIRD_HIDE 1 1) || mount --move $MEMORY $UNION/$MEMORY
+getpar $UIRD_SHUTDOWN  >/dev/null && check_true  $(getpar $UIRD_SHUTDOWN 1 1) && . /uird.shutdown && uird_shutdown
+getpar $UIRD_FREEMEDIA  >/dev/null && check_true  $(getpar $UIRD_FREEMEDIA 1 1) && . /uird.freemedia && uird_freemedia
+getpar $UIRD_HIDE  >/dev/null && check_true  $(getpar $UIRD_HIDE 1 1) || mount --move $MEMORY $UNION/$MEMORY
 
 # fix to init link
 if ! [ -x $UNION/sbin/init ]; then
