@@ -26,11 +26,8 @@ install() {
 	inst "$moddir/livekit/uird.freemedia" "/uird.freemedia"
 	inst "$moddir/livekit/uird.shutdown" "/uird.shutdown"
 	inst "$moddir/livekit/uird.toxzm_mode" "/uird.toxzm_mode"
-#	inst "$moddir/livekit/shutdown" "/shutdown"
-#	inst "$moddir/livekit/i18n/ru.mo" "/usr/share/locale/ru/LC_MESSAGES/uird.mo"
 
 	#binaries
-	#    inst "$moddir/bash-$(uname -i)" "/bin/bash"
 	[ -x "$initdir/bin/bash" ] || inst $(type -p bash) "/bin/bash"
 	inst $(type -p blkid) /sbin/blkid.real
 	inst $(type -p losetup) /sbin/losetup.real
@@ -56,9 +53,9 @@ install() {
 	fi
 	inst $_busybox /usr/bin/busybox
 	_progs=""
-	_filter="bash sh lsmod insmod modprobe rmmod modinfo depmod"
+	_filter="lsmod insmod modprobe rmmod modinfo depmod"
 	for _i in $($_busybox --list); do
-		echo $_filter |grep -wq $_i || _progs="$_progs $_i"
+		echo "$_filter bash sh" |grep -wq $_i || _progs="$_progs $_i"
 	done
 
     for _i in $_progs; do
@@ -68,7 +65,7 @@ install() {
 		ln_r /usr/bin/busybox "$_path"
 	done
     for _m in $_filter ; do
-	ln_r /bin/kmod "/sbin/$_m"
+		ln_r /bin/kmod "/sbin/$_m"
     done
 	echo "version: $(date +%Y%m%d), built for kernel: $kernel" >$initdir/uird_version
 	inst_hook cmdline 95 "$moddir/parse-root-uird.sh"
