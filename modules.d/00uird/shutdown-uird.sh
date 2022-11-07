@@ -115,7 +115,7 @@ rebuild() {
 	export SYSMNT
 	plymouth --quit 2>/dev/null
 	/remount 
-	[ $? == 0 ] || echo -e "[  ${green}OK${default}  ] Remount complete"
+	[ $? == 0 ] && echo -e "[  ${green}OK${default}  ] Remount complete"
 	CFGPWD=$(dirname $CHANGESMNT)
 	export CFGPWD # maybe it is not necessary
 	if [ -f $CHANGESMNT ] ; then

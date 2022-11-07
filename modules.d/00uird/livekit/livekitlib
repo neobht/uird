@@ -275,7 +275,10 @@ debug_shell() {
 # if $1==help then start shell
 shell_cmd() {
 	[ "$SECLEVEL" -gt 2 ] && return
-	plymouth quit 2>/dev/null
+	if plymouth --ping >/dev/null 2>&1 ; then
+	    plymouth quit
+	    setfontkeys
+	fi
 	ln -s /root/bashrc /root/.bashrc 2>/dev/null
 	ln -s /root/bash_profile /root/.bash_profile 2>/dev/null
 	echo
@@ -299,7 +302,10 @@ shell_cmd() {
 start_quickshell() {
 	if getpar qs  > /dev/null ; then
 		[ "$SECLEVEL" -gt 2 ] && return
-		plymouth quit
+		if plymouth --ping >/dev/null 2>&1 ; then
+		    plymouth quit
+		    setfontkeys
+		fi
 		#sleep 2
 		ln -s /root/bashrc /root/.bashrc
 		ln -s /root/bash_profile /root/.bash_profile
