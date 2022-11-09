@@ -51,7 +51,7 @@ uird_shutdown() {
 		echo '		echo "Please enter password for LUKS partition - $DEV:"' >> "${UNION}/run/initramfs/remount"
 		echo '		read PASS' >> "${UNION}/run/initramfs/remount"
 		echo '	fi' >> "${UNION}/run/initramfs/remount"
-		echo '	echo "$PASS" | cryptsetup luksOpen "$DEV" "$LUKS_DEV" & ' >> "${UNION}/run/initramfs/remount"
+		echo '	echo "$PASS" | cryptsetup luksOpen "$DEV" "$LUKS_DEV" >/dev/null 2>&1 & ' >> "${UNION}/run/initramfs/remount"
 		echo '  cspid=$! ' >> "${UNION}/run/initramfs/remount"
 		echo '  echo -n "Waiting for "$DEV" initializing..." ' >> "${UNION}/run/initramfs/remount"
 		echo '    for a in $(seq 15) ; do ' >> "${UNION}/run/initramfs/remount"

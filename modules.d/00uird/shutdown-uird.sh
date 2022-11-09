@@ -115,13 +115,13 @@ rebuild() {
 	export SYSMNT
 	plymouth --quit 2>/dev/null
 	/remount 
-	[ $? == 0 ] && echo -e "[  ${green}OK${default}  ] Remount complete"
+	[ $? == 0 ] && echolog "[  ${green}OK${default}  ] Remount complete"
 	CFGPWD=$(dirname $CHANGESMNT)
 	export CFGPWD # maybe it is not necessary
 	if [ -f $CHANGESMNT ] ; then
 		. $CHANGESMNT
 	else
-		echolog "ERROR: $CHANGESMNT no such file!"
+		echolog "[${red}FALSE!${default}] $CHANGESMNT no such file!"
 		BALLOON_COLOR="$red" 
 		BALLOON_SPEED="0.05"
 		sleep 10
@@ -253,8 +253,8 @@ rebuild() {
 		else
 			BALLOON_COLOR="$red" 
 			BALLOON_SPEED="0.05"
-			echo -e "[  ${red}FALSE!${default}  ]  System changes was not saved to $SAVETOMODULENAME"
-			echo "          Changes dir is $SRC, you may try to save it manualy"
+			echolog "[  ${red}FALSE!${default}  ]  System changes was not saved to $SAVETOMODULENAME"
+			echolog "          Changes dir is $SRC, you may try to save it manualy"
 			shell_
 		fi
 			umount $UNION  2> /dev/null 
@@ -319,7 +319,7 @@ for mntp in $(mount | egrep -v "tmpfs|proc|sysfs" | awk  '{print $3}' | sort -r)
 	if umount $mntp ; then 
 		echolog "[  ${green}OK${default}  ] Umount: $mntp"
 	else
-		echo -e "[${red}FALSE!${default}] Umount: $mntp"
+		echolog "[${red}FALSE!${default}] Umount: $mntp"
 		mount -o remount,ro $mntp && echolog "[  ${green}OK${default}  ] Remount RO: $mntp"
 	fi
 done
