@@ -3,13 +3,12 @@
 # This file is distributed under the same license as the PACKAGE package.
 # Anton Goroshkin <neobht@gmail.com>, 2015.
 #
-
 #, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: 1.1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-07-20 09:28+0300\n"
+"POT-Creation-Date: 2022-11-17 11:23+0300\n"
 "PO-Revision-Date: 2015-10-20 00:00+0700\n"
 "Last-Translator: Anton Goroshkin <neobht@gmail.com>\n"
 "Language-Team: Russian <http://magos-linux.ru>\n"
@@ -118,7 +117,7 @@ msgstr "Инициализация сетевых сервисов"
 
 #: стандартный ввод:93
 msgid "Preparing layers for"
-msgstr "Поготовка слоев для"
+msgstr "Подготовка слоев для"
 
 #: стандартный ввод:94
 msgid "Copy data to RAM, this may take a long time, waiting..."
@@ -154,7 +153,7 @@ msgstr "Инициализируем"
 
 #: стандартный ввод:104
 msgid "Free space less then CHECKSPASE"
-msgstr "Свободное дискового пространство меньше чем установлено в CHECKSPASE"
+msgstr "Свободное дисковое пространство меньше чем установлено в CHECKSPASE"
 
 #: стандартный ввод:105
 msgid "[S]hutdown, [R]eboot, [C]ontinue, [E]rase-and-continue ?"
@@ -190,70 +189,144 @@ msgstr "введите размер образа в Mb"
 msgid "enter password"
 msgstr "введите пароль"
 
-#: стандартный ввод:2861
+#: стандартный ввод:116
+msgid "Remounting media for saves..."
+msgstr "Монтируем устройства заново"
+
+#: стандартный ввод:117
+msgid "Remount complete"
+msgstr "Монтирование завершено"
+
+#: стандартный ввод:118
+msgid "no such file!"
+msgstr "нет такого файла"
+
+#: стандартный ввод:119
+msgid "The system is ready to save changes to the"
+msgstr "Система готова для записи изменений в"
+
+#: стандартный ввод:120
+msgid "Saving changes..."
+msgstr "Сохраняются системные изменния"
+
+#: стандартный ввод:121
+msgid "Merging old module and session changes, it may take a long time"
+msgstr ""
+"Объединяются предыдуший модуль с текущими изменениями, это может быть не "
+"быстро"
+
+#: стандартный ввод:122
+msgid "UIRD shutdown started!"
+msgstr "UIRD: Система сохранения в модуль запущена"
+
+#: стандартный ввод:123
+msgid "Umount"
+msgstr "Размонтирование"
+
+#: стандартный ввод:124
+msgid "Please enter password for LUKS partition"
+msgstr "Введите пароль для раздела LUKS"
+
+#: стандартный ввод:125
+msgid "Waiting for"
+msgstr "Ожидаем инициализацию"
+
+#: стандартный ввод:126
+msgid "Luks setup - error!, try again"
+msgstr "Ошибка подключения раздела LUKS, попробуйте еще раз"
+
+#: стандартный ввод:127
+msgid "Complete!"
+msgstr "Готово"
+
+#: стандартный ввод:128
+msgid "Old module exists..."
+msgstr "Предыдущий модуль существует..."
+
+#: стандартный ввод:129
+msgid "Please wait. Preparing excludes for module"
+msgstr "Готовятся исключения для модуля. Пожалуйста ждите"
+
+#: стандартный ввод:130
+msgid "Please wait. Saving changes to module"
+msgstr "Изменения сохраняются в модуль. Ждите"
+
+#: стандартный ввод:131
+msgid "System changes was not saved to"
+msgstr "Не удалось сохранить изменения в"
+
+#: стандартный ввод:132
+msgid "No such directory:"
+msgstr "Нет такого каталога:"
+
+#: стандартный ввод:133
+msgid "Remount RO:"
+msgstr "Перемонтируется только для чтения (RO)"
+
+#: стандартный ввод:2913
 msgid "Starting freemedia...."
 msgstr "Отключаются источники (freemedia)..."
 
-#: стандартный ввод:2862
+#: стандартный ввод:2914
 msgid "Media"
 msgstr "Ресурс"
 
-#: стандартный ввод:2863
+#: стандартный ввод:2915
 msgid "is not free"
 msgstr "не удалось отключить"
 
-#: стандартный ввод:2864
+#: стандартный ввод:2916
 msgid "add the udev rules to remount sources"
 msgstr "создаются правила UDEV для повторного монтирования источников"
 
-#: стандартный ввод:2865
+#: стандартный ввод:2917
 msgid "Can't unmount"
 msgstr "Невозможно размонтировать"
 
-#: стандартный ввод:3005
+#: стандартный ввод:3055
 msgid "Starting UIRD init <http://magos-linux.ru>"
 msgstr "Запускается UIRD init <http://magos-linux.ru>"
 
-#: стандартный ввод:3006
+#: стандартный ввод:3056
 msgid "UIRD init is finished, starting"
 msgstr "UIRD init завершил работу, запускается"
 
-#: стандартный ввод:3007
+#: стандартный ввод:3057
 msgid "Updating directory /mnt"
 msgstr "Обновление директории /mnt"
 
-#: стандартный ввод:3008
+#: стандартный ввод:3058
 msgid "UIRD help system"
 msgstr "Справка по UIRD"
 
-#: стандартный ввод:3009
+#: стандартный ввод:3059
 msgid "No modules found for current kernel"
 msgstr "Модули для текущего ядра не найдены"
 
-#: стандартный ввод:3010
+#: стандартный ввод:3060
 msgid "RAM disk size"
 msgstr "Размер RAM диска"
 
-#: стандартный ввод:3495
+#: стандартный ввод:3554
 msgid "Seting up CHANGES to XZM mode"
 msgstr "Включение режима сохранения в модуль \"toxzm\""
 
-#: стандартный ввод:3496
+#: стандартный ввод:3555
 msgid "File or dir for toxzm mode not found"
 msgstr "Файл или каталог для режима \"toxzm\" не найден"
 
-#: стандартный ввод:3497
+#: стандартный ввод:3556
 msgid "Toxzm  mode disabled!!!"
 msgstr "Режим \"toxzm\" отключен!!!"
 
-#: стандартный ввод:3498
+#: стандартный ввод:3557
 msgid "Parsing"
 msgstr "Разбирается"
 
-#: стандартный ввод:3499
+#: стандартный ввод:3558
 msgid "wrong value - "
 msgstr "неверное значение - "
 
-#: стандартный ввод:3500
+#: стандартный ввод:3559
 msgid "created, trying to setting up CHANGES to XZM mode again"
 msgstr "создан, повторная попытка включения режима \"toxzm\""

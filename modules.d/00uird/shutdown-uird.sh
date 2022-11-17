@@ -4,6 +4,11 @@
 # script must be started only once
 # if tmp dir exists, the script is run a second time
 [ -d /tmp ] && exit 0
+. /etc/initvars
+export TEXTDOMAIN="uird"
+export TEXTDOMAINDIR="/usr/share/locale"
+export LANG
+. /livekitlib
 
 clear 
 shell="no" ; ask="no" ; silent="no" ; haltonly="no" ; lowuptime="no" ; log='no'
@@ -37,17 +42,28 @@ get_MUID() {
 		echo "$MUID"
 	}
 
-echolog() {
+log(){
 	echo "$@" 2>/dev/null >> /tmp/uird.shutdown.log
+}
+
+echolog() {
+	log "$@" 
 	if 	[ "$silent" == no ] >/dev/null ; then
 		local key
-		key="$1"
-	shift
-		echo -e "$key" $@ >/dev/console 2>/dev/console
+		if [ "$2" ] ; then 
+			key="$1"
+			shift
+		fi
+		if plymouth --ping 2>/dev/null; then 
+			plymouth display-message --text="$(echo "$@" |sed 's:\\\033\[[[:digit:]];*[[:digit:]]*m::g')"
+		else
+			echo -e "$key" $@ >/dev/console 2>/dev/console
+		fi
 	fi
 }
 
 shell_() {
+	plymouth --quit 2>/dev/null
 	echo -e  ${red}"Please, enter \"exit\", to continue shutdown"${default}
 	/bin/ash
 	echo ''
@@ -111,17 +127,16 @@ echo -e $black
 
 rebuild() {
 	BALLOON_COLOR="$green"
-	echolog "Remounting media for saves..."
+	echolog "$REMOUNT_FOR_SAVES"
 	export SYSMNT
-	plymouth --quit 2>/dev/null
-	/remount 
-	[ $? == 0 ] && echolog "[  ${green}OK${default}  ] Remount complete"
+	. /remount
+	[ $? == 0 ] && echolog "[  ${green}OK${default}  ] $REMOUNT_COMPLETE"
 	CFGPWD=$(dirname $CHANGESMNT)
 	export CFGPWD # maybe it is not necessary
 	if [ -f $CHANGESMNT ] ; then
 		. $CHANGESMNT
 	else
-		echolog "[${red}FALSE!${default}] $CHANGESMNT no such file!"
+		echolog "[${red}FALSE!${default}] $CHANGESMNT $NO_FILE"
 		BALLOON_COLOR="$red" 
 		BALLOON_SPEED="0.05"
 		sleep 10
@@ -157,13 +172,14 @@ rebuild() {
 		[ -w $SAVETOMODULEDIR  ] || continue
 		[ "$shell" == "yes" ] && shell_
 		if [ "$ask" == "yes" -o "$lowuptime" == "yes" ] ; then
-			echolog "Uptime: $uptime min"
-			echo -e "${brown}The system is ready to save changes to the $XZM ${default} "
-			echo -ne $yellow"(C)ontinue(default), (A)bort: $default"
-			read ASK
+			echo "Uptime: $uptime min"
+			echolog "${brown}$READY_TO_SAVE $XZM"
+			echo "(C)ontinue(default), (A)bort:"
+			echo -en  "${default}"
+			ASK=$(ask_answer "(C)ontinue(default), (A)bort")
 		case "$ASK" in
 			"A" | "a") REBUILD="no" ;;
-			*) echolog "Saving changes..." ;;
+			*) echolog "${SAVE_CHANGES}..." ;;
 		esac
 		fi
 	if [ "$REBUILD" == "yes"  ] ; then
@@ -186,9 +202,9 @@ rebuild() {
 		echo "/mnt" >> /tmp/$n/excludedfiles # maybe it is not necessary
 		# if old module exists we have to concatenate it
 		if [ -f "$SAVETOMODULENAME" ]; then
-		echolog "Old module exists..."
+		echolog "$OLD_MODULE_EXISTS"
 			if [ "$MODE" = "mount+wh" -o "$MODE" = "mount" -o "$MODE" = "overlay" ] ; then
-				echolog 'Merging old module and session "changes", it may take a long time'
+				echolog "$MERGING"
 				UNION=/tmp/UNION
 				mkdir -p $UNION ${UNION}-bundle
 				mount -o loop "$SAVETOMODULENAME" ${UNION}-bundle			
@@ -215,7 +231,7 @@ rebuild() {
 			fi
 		fi
 		if [ -n "$ADDFILTER" -o -n "$DROPFILTER" ] ;then
-			echolog "Please wait. Preparing excludes for module ${SAVETOMODULENAME}....." 
+			echolog "$PREPARING_EXCLUDES ${SAVETOMODULENAME}....." 
 			# do not create list of all files from changes, if it already exists
 			[ -f /tmp/allfiles  ] || find $SRC/ | sed -e 's|^'$SRC'||' -e '/^\/$/d' > /tmp/allfiles
 			: > /tmp/savelist.black
@@ -242,18 +258,18 @@ rebuild() {
 			|sort -u >> /tmp/$n/excludedfiles
 		fi
 		sed -i 's|^/||' /tmp/$n/excludedfiles
-		echolog "Please wait. Saving changes to module ${SAVETOMODULENAME}....."
+		echolog "$SAVING_CHANGES ${SAVETOMODULENAME}....."
 		[ "$shell" = "yes" ] && shell_
 		eval mksquashfs $SRC "${SAVETOMODULENAME}.new" -ef /tmp/$n/excludedfiles $SQFSOPT -wildcards $DEVNULL 
 		if [ $? == 0 ] ; then
-			echolog "[  ${green}OK${default}  ]  $SAVETOMODULENAME  -- complete."
+			echolog "[  ${green}OK${default}  ]  $SAVETOMODULENAME  -- ${COMPLETE}."
 			[ -f "$SAVETOMODULENAME" ] && mv -f "$SAVETOMODULENAME" "${SAVETOMODULENAME}.bak" 
 			mv -f "${SAVETOMODULENAME}.new" "$SAVETOMODULENAME" 
 			chmod 400 "$SAVETOMODULENAME"
 		else
 			BALLOON_COLOR="$red" 
 			BALLOON_SPEED="0.05"
-			echolog "[  ${red}FALSE!${default}  ]  System changes was not saved to $SAVETOMODULENAME"
+			echolog "[  ${red}FALSE!${default}  ]  $WAS_NOT_SAVED $SAVETOMODULENAME"
 			echolog "          Changes dir is $SRC, you may try to save it manualy"
 			shell_
 		fi
@@ -266,13 +282,13 @@ rebuild() {
 }
 
 mkdir -p /tmp
-echolog "UIRD shutdown started!"
+echolog "$SHTD_STARTED"
 date >> /tmp/uird.shutdown.log
 
-[ -f /oldroot/etc/initvars ] && . /oldroot/etc/initvars || BALLOON_COLOR="$red"
+# [ -f /oldroot/etc/initvars ] && . /oldroot/etc/initvars || BALLOON_COLOR="$red"
 [ -f /shutdown.cfg ] && . /shutdown.cfg || BALLOON_COLOR="$red"
 if ! [ -d "/oldroot$SYSMNT" ] ; then
-	echolog "ERROR:  /oldroot$SYSMNT no such directory"
+	echolog "$NO_DIR /oldroot$SYSMNT "
 	BALLOON_COLOR="$red"
 	unset CHANGESMNT
 	sleep 5
@@ -286,14 +302,14 @@ mount -o move /oldroot${SYSMNT}  ${SYSMNT}
 
 [ "$ACTION" = "reboot" -a "$haltonly" = "yes" ] && unset CHANGESMNT  
 if umount /oldroot  ; then
-	echolog "[  ${green}OK${default}  ] Umount: ROOTFS"
+	echolog "[  ${green}OK${default}  ] ${UMOUNT}: ROOTFS"
 else
-	echolog "[${red}FALSE!${default}] Umount: ROOTFS"	
+	echolog "[${red}FALSE!${default}] ${UMOUNT}: ROOTFS"
 fi
-echolog "$(umount $(mount | egrep -v "tmpfs|zram|proc|sysfs" | awk  '{print $3}' | sort -r) 2>&1) "
+log "$(umount $(mount | egrep -v "tmpfs|zram|proc|sysfs" | awk  '{print $3}' | sort -r) 2>&1) "
 n=0
 while mount | egrep -v "tmpfs|zram|proc|sysfs" ; do
-	echolog "$(umount $(mount | egrep -v "tmpfs|zram|proc|sysfs" | awk  '{print $3}' | sort -r) 2>&1) "
+	log "$(umount $(mount | egrep -v "tmpfs|zram|proc|sysfs" | awk  '{print $3}' | sort -r) 2>&1) "
 	sleep 0.3 ; n=$(( $n +1 )) 
 	[ $n -ge 3 ] && break
 done
@@ -317,12 +333,14 @@ done 2>/dev/null
 
 for mntp in $(mount | egrep -v "tmpfs|proc|sysfs" | awk  '{print $3}' | sort -r) ; do
 	if umount $mntp ; then 
-		echolog "[  ${green}OK${default}  ] Umount: $mntp"
+		echolog "[  ${green}OK${default}  ] ${UMOUNT}: $mntp"
 	else
-		echolog "[${red}FALSE!${default}] Umount: $mntp"
-		mount -o remount,ro $mntp && echolog "[  ${green}OK${default}  ] Remount RO: $mntp"
+		echolog "[${red}FALSE!${default}] ${UMOUNT}: $mntp"
+		mount -o remount,ro $mntp && echolog "[  ${green}OK${default}  ] $REMOUNT_RO $mntp"
 	fi
 done
+
+plymouth --ping 2>/dev/null &&  plymouth  --hide-splash  
 [ "$shell" = "yes" ] && shell_
 [ "$silent" = "no" ] && banner "$BALLOON_COLOR" "$BALLOON_SPEED"
 grep  /dev/sd /proc/mounts && sleep 5

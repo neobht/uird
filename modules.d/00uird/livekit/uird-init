@@ -26,14 +26,8 @@ CMDLINE_LANG=$(echo -n " " | cat - /proc/cmdline 2>/dev/null | tr -s ";" "," | e
 export LANG=$LANG
 export LOCALE=$LANG
 
-setfontkeys() {
-    [ -d "/usr/lib/consolefonts/${LANG}" -o -L "/usr/lib/consolefonts/${LANG}" ] && loadfont < /usr/lib/consolefonts/${LANG}/$(ls -1 /usr/lib/consolefonts/${LANG}/)  >/dev/null
-    [ -d "/usr/lib/kbd/${LANG}" -o -L "/usr/lib/kbd/${LANG}" ] && loadkeys /usr/lib/kbd/${LANG}/$(ls -1 /usr/lib/kbd/${LANG}/) >/dev/null
-}
-
-setfontkeys
-
 . /livekitlib
+setfontkeys
 
 #Messages
 HEADER_START=$($GETTEXT "Starting UIRD init <http://magos-linux.ru>")

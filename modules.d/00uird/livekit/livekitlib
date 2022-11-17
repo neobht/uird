@@ -112,6 +112,25 @@ NOT_FOUND_CREATE=$($GETTEXT "was not found, create it?")
 ENTER_FS_TYPE=$($GETTEXT "enter FS type")
 ENTER_SIZE=$($GETTEXT "enter new image size Mb")
 ENTER_PASSWORD=$($GETTEXT "enter password")
+# text for shutdown
+REMOUNT_FOR_SAVES=$($GETTEXT "Remounting media for saves...")
+REMOUNT_COMPLETE=$($GETTEXT "Remount complete")
+NO_FILE=$($GETTEXT "no such file!")
+READY_TO_SAVE=$($GETTEXT "The system is ready to save changes to the")
+SAVE_CHANGES=$($GETTEXT "Saving changes...")
+MERGING=$($GETTEXT "Merging old module and session "changes", it may take a long time")
+SHTD_STARTED=$($GETTEXT "UIRD shutdown started!")
+UMOUNT=$($GETTEXT "Umount")
+PASSWD_ENTER=$($GETTEXT "Please enter password for LUKS partition")
+WAITING_FOR=$($GETTEXT "Waiting for")
+LUKS_ERROR=$($GETTEXT "Luks setup - error!, try again")
+COMPLETE=$($GETTEXT "Complete!")
+OLD_MODULE_EXISTS=$($GETTEXT "Old module exists...")
+PREPARING_EXCLUDES=$($GETTEXT "Please wait. Preparing excludes for module")
+SAVING_CHANGES=$($GETTEXT "Please wait. Saving changes to module")
+WAS_NOT_SAVED=$($GETTEXT "System changes was not saved to")
+NO_DIR=$($GETTEXT "No such directory:")
+REMOUNT_RO=$($GETTEXT "Remount RO:")
 
 ##### UIRD cmdline parameters aliases
 
@@ -239,16 +258,16 @@ log() {
 }
 
 echolog() {
-local text
-text="$(echo "$@" |sed 's:\\\033\[[[:digit:]];*[[:digit:]]*m::g')"
-log "$text"
-if ! getpar $UIRD_SILENT >/dev/null ; then
-	if plymouth --ping 2>/dev/null; then 
-		plymouth display-message --text="$text"
-	else
-		echo -e "$@"  >/dev/console 2>&1
+	local text
+	text="$(echo "$@" |sed 's:\\\033\[[[:digit:]];*[[:digit:]]*m::g')"
+	log "$text"
+	if ! getpar $UIRD_SILENT >/dev/null ; then
+		if plymouth --ping 2>/dev/null; then 
+			plymouth display-message --text="$text"
+		else
+			echo -e "$@"  >/dev/console 2>&1
+		fi
 	fi
-fi
 }
 
 # show information about the debug shell
@@ -2880,3 +2899,9 @@ setup_union(){
 	modprobe "$UNION_FS" 2>/dev/null
 	echo "$UNION_FS"
 }
+
+setfontkeys() {
+    [ -d "/usr/lib/consolefonts/${LANG}" -o -L "/usr/lib/consolefonts/${LANG}" ] && loadfont < /usr/lib/consolefonts/${LANG}/$(ls -1 /usr/lib/consolefonts/${LANG}/)  >/dev/null
+    [ -d "/usr/lib/kbd/${LANG}" -o -L "/usr/lib/kbd/${LANG}" ] && loadkeys /usr/lib/kbd/${LANG}/$(ls -1 /usr/lib/kbd/${LANG}/) >/dev/null
+}
+

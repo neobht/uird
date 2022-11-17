@@ -4,7 +4,7 @@
 uird_shutdown() {
 	local  UUID MPOINT MNTOPTS RBIND savesdir savesname savesdev ARR_CFG
 	move_run
-	#nosave="no"
+	# dracut shutdown script fixed for plymouth
 	: > "${UNION}/run/initramfs/shutdown.cfg"
 	if [ "$(getpar $UIRD_SHUTDOWN 1 1)" ] ; then
 	for a in $(getpar $UIRD_SHUTDOWN ) ; do 
@@ -47,13 +47,13 @@ uird_shutdown() {
 		echo 'echo $HARDPASS | cryptsetup luksOpen "$DEV" --test-passphrase && PASS="$HARDPASS"' >> "${UNION}/run/initramfs/remount"
 		echo 'times=3' >> "${UNION}/run/initramfs/remount"
 		echo 'while [ $times -gt 0 ]; do' >> "${UNION}/run/initramfs/remount"
-		echo '	if ! [ "$PASS" ] ; then'	>> "${UNION}/run/initramfs/remount"
-		echo '		echo "Please enter password for LUKS partition - $DEV:"' >> "${UNION}/run/initramfs/remount"
-		echo '		read PASS' >> "${UNION}/run/initramfs/remount"
+		echo '	if ! [ "$PASS" ] ; then' >> "${UNION}/run/initramfs/remount"
+		echo '		echo "$PASSWD_ENTER - $DEV:"' >> "${UNION}/run/initramfs/remount"
+		echo '		PASS=$(ask_pass "$PASSWD_ENTER - $DEV")' >> "${UNION}/run/initramfs/remount"
 		echo '	fi' >> "${UNION}/run/initramfs/remount"
 		echo '	echo "$PASS" | cryptsetup luksOpen "$DEV" "$LUKS_DEV" >/dev/null 2>&1 & ' >> "${UNION}/run/initramfs/remount"
 		echo '  cspid=$! ' >> "${UNION}/run/initramfs/remount"
-		echo '  echo -n "Waiting for "$DEV" initializing..." ' >> "${UNION}/run/initramfs/remount"
+		echo '  echolog "$WAITING_FOR "$DEV" " ' >> "${UNION}/run/initramfs/remount"
 		echo '    for a in $(seq 15) ; do ' >> "${UNION}/run/initramfs/remount"
     		echo '       [ -b "/dev/mapper/$LUKS_DEV" ] && break ' >> "${UNION}/run/initramfs/remount"
     		echo '       [ -f "/proc/$cspid/cmdline"  ] || break ' >> "${UNION}/run/initramfs/remount"
@@ -66,10 +66,10 @@ uird_shutdown() {
 		echo '  echo "!" '  >> "${UNION}/run/initramfs/remount"
 		echo '	times=$(expr $times - 1 ) ' >> "${UNION}/run/initramfs/remount"
 		echo '  [ $times -eq 0 ] && exit 1 ' >> "${UNION}/run/initramfs/remount"
-		echo '	echo "Luks setup - error!, try again ($times try)"' >> "${UNION}/run/initramfs/remount"
+		echo '	echolog "$LUKS_ERROR ($times)"' >> "${UNION}/run/initramfs/remount"
 		echo 'done' >> "${UNION}/run/initramfs/remount"
 	fi
-################################################################	
+################################################################
 	echo "mkdir -p $MPOINT" >> "${UNION}/run/initramfs/remount"
 	echo 'SAVESDEV=$($BLKID 2>/dev/null | grep -m1 $(echo ' " $UUID " ' ) | awk -F: '\'{print \$1}\'')' >> "${UNION}/run/initramfs/remount"
 	echo "mount  -o $MNTOPTS  "'$SAVESDEV'"  $MPOINT" >> "${UNION}/run/initramfs/remount"
