@@ -10,7 +10,9 @@ export TEXTDOMAINDIR="/usr/share/locale"
 export LANG
 . /livekitlib
 
-clear 
+clear
+setfontkeys
+
 shell="no" ; ask="no" ; silent="no" ; haltonly="no" ; lowuptime="no" ; log='no'
 DEVNULL=''
 DEFSQFSOPT="-b 512K -comp lz4"
@@ -262,7 +264,7 @@ rebuild() {
 		[ "$shell" = "yes" ] && shell_
 		eval mksquashfs $SRC "${SAVETOMODULENAME}.new" -ef /tmp/$n/excludedfiles $SQFSOPT -wildcards $DEVNULL 
 		if [ $? == 0 ] ; then
-			echolog "[  ${green}OK${default}  ]  $SAVETOMODULENAME  -- ${COMPLETE}."
+			echolog "[  ${green}OK${default}  ]"  "$SAVETOMODULENAME  -- ${COMPLETE}."
 			[ -f "$SAVETOMODULENAME" ] && mv -f "$SAVETOMODULENAME" "${SAVETOMODULENAME}.bak" 
 			mv -f "${SAVETOMODULENAME}.new" "$SAVETOMODULENAME" 
 			chmod 400 "$SAVETOMODULENAME"
@@ -340,7 +342,12 @@ for mntp in $(mount | egrep -v "tmpfs|proc|sysfs" | awk  '{print $3}' | sort -r)
 	fi
 done
 
-plymouth --ping 2>/dev/null &&  plymouth  --hide-splash  
+if plymouth --ping 2>/dev/null ; then 
+	plymouth  --quit
+	[ -w /dev/console ] \
+    && (echo < /dev/console > /dev/null 2> /dev/null) \
+    && exec < /dev/console >> /dev/console 2>> /dev/console
+fi
 [ "$shell" = "yes" ] && shell_
 [ "$silent" = "no" ] && banner "$BALLOON_COLOR" "$BALLOON_SPEED"
 grep  /dev/sd /proc/mounts && sleep 5
