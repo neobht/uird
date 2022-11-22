@@ -36,16 +36,8 @@ black='\033[0;30m'
 BALLOON_COLOR="$white"
 BALLOON_SPEED='0.01'
 
-get_MUID() {
-		# calculate machine UID
-		MUID=mac-$(cat /sys/class/net/e*/address 2>/dev/null | head -1 | tr -d :)
-		[ "$MUID" = "mac-" ] && MUID=mac-$(cat /sys/class/net/*/address 2>/dev/null | head -1 | tr -d :)
-		[ "$MUID" = "mac-"  -o "$MUID" = "mac-000000000000" ] && MUID=vga-$(lspci -mm | grep -i vga | md5sum | cut -c 1-12)
-		echo "$MUID"
-	}
-
 log(){
-	echo "$@" 2>/dev/null >> /tmp/uird.shutdown.log
+	echo "$@" 2>&1 >> /tmp/uird.shutdown.log
 }
 
 echolog() {
@@ -64,13 +56,6 @@ echolog() {
 	fi
 }
 
-shell_() {
-	plymouth --quit 2>/dev/null
-	echo -e  ${red}"Please, enter \"exit\", to continue shutdown"${default}
-	/bin/ash
-	echo ''
-}
-
 wh_exclude() {
 	find $1 -name '.wh.*' |sed -e "s:$1::" -e  's/\/.wh./\//' > /tmp/wh_files
 	(cat /tmp/wh_files ;  find $2 |sed "s:$2/:/:" )   |sort |uniq -d > /tmp/wh_exclude
@@ -81,6 +66,12 @@ wh_exclude() {
 banner() {
 # $1 BALLOON_COLOR
 # $2 BALLOON_SPEED
+if plymouth --ping 2>/dev/null ; then 
+	plymouth  --quit
+	[ -w /dev/console ] \
+    && (echo < /dev/console > /dev/null 2> /dev/null) \
+    && exec < /dev/console >> /dev/console 2>> /dev/console
+fi
 echo -e $1
 t=$2
 if [ $COLUMNS ] ; then
@@ -342,13 +333,7 @@ for mntp in $(mount | egrep -v "tmpfs|proc|sysfs" | awk  '{print $3}' | sort -r)
 	fi
 done
 
-if plymouth --ping 2>/dev/null ; then 
-	plymouth  --quit
-	[ -w /dev/console ] \
-    && (echo < /dev/console > /dev/null 2> /dev/null) \
-    && exec < /dev/console >> /dev/console 2>> /dev/console
-fi
-[ "$shell" = "yes" ] && shell_
+[ "$shell" = "yes" ] && shell_cmd 'shell'
 [ "$silent" = "no" ] && banner "$BALLOON_COLOR" "$BALLOON_SPEED"
 grep  /dev/sd /proc/mounts && sleep 5
 exit 0

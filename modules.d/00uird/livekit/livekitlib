@@ -294,12 +294,19 @@ debug_shell() {
 # if $1==help then start shell
 shell_cmd() {
 	[ "$SECLEVEL" -gt 2 ] && return
-	if plymouth --ping >/dev/null 2>&1 ; then
-	    plymouth quit
-	    setfontkeys
-	fi
-	ln -s /root/bashrc /root/.bashrc 2>/dev/null
+	plymouth --ping >/dev/null 2>&1 && plymouth quit
 	ln -s /root/bash_profile /root/.bash_profile 2>/dev/null
+cat << EOF > /root/.bashrc
+# .bashrc
+PATH=.:/:/usr/sbin:/usr/bin:/sbin:/bin
+ENV=/root/.bashrc
+USERNAME="root"
+LANG=$LANG
+PS1='\[\033[31;1m\][\u@QuickShell \W] # \[\033[m\]'
+. /livekitlib
+setfontkeys
+export USERNAME ENV PATH PS1 LANG
+EOF
 	echo
 	if [ "$1" = "shell" ]; then
 		echo "============== SHELL MODE ============="
@@ -321,21 +328,15 @@ shell_cmd() {
 start_quickshell() {
 	if getpar qs  > /dev/null ; then
 		[ "$SECLEVEL" -gt 2 ] && return
-		if plymouth --ping >/dev/null 2>&1 ; then
-		    plymouth quit
-		    setfontkeys
-		fi
-		#sleep 2
-		ln -s /root/bashrc /root/.bashrc
-		ln -s /root/bash_profile /root/.bash_profile
 		mkdir -p /mnt
 		automount
+		plymouth --ping >/dev/null 2>&1 && plymouth quit
 		clear
+		setfontkeys
 		cat /usr/share/uird.help/${LANG}/uird.quickshell.help 2>/dev/null || cat /usr/share/uird.help/uird.quickshell.help
-		setsid bash -c 'exec bash autologin < /dev/tty1 >/dev/tty1 2>&1'
+		shell_cmd shell
 		cd /
 		umount /mnt/*
-		killall getty 
 		echo "continue...."
 	fi
 }
