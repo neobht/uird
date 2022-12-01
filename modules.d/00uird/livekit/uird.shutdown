@@ -47,6 +47,7 @@ uird_shutdown() {
 		echo 'echo $HARDPASS | cryptsetup luksOpen "$DEV" --test-passphrase && PASS="$HARDPASS"' >> "${UNION}/run/initramfs/remount"
 		echo 'times=3' >> "${UNION}/run/initramfs/remount"
 		echo 'while [ $times -gt 0 ]; do' >> "${UNION}/run/initramfs/remount"
+    		echo '  [ -b "/dev/mapper/$LUKS_DEV" ] && break ' >> "${UNION}/run/initramfs/remount"
 		echo '	if ! [ "$PASS" ] ; then' >> "${UNION}/run/initramfs/remount"
 		echo '		echo "$PASSWD_ENTER - $DEV:"' >> "${UNION}/run/initramfs/remount"
 		echo '		PASS=$(ask_pass "$PASSWD_ENTER - $DEV")' >> "${UNION}/run/initramfs/remount"
@@ -73,7 +74,6 @@ uird_shutdown() {
 	echo "mkdir -p $MPOINT" >> "${UNION}/run/initramfs/remount"
 	echo 'SAVESDEV=$($BLKID 2>/dev/null | grep -m1 $(echo ' " $UUID " ' ) | awk -F: '\'{print \$1}\'')' >> "${UNION}/run/initramfs/remount"
 	echo "mount  -o $MNTOPTS  "'$SAVESDEV'"  $MPOINT" >> "${UNION}/run/initramfs/remount"
-	echo '[ $? != 0 ] && ntfs-3g'"  -o $MNTOPTS  "'$SAVESDEV'"  $MPOINT" >> "${UNION}/run/initramfs/remount"
 	for mountstr in $RBIND; do
 		mpoint=$(echo $mountstr | cut -d "," -f2 |sed 's:^/sysroot::')
 		echo "mkdir -p $mpoint" >> "${UNION}/run/initramfs/remount"
@@ -82,4 +82,4 @@ uird_shutdown() {
 	echo '' >> "${UNION}/run/initramfs/remount" 
 	chmod +x "${UNION}/run/initramfs/remount"
 }
-	
+

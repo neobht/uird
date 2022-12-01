@@ -122,14 +122,14 @@ rebuild() {
 	BALLOON_COLOR="$green"
 	echolog "$REMOUNT_FOR_SAVES"
 	export SYSMNT
-	. /remount
-	[ $? == 0 ] && echolog "[  ${green}OK${default}  ] $REMOUNT_COMPLETE"
+	[ -f $CHANGESMNT ] || . /remount
 	CFGPWD=$(dirname $CHANGESMNT)
 	export CFGPWD # maybe it is not necessary
 	if [ -f $CHANGESMNT ] ; then
-		. $CHANGESMNT
+	    echolog "[  ${green}OK${default}  ] $REMOUNT_COMPLETE"
+	    . $CHANGESMNT
 	else
-		echolog "[${red}FALSE!${default}] $CHANGESMNT $NO_FILE"
+		echolog "[${red}FAIL!${default}] $CHANGESMNT $NO_FILE"
 		BALLOON_COLOR="$red" 
 		BALLOON_SPEED="0.05"
 		sleep 10
@@ -262,7 +262,7 @@ rebuild() {
 		else
 			BALLOON_COLOR="$red" 
 			BALLOON_SPEED="0.05"
-			echolog "[  ${red}FALSE!${default}  ]  $WAS_NOT_SAVED $SAVETOMODULENAME"
+			echolog "[  ${red}FAIL!${default}  ]  $WAS_NOT_SAVED $SAVETOMODULENAME"
 			echolog "          Changes dir is $SRC, you may try to save it manualy"
 			shell_
 		fi
@@ -297,7 +297,7 @@ mount -o move /oldroot${SYSMNT}  ${SYSMNT}
 if umount /oldroot  ; then
 	echolog "[  ${green}OK${default}  ] ${UMOUNT}: ROOTFS"
 else
-	echolog "[${red}FALSE!${default}] ${UMOUNT}: ROOTFS"
+	echolog "[${red}FAIL!${default}] ${UMOUNT}: ROOTFS"
 fi
 log "$(umount $(mount | egrep -v "tmpfs|zram|proc|sysfs" | awk  '{print $3}' | sort -r) 2>&1) "
 n=0
@@ -328,7 +328,7 @@ for mntp in $(mount | egrep -v "tmpfs|proc|sysfs" | awk  '{print $3}' | sort -r)
 	if umount $mntp ; then 
 		echolog "[  ${green}OK${default}  ] ${UMOUNT}: $mntp"
 	else
-		echolog "[${red}FALSE!${default}] ${UMOUNT}: $mntp"
+		echolog "[${red}FAIL!${default}] ${UMOUNT}: $mntp"
 		mount -o remount,ro $mntp && echolog "[  ${green}OK${default}  ] $REMOUNT_RO $mntp"
 	fi
 done
