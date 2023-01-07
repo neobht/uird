@@ -20,8 +20,8 @@ uird_freemedia() {
 	mapper_devs=''
 	if [ "$PARS" == "enabled" ] ; then
 		mapper_devs=$(tac /proc/mounts | grep '/dev/mapper' | cut -d " " -f2)
-		devs=$(egrep '/dev/sd.*[[:digit:]]' /proc/mounts | cut -d " " -f1 | sort -u)
-		swaps=$(egrep '/dev/sd.*[[:digit:]]' /proc/swaps | cut -d " " -f1)
+		devs=$(grep -E '/dev/sd.*[[:digit:]]' /proc/mounts | cut -d " " -f1 | sort -u)
+		swaps=$(grep -E '/dev/sd.*[[:digit:]]' /proc/swaps | cut -d " " -f1)
 	else 
 		for a in $PARS ; do
 			par=$(getpar $UIRD_FREEMEDIA $a 1 |sed 's/[[:digit:]].*//')

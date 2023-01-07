@@ -70,7 +70,7 @@ setup_toxzm_mode() {
 	elif [ -f "$DATA_FROM" ] ; then
 		CHANGESMNT=$DATA_FROM
 	else
-		if dirname  $CHANGESVAL |egrep -q "^\.$|^\/$" ; then
+		if dirname  $CHANGESVAL |grep -E -q "^\.$|^\/$" ; then
 			echolog "$TOXZM_NOTFOUND"
 			echolog "$TOXZM_DISABLED"
 			sleep 5
@@ -83,8 +83,8 @@ setup_toxzm_mode() {
 		echo_blue_star
 		echolog "$TOXZM_PARSING $CHANGESMNT"
 		source  "$CHANGESMNT"
-		end=$(( $(cat "$CHANGESMNT" |egrep '^[[:space:]]*XZM[[:digit:]]{,2}=' |wc -l) - 1 ))
-		notenumerated=$(cat "$CHANGESMNT" |egrep '^[[:space:]]*XZM.*[a-zA-Z]+.*=' |sed -e 's/^[[:space:]]*XZM//' -e 's/=.*$//')
+		end=$(( $(cat "$CHANGESMNT" |grep -E '^[[:space:]]*XZM[[:digit:]]{,2}=' |wc -l) - 1 ))
+		notenumerated=$(cat "$CHANGESMNT" |grep -E '^[[:space:]]*XZM.*[a-zA-Z]+.*=' |sed -e 's/^[[:space:]]*XZM//' -e 's/=.*$//')
 		for n in $(seq 0 $end) $notenumerated; do
 			eval XZM=\$XZM$n
 			if [ -z "$XZM" ] ; then 

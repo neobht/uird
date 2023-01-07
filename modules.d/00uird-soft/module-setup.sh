@@ -30,9 +30,9 @@ install() {
     [ -d /usr/lib64/mc/fish ] && dracut_install /usr/lib64/mc/fish/*
     [ -d /usr/lib/mc ] &&  dracut_install /usr/lib/mc/*
     [ -d /usr/lib/mc/fish ] && dracut_install /usr/lib/mc/fish/*
-	egrep -Rs '#![[:space:]]*/bin/.*sh' 	/usr/lib64/mc/ext.d/* /usr/lib64/mc/extfs.d/* \
+	grep -E -Rs '#![[:space:]]*/bin/.*sh' 	/usr/lib64/mc/ext.d/* /usr/lib64/mc/extfs.d/* \
     /usr/lib/mc/ext.d/* /usr/lib/mc/extfs.d/* |sed 's/:.*$//' 2>/dev/null |while read script ; do
-	cat $script |egrep -q '[/, ]python |[/, ]perl ' || dracut_install $script
+	cat $script |grep -E -q '[/, ]python |[/, ]perl ' || dracut_install $script
 	done
 
 

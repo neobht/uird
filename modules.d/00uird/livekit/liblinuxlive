@@ -161,7 +161,7 @@ cmdline_parameter() {
 	log "searching for bootparam: $1"
 	ADDFILE=/tmp/cmdline
 	[ -f /liblinuxlive ] || ADDFILE=/mnt/live$ADDFILE
-	echo -n " " | cat - /proc/cmdline $ADDFILE 2>/dev/null | egrep -m1 -o "(^|[[:space:]])$1([[:space:]]|\$)" | tr -d " "
+	echo -n " " | cat - /proc/cmdline $ADDFILE 2>/dev/null | grep -E -m1 -o "(^|[[:space:]])$1([[:space:]]|\$)" | tr -d " "
 }
 
 # look into cmdline and echo value of $1 option
@@ -172,7 +172,7 @@ cmdline_value() {
 	log "searching for bootparam value: $1"
 	ADDFILE=/tmp/cmdline
 	[ -f /liblinuxlive ] || ADDFILE=/mnt/live$ADDFILE
-	echo -n " " | cat - /proc/cmdline $ADDFILE 2>/dev/null | egrep -m1 -o "(^|[[:space:]])$1=[^[:space:]]+" | cut -d "=" -f 2-
+	echo -n " " | cat - /proc/cmdline $ADDFILE 2>/dev/null | grep -E -m1 -o "(^|[[:space:]])$1=[^[:space:]]+" | cut -d "=" -f 2-
 }
 
 # Make sure the part of a script after 'mutex_lock' call is atomic,
@@ -287,7 +287,7 @@ locale_id() {
 	fi
 
 	if [ "$LOCALE" != "" ]; then
-		cat /usr/share/locale/locale.alias | sed -r "s/#.*//" | egrep "$LOCALE|$LOCALE""_" | tail -n 1 | tr -s "[[:space:]]" " " | cut -d " " -f 2- | tr -d " "
+		cat /usr/share/locale/locale.alias | sed -r "s/#.*//" | grep -E "$LOCALE|$LOCALE""_" | tail -n 1 | tr -s "[[:space:]]" " " | cut -d " " -f 2- | tr -d " "
 	fi
 }
 
@@ -391,7 +391,7 @@ is_supported_filesystem() {
 	fi
 
 	# the following command will set the return value
-	egrep -q "[[:space:]]$1\$" /proc/filesystems
+	grep -E -q "[[:space:]]$1\$" /proc/filesystems
 }
 
 # Check device on demand. Only block devices and *.img loop files  can be checked
@@ -557,7 +557,7 @@ ismountpoint() {
 	local MDIR
 
 	MDIR=$(readlink -f "$1")
-	cat /proc/mounts | cut -d " " -f 2 | egrep "^$MDIR\$" >/dev/null 2>&1
+	cat /proc/mounts | cut -d " " -f 2 | grep -E "^$MDIR\$" >/dev/null 2>&1
 }
 
 # Mount filesystem module to destination directory
@@ -610,9 +610,9 @@ list_modules() {
 	find_modules "$1" | while read LINE; do
 		MODNAME=$(echo $LINE | cut -b ${#1}- | cut -b 2-)
 		if [ "$(echo $LINE | grep /optional/)" ]; then
-			if [ ! "$LOAD" -o ! "$(echo $MODNAME | egrep -i "$LOAD")" ]; then continue; fi
+			if [ ! "$LOAD" -o ! "$(echo $MODNAME | grep -E -i "$LOAD")" ]; then continue; fi
 		fi
-		if [ "$NOLOAD" -a "$(echo $MODNAME | egrep -i "$NOLOAD")" ]; then continue; fi
+		if [ "$NOLOAD" -a "$(echo $MODNAME | grep -E -i "$NOLOAD")" ]; then continue; fi
 		echo $LINE
 	done
 }
@@ -690,7 +690,7 @@ copy_to() {
 	debug_log "copy_to_ram" "$*"
 	list_modules "$1" | while read MODULE; do
 		MODNAME=$(echo $MODULE | cut -b ${#1}- | cut -b 2-)
-		[ "$C2PARAM" ] && ! [ "$(echo $MODNAME | egrep -i $C2PARAM)" ] && continue
+		[ "$C2PARAM" ] && ! [ "$(echo $MODNAME | grep -E -i $C2PARAM)" ] && continue
 		TARGET=$(dirname "$MODULE" | cut -b ${#1}- | cut -b 2-)
 		mkdir -p "$2/$TARGET"
 		echolog "  $3 <- $(basename $MODULE)"
@@ -773,7 +773,7 @@ list_mounted_directories() {
 list_partition_devices() {
 	debug_log "list_partition_devices" "$*"
 	if [ "$(cmdline_parameter nohd)" != "" ]; then return 1; fi
-	egrep -v 'loop|major|^$| [0-9] [a-z]' /proc/partitions | sed -r "s:^[0-9 ]+:/dev/:"
+	grep -E -v 'loop|major|^$| [0-9] [a-z]' /proc/partitions | sed -r "s:^[0-9 ]+:/dev/:"
 	if [ -e /dev/mapper/control ]; then # list LVM partitions if available
 		ls -1 /dev/mapper/ | grep -v "^control\$" | sed -r "s:^:/dev/mapper/:"
 	fi
@@ -783,7 +783,7 @@ list_partition_devices() {
 #
 list_disk_devices() {
 	debug_log "list_disk_devices" "$*"
-	list_partition_devices | egrep -v "[0-9]"
+	list_partition_devices | grep -E -v "[0-9]"
 }
 
 # List all partitions marked as Linux Swap
@@ -901,7 +901,7 @@ find_file() {
 
 	# If path doesn't start with /dev/, try to find the exact path on all devices
 	# First, split DEV/PATH parts
-	DEVPART=$(echo "$FIND" | egrep -o "^/dev/[^/]+")
+	DEVPART=$(echo "$FIND" | grep -E -o "^/dev/[^/]+")
 
 	if [ "$DEVPART" = "" ]; then
 		# no device is specified. Search all devices for filename $FIND
@@ -965,7 +965,7 @@ find_n_run_scripts() {
 	RUNSCRIPTS="$MOD$RCPATH|$MOD/usr/lib/magos/rc.local|$MOD/usr/lib/magos/rc.post"
 	echo $@ | grep -q start || RUNSCRIPTS="$MOD$RCPATH"
 
-	find "$MOD" | egrep "$RUNSCRIPTS" | cut -b "${#MOD}"- | cut -b 2- | xargs -n 1 -r readlink -f | sort -u |
+	find "$MOD" | grep -E "$RUNSCRIPTS" | cut -b "${#MOD}"- | cut -b 2- | xargs -n 1 -r readlink -f | sort -u |
 		while read SCRIPT; do
 			if [ "$SCRIPT" != "" -a -x "$SCRIPT" -a ! -d "$SCRIPT" ]; then
 				# call the script by real path, not from the module
@@ -1081,7 +1081,7 @@ modprobe_network_modules() {
 
 	# probe all drivers. Start by the ones mentioned in pcimodules' output
 	for module in $(#"
-		list_network_drivers | egrep "$(pcimodules | tr "\n" "|")!"
+		list_network_drivers | grep -E "$(pcimodules | tr "\n" "|")!"
 	) $(list_network_drivers); do
 		modprobe_module $module
 		ETH=$(cat /proc/net/dev | grep : | grep -v lo: | cut -d : -f 1 | tr -d " ")
@@ -1209,7 +1209,7 @@ killall_unneeded() {
 	local LIST PID
 
 	PID=$1
-	for pid in $(ps | grep -v "PID" | egrep -v "\[.*\]" | fgrep -v mount | fgrep -v posixovl | fgrep -v ntfs | sed -r "s/^[[:space:]]*([0-9]+).*/\\1/"); do
+	for pid in $(ps | grep -v "PID" | grep -E -v "\[.*\]" | fgrep -v mount | fgrep -v posixovl | fgrep -v ntfs | sed -r "s/^[[:space:]]*([0-9]+).*/\\1/"); do
 		if [ $pid -lt $PID ]; then
 			LIST="$LIST $pid"
 		fi
@@ -1236,7 +1236,7 @@ cd_autoeject() {
 # $2 = device name
 dev_is_in_fstab() {
 	debug_log "dev_is_in_fstab" "$*"
-	cat "$1" | sed -r "s/#.*//" | grep -v "^[[:space:]]*none[[:space:]]" | grep -v "^[[:space:]]*tmpfs[[:space:]]" | egrep -q "^[[:space:]]*$2[[:space:]]"
+	cat "$1" | sed -r "s/#.*//" | grep -v "^[[:space:]]*none[[:space:]]" | grep -v "^[[:space:]]*tmpfs[[:space:]]" | grep -E -q "^[[:space:]]*$2[[:space:]]"
 }
 
 # update given line in fstab, add new values only if the device is not found

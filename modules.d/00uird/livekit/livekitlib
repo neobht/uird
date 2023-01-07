@@ -404,7 +404,7 @@ if [ "$SECLEVEL" -gt 0 ] ; then
 else
 	eval echo $(cat /proc/cmdline /tmp/cmdline 2>/dev/null |sed 's/(.*)//' | tr -s ";" ",") >/tmp/cmdline
 fi
-BASECFG=$(echo -n " " | cat - /tmp/cmdline 2>/dev/null | egrep -m1 -o "(^|[[:space:]])uird.basecfg=[^[:space:]]+" | cut -d "=" -f 2- | head -n1)
+BASECFG=$(echo -n " " | cat - /tmp/cmdline 2>/dev/null | grep -E -m1 -o "(^|[[:space:]])uird.basecfg=[^[:space:]]+" | cut -d "=" -f 2- | head -n1)
 [ -f "$BASECFG" -o "$BASECFG" == "help" ] || BASECFG=/uird_configs/$BASECFG
 if ! [ -f "$BASECFG" -o "$BASECFG" == "help" ]; then
 	echo "$BASECFG is not correct uird.basecfg value"
@@ -482,7 +482,7 @@ old_pars_compat() {
 short_pars_compat() {
 	[ "$SECLEVEL" -gt 4 ] && return
 	local par
-	cat /proc/cmdline | egrep -q " -|^-" || return 
+	cat /proc/cmdline | grep -E -q " -|^-" || return 
 	for par in $(cat /proc/cmdline | sed 's/^.* -//' |cut -d " " -f 1 |fold -w 1) ; do
 		case $par in 
 		q)	mkdir -p /tmp/parameters/qs && : > /tmp/parameters/qs/enabled;;
@@ -667,17 +667,17 @@ init_union() {
 
 		[ "$OPTIONS" = "bind" -a -f "$BUNDLE" ] && continue
 
-		if [ "$CP" -a "$(echo $BUNDLE | egrep -i "$CP")" -o "$MODE" == "copy" ]; then
+		if [ "$CP" -a "$(echo $BUNDLE | grep -E -i "$CP")" -o "$MODE" == "copy" ]; then
 			echolog "  $blue-->" $purple"$BUNDLE"$green" [CP mode] "$default
 			mount -o $OPTIONS $FS "$BUNDLE" "$LBUNDLES/$BUN"
 			cp -a "$LBUNDLES/$BUN"/. "${CPDEST}/" 2>/dev/null
 			umount "$LBUNDLES/$BUN" && rmdir "$LBUNDLES/$BUN" # it need to freemedia 
 			return
-		elif [ "$RUN" -a "$(echo $BUNDLE | egrep -i "$RUN")" ]; then
+		elif [ "$RUN" -a "$(echo $BUNDLE | grep -E -i "$RUN")" ]; then
 			echolog "  $blue-->" $purple"$BUNDLE"$yellow" [RUN mode] "$default
 			[ -x $BUNDLE ] && $BUNDLE
 			return
-		elif [ "$RW" -a "$(echo $BUNDLE | egrep -i "$RW")" ]; then
+		elif [ "$RW" -a "$(echo $BUNDLE | grep -E -i "$RW")" ]; then
 			MOD=rw+wh
 		else
 			MOD=ro+wh
@@ -806,9 +806,9 @@ list_mounted_directories() {
 list_partition_devices() {
 	debug_log "list_partition_devices" "$*"
 	if [ "$(getpar nohd)" == "enabled" ]; then return 1; fi
-	MOUNTED=$(cat /proc/mounts | egrep '/dev/(sd|nbd).*[[:digit:]]' | cut -d " " -f 1 | sort -u)
+	MOUNTED=$(cat /proc/mounts | grep -E '/dev/(sd|nbd).*[[:digit:]]' | cut -d " " -f 1 | sort -u)
 	#not mounted
-	for DEV in $MOUNTED $(egrep -v 'ram|loop|major|sr|^$| [0-9] [a-z]' /proc/partitions | grep [0-9] | sed -r "s:^[0-9 ]+:/dev/:"); do
+	for DEV in $MOUNTED $(grep -E -v 'ram|loop|major|sr|^$| [0-9] [a-z]' /proc/partitions | grep [0-9] | sed -r "s:^[0-9 ]+:/dev/:"); do
 		$BIN_BLKID -s TYPE "$DEV" |grep -q "crypto_LUKS" || echo $DEV
 	done | sort | uniq -u
 	if [ -e /dev/mapper/control ]; then # list LVM partitions if available
@@ -881,7 +881,7 @@ is_supported_filesystem() {
 	fi
 
 	# the following command will set the return value
-	egrep -q "[[:space:]]$1\$" /proc/filesystems
+	grep -E -q "[[:space:]]$1\$" /proc/filesystems
 }
 
 # Check device on demand. Only block devices and *.img loop files  can be checked
@@ -1276,7 +1276,7 @@ ismountpoint() {
 	local MDIR
 
 	MDIR=$(readlink -f "$1")
-	cat /proc/mounts | cut -d " " -f 2 | egrep "^$MDIR\$" >/dev/null 2>&1
+	cat /proc/mounts | cut -d " " -f 2 | grep -E "^$MDIR\$" >/dev/null 2>&1
 }
 
 # Find file-path on given device
@@ -1392,7 +1392,7 @@ find_file() {
 	fi
 	# If path doesn't start with /dev/, try to find the exact path on all devices
 	# First, split DEV/PATH parts
-	DEVPART=$(echo "$FIND" | egrep -o "^/dev/[^/]+")
+	DEVPART=$(echo "$FIND" | grep -E -o "^/dev/[^/]+")
 
 	if [ "$DEVPART" = "" ]; then
 		# no device is specified. Search all devices for filename $FIND
@@ -1768,7 +1768,7 @@ mount_data_source() {
 	DATA_FROM=$(find_data "$SOURCE" "$MNT_DIR" "$FPARS" )
 ##################################################################
 		if ! [ -e "$DATA_FROM" ] ; then 
-			echo $FPARS |egrep -q 'uird.home|uird.changes' && mkimg $SOURCE $MNT_DIR $FPARS
+			echo $FPARS |grep -E -q 'uird.home|uird.changes' && mkimg $SOURCE $MNT_DIR $FPARS
 			log "mkimg maked DATA_FROM - $DATA_FROM"
 		fi
 ##################################################################
@@ -1982,7 +1982,7 @@ setup_config() {
 	[ -z "$PATHINI" ] && echolog $red"$SETUP_CONFIG_NOTFOUND"$default || echolog "$SETUP_CONFIG_USING" $yellow"$PATHINI"$default
 	[ -z "$PATHINI" ] && PATHINI=/dev/null
 	echo "PATHINI=$PATHINI" >>/etc/initvars
-	egrep -v '^#|^$' "$PATHINI" | sed s-\\\\r-- | gzip >$MEMORY/$LIVEKITNAME.ini.gz
+	grep -E -v '^#|^$' "$PATHINI" | sed s-\\\\r-- | gzip >$MEMORY/$LIVEKITNAME.ini.gz
 	if grep -q '^CMDLINE=' "$PATHINI" ; then
 		echo '' >>/tmp/basecfg  
 		grep '^CMDLINE=' "$PATHINI"| sed s/^CMDLINE=// | tr -d [:cntrl:]\'\" >> /tmp/basecfg
@@ -2312,8 +2312,8 @@ list_modules() {
 	NOLOAD=$(echo $(getpar $UIRD_NOLOAD [[:digit:]]) |sed 's/ /|/g')
 	find_modules "$1" | sort | uniq | while read LINE; do
 		MODNAME=$(echo $LINE | cut -b ${#1}- | cut -b 2-)
-		if [ "$LOAD" -a "$(echo $MODNAME | egrep -i "$LOAD")" ]; then
-			if [ "$NOLOAD" -a "$(echo $MODNAME | egrep -i "$NOLOAD")" ]; then continue; fi
+		if [ "$LOAD" -a "$(echo $MODNAME | grep -E -i "$LOAD")" ]; then
+			if [ "$NOLOAD" -a "$(echo $MODNAME | grep -E -i "$NOLOAD")" ]; then continue; fi
 			echo $LINE
 		fi
 	done
@@ -2405,7 +2405,7 @@ copy_to() {
 		fi
 	}
 	for BUNDLE in $fullist; do
-		[ "$C2PARAM" ] && ! [ "$(echo $BUNDLE | egrep -i "$C2PARAM")" ] && continue
+		[ "$C2PARAM" ] && ! [ "$(echo $BUNDLE | grep -E -i "$C2PARAM")" ] && continue
 		echolog $yellow"  $3 $blue<- $purple$(basename "$BUNDLE")"$green
 		( c2 "$1" "$2" "$BUNDLE" ) &
 		PIDSS="$PIDSS /proc/$!"
@@ -2461,7 +2461,7 @@ fstab_create() {
 # $2 = device name
 dev_is_in_fstab() {
 	debug_log "dev_is_in_fstab" "$*"
-	cat "$1" | sed -r "s/#.*//" | grep -v "^[[:space:]]*none[[:space:]]" | grep -v "^[[:space:]]*tmpfs[[:space:]]" | egrep -q "^[[:space:]]*$2[[:space:]]"
+	cat "$1" | sed -r "s/#.*//" | grep -v "^[[:space:]]*none[[:space:]]" | grep -v "^[[:space:]]*tmpfs[[:space:]]" | grep -E -q "^[[:space:]]*$2[[:space:]]"
 }
 
 # update given line in fstab, add new values only if the device is not found
@@ -2543,7 +2543,7 @@ freemedia_old() {
 	local devs device notfree dev
 	#DATAMNT=/memory/data
 	#MOUNTDIR=/memory/layer-base
-	devs=$(cat /proc/mounts | egrep "${DATAMNT}/from|$MOUNTDIR" | cut -d " " -f 1 | sort | uniq -d)
+	devs=$(cat /proc/mounts | grep -E "${DATAMNT}/from|$MOUNTDIR" | cut -d " " -f 1 | sort | uniq -d)
 	for dev in $devs; do
 		umount $(cat /proc/mounts | grep ${dev}.*$MOUNTDIR | cut -d " " -f 2) 2>/dev/null
 		umount $dev 2>/dev/null && echo "$dev is free now"
@@ -2633,7 +2633,7 @@ INIGZFILE=$MEMORY/$LIVEKITNAME.ini.gz
 if [ -f $MEMORY/$LIVEKITNAME.ini.gz ] ;  then
 FNAME="/dev/null" ; FMOD=""
 zcat  $INIGZFILE |  while read a ;do
-   echo "$a" | egrep -q '^[[:space:]]*#|^[[:space:]]*$' && continue
+   echo "$a" | grep -E -q '^[[:space:]]*#|^[[:space:]]*$' && continue
    if echo "$a" | grep -q "^\[.*\][[:space:]]*" ;then
       FNAME=$(echo "$a" | tr '[]' '|' | awk -F'|' '{print $2}' | sed s-^/--)
       FMOD=$(echo "$a" | tr '[]' '|' | awk -F'|' '{print $3}' | tr -d ' ')
@@ -2716,7 +2716,7 @@ mkimg() {
 				fi
 			fi
 	fi
-	if  basename $newimg |egrep -q '\.img$|\.enc$'  ; then
+	if  basename $newimg |grep -E -q '\.img$|\.enc$'  ; then
 			FNAME="$DIR/$(basename $newimg)"
 			dd if=/dev/zero of="$FNAME" bs=1 count=0 seek=${SIZE}M >/dev/null
 			if  basename $newimg |grep -q 'enc$' ; then

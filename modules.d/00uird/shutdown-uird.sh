@@ -137,9 +137,9 @@ rebuild() {
 	fi
 	. /shutdown.cfg # this is necessary to hot change the mode
 	# number of enumerated sections
-	end=$(( $(cat "$CHANGESMNT" |egrep '^[[:space:]]*XZM[[:digit:]]{,2}=' |wc -l) - 1 ))
+	end=$(( $(cat "$CHANGESMNT" |grep -E '^[[:space:]]*XZM[[:digit:]]{,2}=' |wc -l) - 1 ))
 	# list of not enumerated sections
-	notenumerated=$(cat "$CHANGESMNT" |egrep '^[[:space:]]*XZM.*[a-zA-Z]+.*=' |sed -e 's/^[[:space:]]*XZM//' -e 's/=.*$//')
+	notenumerated=$(cat "$CHANGESMNT" |grep -E '^[[:space:]]*XZM.*[a-zA-Z]+.*=' |sed -e 's/^[[:space:]]*XZM//' -e 's/=.*$//')
 	UNIONFS=aufs
 	DEFSRC=${SYSMNT}/changes
 	if [ -d ${SYSMNT}/ovl/changes ] ; then
@@ -299,10 +299,10 @@ if umount /oldroot  ; then
 else
 	echolog "[${red}FAIL!${default}] ${UMOUNT}: ROOTFS"
 fi
-log "$(umount $(mount | egrep -v "tmpfs|zram|proc|sysfs" | awk  '{print $3}' | sort -r) 2>&1) "
+log "$(umount $(mount | grep -E -v "tmpfs|zram|proc|sysfs" | awk  '{print $3}' | sort -r) 2>&1) "
 n=0
-while mount | egrep -v "tmpfs|zram|proc|sysfs" ; do
-	log "$(umount $(mount | egrep -v "tmpfs|zram|proc|sysfs" | awk  '{print $3}' | sort -r) 2>&1) "
+while mount | grep -E -v "tmpfs|zram|proc|sysfs" ; do
+	log "$(umount $(mount | grep -E -v "tmpfs|zram|proc|sysfs" | awk  '{print $3}' | sort -r) 2>&1) "
 	sleep 0.3 ; n=$(( $n +1 )) 
 	[ $n -ge 3 ] && break
 done
@@ -324,7 +324,7 @@ for a in $(ls -1 /dev/mapper) ; do
 	sync
 done 2>/dev/null
 
-for mntp in $(mount | egrep -v "tmpfs|proc|sysfs" | awk  '{print $3}' | sort -r) ; do
+for mntp in $(mount | grep -E -v "tmpfs|proc|sysfs" | awk  '{print $3}' | sort -r) ; do
 	if umount $mntp ; then 
 		echolog "[  ${green}OK${default}  ] ${UMOUNT}: $mntp"
 	else

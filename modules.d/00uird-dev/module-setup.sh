@@ -34,7 +34,7 @@ install() {
 #		/usr/lib64/git-core/git-rebase--interactive \
 #		/usr/lib64/git-core/git-rebase--merge
     inst_multiple /usr/lib64/git-core/*
-    
+
     inst_multiple /usr/lib64/gcc/x86_64-unknown-linux-gnu/5.5.0/*
     inst_multiple /usr/lib64/gcc/x86_64-unknown-linux-gnu/5.5.0/32/*
     inst_multiple /usr/lib64/gcc/x86_64-unknown-linux-gnu/5.5.0/include/*
@@ -92,7 +92,7 @@ install() {
     inst unsquashfs
     inst realpath /bin/realpath
     inst ln
-    inst egrep
+    inst grep
     inst hardlink /bin/hardlink
 }
 

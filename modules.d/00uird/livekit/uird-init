@@ -19,7 +19,7 @@ fi
 export TEXTDOMAIN="uird"
 export TEXTDOMAINDIR="/usr/share/locale"
 
-CMDLINE_LANG=$(echo -n " " | cat - /proc/cmdline 2>/dev/null | tr -s ";" "," | egrep -m1 -o "(^|[[:space:]])lang=[^[:space:]]+" | cut -d "=" -f 2- | head -n1)
+CMDLINE_LANG=$(echo -n " " | cat - /proc/cmdline 2>/dev/null | tr -s ";" "," | grep -E -m1 -o "(^|[[:space:]])lang=[^[:space:]]+" | cut -d "=" -f 2- | head -n1)
 [ "_$CMDLINE_LANG" != "_"  ] &&  LANG="$CMDLINE_LANG" 
 [ "$LANG" ]  ||	LANG=en
 [ -e /usr/share/locale/${LANG}.alias ] && LANG=$(cat /usr/share/locale/${LANG}.alias)
