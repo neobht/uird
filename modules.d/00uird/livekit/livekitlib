@@ -1166,7 +1166,7 @@ mount_curlftpfs() {
 # $2 = mountdir
 #
 mount_sshfs() {
-	local OPTIONS
+	local OPTIONS ERR
 	debug_log "mount_sshfs" "$*"
 	OPTIONS=
 	getpar $UIRD_NETFSOPT >/dev/null && OPTIONS="-o $(getpar $UIRD_NETFSOPT 1 1)"
@@ -1191,11 +1191,34 @@ mount_sshfs() {
 	fi
 }
 
+# Mount via 9p
+# $1 - 9p mount tag
+# $2 - mountdir
+mount_9p() {
+	local TAG ERR OPTIONS
+	TAG=$(echo $1 |sed 's#^9p://##')
+	OPTIONS="trans=virtio,msize=100000000"
+	[ $3 ] && OPTIONS=$3
+	debug_log "mount_9p" "$*"
+	times=2
+	mkdir -p $2
+	while [ $times -gt 0 ]; do
+		echo "mount -t 9p -o $OPTIONS $TAG $2" 1>&2
+		mount -t 9p -o $OPTIONS $TAG $2
+		ERR=$?
+		[ $ERR -eq 0 ] && break
+		times=$(expr $times - 1)
+	done
+	[ $ERR -eq 0 ] || return
+	echo $2
+}
+
 # Mount nfs filesystem from the given server
 # $1 = server
 # $2 = mountdir
 #
 mount_nfs() {
+	local OPTIONS
 	debug_log "mount_nfs" "$*"
 	OPTIONS="nolock,rsize=4096,wsize=4096"
 	getpar $UIRD_NETFSOPT >/dev/null && OPTIONS="$OPTIONS,$(getpar $UIRD_NETFSOPT 1 1)"
@@ -1213,13 +1236,14 @@ mount_nfs() {
 # $2 = mountdir
 #
 mount_cifs() {
+	local OPTIONS SHARE
 	debug_log "mount_cifs" "$*"
 	OPTIONS=""
 	[ $3 ] && OPTIONS=$3
 	getpar $UIRD_NETFSOPT >/dev/null && OPTIONS="$(getpar $UIRD_NETFSOPT 1 1)"
 	mkdir -p $2
 	modprobe cifs 1>&2
-	local SHARE=$(echo $1 | sed s-^cifs://--)
+	SHARE=$(echo $1 | sed s-^cifs://--)
 	if mount -t cifs $SHARE $2 -o $OPTIONS 2>/dev/null 1>&2; then
 		echo $2
 	elif mount -t cifs $(dirname $SHARE) $2 -o $OPTIONS 2>/dev/null 1>&2 ; then
@@ -1236,11 +1260,7 @@ mount_rsync() {
 	[ $3 ] && OPTIONS="$3"
 	getpar $UIRD_NETFSOPT >/dev/null && OPTIONS="$(getpar $UIRD_NETFSOPT)"
 	mkdir -p $2
-	#    local SHARE=`echo $1 | sed s-^cifs://-- `
-	# if
-	$BIN_RSYNC $OPTIONS $1/* $2/ #2>/dev/null ; then
-	#echo $2
-	#fi
+	$BIN_RSYNC $OPTIONS $1/* $2/ 1>&2 && echo $2
 }
 
 # Format mountdir for device. This function used to append _cdrom or _removable
@@ -1433,19 +1453,19 @@ find_data() {
 	[ "$TIMEOUT" ] || TIMEOUT=$(getpar scantimeout 1 1 | sed -r 's/[^0-9]*([0-9]+).*/\1/')
 	if [ "$TIMEOUT" = "" ]; then TIMEOUT=5; fi
 	log "find_file "$1" "$2" "$3" "
-	if echo "$1" | grep -q "://" ; then
-		echolog $(init_ifcfg)
-		NET_MOUNT=yes
-	fi
+	
 	while [ $TIMEOUT -gt 0 -a "$RESULT" = "" ]; do
 		log "find_file "$1" "$2" "$3" "
-		if [ $NET_MOUNT ]  ; then
+		if echo "$1" | grep -q "9p://"  ; then
+			RESULT=$(mount_9p $1 $2 $MNT_OPTS)
+		elif echo "$1" | grep -q "://"  ; then
+			init_ifcfg 
 			echo $1 | grep -iq ^"http://"	&& RESULT=$(mount_httpfs $1 $2 $MNT_OPTS)
 			echo $1 | grep -iq ^"nfs://"	&& RESULT=$(mount_nfs $1 $2 $MNT_OPTS)
 			echo $1 | grep -iq ^"cifs://"	&& RESULT=$(mount_cifs $1 $2 $MNT_OPTS)
 			echo $1 | grep -iq ^"ssh://"	&& RESULT=$(mount_sshfs $1 $2 $MNT_OPTS)
 			echo $1 | grep -iq ^"ftp://"	&& RESULT=$(mount_curlftpfs $1 $2 $MNT_OPTS)
-			echo $1 | grep -iq ^"rsync://"	&& mount_rsync $1 $2 && RESULT=$2
+			echo $1 | grep -iq ^"rsync://"	&& RESULT=$(mount_rsync $1 $2 $MNT_OPTS)
 		else
 			RESULT=$(find_file "$1" "$2" "$3")
 		fi
