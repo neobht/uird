@@ -15,7 +15,7 @@
 #Purple       0;35     Light Purple  1;35
 #Brown/Orange 0;33     Yellow        1;33
 #Light Gray   0;37     White         1;37
-	
+
 	black='\033[0;30m'
 	red='\033[0;31m'
 	green='\033[0;32m'
@@ -226,6 +226,7 @@ debug_log() {
 		log "- debug: $*"
 	fi
 }
+export -f debug_log
 
 # header
 # $1 = text to show
@@ -233,7 +234,7 @@ debug_log() {
 header() {
 if ! getpar $UIRD_SILENT >/dev/null ; then
 	echo ''
-	echolog "\\033[0;1m""$@""\\033[0;0m"
+	echolog $brown"$@"$default
 	echo ''
 fi
 }
@@ -245,17 +246,20 @@ if ! getpar $UIRD_SILENT > /dev/null ; then
 	echo -ne $green"* "$default >/dev/console 2>/dev/console
 fi
 }
+export -f echo_green_star
 
 echo_blue_star() {
 if ! getpar $UIRD_SILENT > /dev/null ; then
 	echo -ne $blue"  * "$default >/dev/console 2>/dev/console
 fi
 }
+export -f echo_blue_star
 
 # log - store given text in /var/log/uird.dbg.log
 log() {
 	echo "$@" 2>/dev/null >> $LOGFILE 
 }
+export -f log
 
 echolog() {
 	local text
@@ -269,6 +273,7 @@ echolog() {
 		fi
 	fi
 }
+export -f echolog
 
 # show information about the debug shell
 show_debug_banner() {
@@ -323,6 +328,7 @@ EOF
 		echo
 	fi
 }
+export -f shell_cmd
 
 # start quickshell
 start_quickshell() {
@@ -349,18 +355,6 @@ resume_from_suspend() {
 	fi
 }
 
-fatal() {
-	echolog
-	header "Fatal error occured - $1"
-	echolog "Something went wrong and we can't continue. This should never happen."
-	echolog "Please reboot your computer with Ctrl+Alt+Delete ..."
-	echolog
-	setsid sh -c 'exec sh < /dev/tty1 >/dev/tty1 2>&1'
-}
-
-#============================================================
-# MagOS debug functions
-#============================================================
 # enabling logging mode for script by DEBUG_IS_ENABLED=yes
 # or for all scripts by "debug" cmdline parametr
 debug_mode() {
@@ -441,10 +435,10 @@ for par in $(cat  /tmp/basecfg) ; do
 		NUM_PAR=$((NUM_PAR + 1))
 		done
 		
-	echo "$par" | sed -re 's/^([^=]*)\.([^=]*\=.*)$/\1_\2/' -e 's/^([[:digit:]].*)$/_&/'  >> /etc/initvars
+	echo "$par" | sed -re 's/^([^=]*)\.([^=]*\=.*)$/\1_\2/' -e 's/^([[:digit:]].*)$/_&/'  | update_initvars
 	else
 		: > /tmp/parameters/$parDir/enabled
-		echo "${par}=enabled" | sed -re 's/^(.*)\.(.*\=.*)$/\1_\2/' -e 's/^([[:digit:]].*)$/_&/' >> /etc/initvars
+		echo "${par}=enabled" | sed -re 's/^(.*)\.(.*\=.*)$/\1_\2/' -e 's/^([[:digit:]].*)$/_&/' | update_initvars
 	fi
 	set +f
 done
@@ -528,7 +522,7 @@ else
 	return 1
 fi
 }
-
+export -f getpar
 
 # test if the script is started by root user. If not, exit
 #
@@ -539,46 +533,6 @@ allow_only_root() {
 	fi
 }
 
-# Create bundle
-# call mksquashfs with apropriate arguments
-# $1 = directory which will be compressed to squashfs bundle
-# $2 = output file
-# $3..$9 = optional arguments like -keep-as-directory or -b 123456789
-#
-create_bundle() {
-	debug_log "create_module" "$*"
-	rm -f "$2" # overwrite, never append to existing file
-	mksquashfs "$1" "$2" -comp xz -b 512K $3 $4 $5 $6 $7 $8 $9 >/dev/null
-}
-
-# Move entire initramfs tree to tmpfs mount.
-# It's a bit tricky but is necessray to enable pivot_root
-# even for initramfs boot image
-#
-transfer_initramfs() {
-	if [ ! -r /lib/initramfs_escaped ]; then
-		echo "switch root from initramfs to ramfs"
-		SWITCH=/m # one letter directory
-		mkdir -p $SWITCH
-		mount -t tmpfs -o size="100%" tmpfs $SWITCH
-		cp -a /??* $SWITCH 2>/dev/null # only copy two-and-more-letter directories
-		cd $SWITCH
-		echo "This file indicates that we successfully escaped initramfs" >$SWITCH/lib/initramfs_escaped
-		exec switch_root -c /dev/console . $0
-	fi
-}
-
-# mount virtual filesystems like proc etc
-#
-init_proc_sysfs() {
-	debug_log "init_proc_sysfs" "$*"
-	mkdir -p /proc /sys /etc $MEMORY
-	mount -n -t proc proc /proc
-	echo "0" >/proc/sys/kernel/printk
-	mount -n -t sysfs sysfs /sys
-	mount -n -o remount,rw rootfs /
-	ln -sf /proc/mounts /etc/mtab
-}
 
 # make sure some devices are there
 init_devs() {
@@ -641,10 +595,10 @@ init_union() {
 	elif [ "$UNION_FS" = "aufs" ] ; then
 		CPDEST="$LCHANGES"
 	fi	
-	
+
 	echo_green_star
 	echolog "${PREPARING_BUNDLES}: $UNION_FS" $brown$LUNION$default
-		
+
 	add_bundle() {
 		local BUNDLE MODE BUN MID_BUN
 		BUNDLE="$1"
@@ -661,7 +615,7 @@ init_union() {
 			[ -e "$LCACHE/$MID_BUN" -a "$(getpar $UIRD_COPY2CACHE 1 1)$(getpar $UIRD_COPY2CACHE 1 1)" ] && BUNDLE="$LCACHE/$MID_BUN"
 			[ -e "$LCP2RAM/$MID_BUN" ] && BUNDLE="$LCP2RAM/$MID_BUN"
 		fi
-		
+
 		FS="$(device_bestfs "$BUNDLE")"
 		OPTIONS="$(fs_options $FS mount)"
 
@@ -736,23 +690,6 @@ mutex_unlock() {
 	rmdir "/dev/ll-mutex-lock-$1" 2>/dev/null
 }
 
-# modprobe module $1, including all dependencies, suppress all messages
-# This was own function, because modprobe in busybox didn't support
-# neither gzipped modules nor dependencies. Seems to be fixed now, though.
-# $1 = module name, eg. ehci-hcd
-# $* = optional arguments
-#
-modprobe_module() {
-	debug_log "modprobe_module" "$*"
-	local MODULE
-
-	MODULE="$1"
-	shift
-
-	if [ ! "$MODULE" ]; then return 1; fi
-	modprobe "$MODULE" $* 2>/dev/null
-}
-
 # mknod next loop device
 # - find biggest loop device in /dev/loop/, assume it to be used
 # - preallocate (mknod) 20 more loop devices in one round
@@ -817,12 +754,6 @@ list_partition_devices() {
 	#mounted
 	for DEV in $MOUNTED; do echo $DEV; done
 }
-# THIS FUNCTION IS NEVER USED
-# List all disk devices
-list_disk_devices() {
-	debug_log "list_disk_devices" "$*"
-	list_partition_devices | grep -v [0-9]
-}
 
 # List all partitions marked as Linux Swap
 #
@@ -867,21 +798,6 @@ device_filesystem() {
 
 	if [ -e /bin/ntfsmount ]; then NTFS="ntfs-3g"; else NTFS="ntfs"; fi
 	$BIN_BLKID -s TYPE "$1" -o value | sed "s/msdos/vfat/" | sed "s/ntfs/$NTFS/"
-}
-
-# tell us if the given filesystem is supported
-# (eg. it's in /proc/filesystems or we know it)
-# $1 = filesystem name
-#
-is_supported_filesystem() {
-	debug_log "is_supported_filesystem" "$*"
-
-	if [ -e /bin/ntfsmount -a "$1" = "ntfs-3g" ]; then
-		return 0
-	fi
-
-	# the following command will set the return value
-	grep -E -q "[[:space:]]$1\$" /proc/filesystems
 }
 
 # Check device on demand. Only block devices and *.img loop files  can be checked
@@ -981,7 +897,7 @@ mount_device() {
 	if [ "$OPTIONS" ]; then OPTIONS="$OPTIONS"; else OPTIONS=""; fi
 	if [ -f "$DEV" ]; then OPTIONS="$OPTIONS,loop"; fi
 	if [ -d "$DEV" ]; then OPTIONS="$OPTIONS,rbind"; fi
-	if [ "$3" ]; then OPTIONS="$OPTIONS,$(echo $3 | tr -s "+" ",")"; fi
+	if [ "$3" ]; then OPTIONS="$OPTIONS,${3//+/,}"; fi
 	OPTIONS=$(echo "$OPTIONS" | sed -r "s/^,+//")
 	if [ "$FS" = "-t ntfs-3g" ]; then
 		[ $FSCK == "yes" ] && fsck_device "$DEV" ntfs
@@ -1001,9 +917,10 @@ mount_device() {
 	if [ -f ${2}/EXPAND_ME ] ; then
 		umount $2
 		expand_part $DEV 
-		mount -n -o $OPTIONS $FS "$DEV" "$2" #>>$LOGFILE 2>&1
+		mount -n -o $OPTIONS $FS "$DEV" "$2" >>$LOGFILE 2>&1
 		ERR=$?
 	fi
+
 #LOOPAES####################################################
 	if [ $ERR -ne 0 ] && [ -f "$DEV" ] && echo "$DEV" | grep -q .enc$; then
 		echolog "$MOUNT_DEVICE_ENC" $green"$DEV"$default
@@ -1030,7 +947,7 @@ mount_device() {
 				PASS=$(ask_pass "$ENC_PASS")
 				echo $PASS | cryptsetup open --type loopaes "$DEV" "$LOOPDEV" --key-file -
 			fi
-			
+
 			if [ -b "/dev/mapper/$LOOPDEV" ]  ;  then
 				echolog "accepted!"
 				getpar fsck && fsck_device "/dev/mapper/$LOOPDEV"
@@ -1045,33 +962,40 @@ mount_device() {
 		done
 		grep -q "/dev/mapper/$LOOPDEV"  /proc/mounts  &&  ERR=0
 	fi
-	
+
 #LUKS####################################################
-if [ $ERR -ne 0 ] && [ -b "$DEV" ] && $BIN_BLKID "$DEV" -s TYPE | grep -q crypto_LUKS ; then
+if [ $ERR -ne 0 ] && [ -b "$DEV" ] && cryptsetup isLuks "$DEV"  ; then
 	LUKS_DEV=$(echo $DEV |sed 's:/dev/::')
 	times=3
 	while [ $times -gt 0 ]; do
-			if ! [ -e "/dev/mapper/$LUKS_DEV" ] ; then
+			echolog "$MOUNT_DEVICE_ENC" "LUKS" $green"$DEV"$default
+			if ! [ -b "/dev/mapper/$LUKS_DEV" ] ; then
 				log "Initialization luks partition $LUKS_DEV"
-				if [ "$KEY"_ != "_" ] ; then
-					if ! [ -f $KEY ] ; then
-						KEY=$(find_data "$KEY" "/tmp/lukskey")
-					fi
-				elif [ "$PASS"_ != "_" ] ; then
-					[ "$PASS" == '//hardware//' ] && PASS=$(busybox lspci |md5sum |cut -f1 -d ' ')
+				if [ "$PASS" == '//hardware//' ] ; then
+					# try all getpass_* functions
+					for getpass_func in $(typeset -f |grep '^getpass_.*(.*)' |sed 's#(.*)##') ; do
+						if $getpass_func $DEV | cryptsetup luksOpen "$DEV" "$LUKS_DEV" >> $LOGFILE 2>&1 ; then 
+							echo getpass_${LUKS_DEV}=${getpass_func} | update_initvars
+							break
+						fi
+					done
 				fi
-				echolog "$MOUNT_DEVICE_ENC" "LUKS" $green"$DEV"$default
-				if [ -f "$KEY" ] ; then 
-					cryptsetup -d $KEY luksOpen "$DEV" "$LUKS_DEV" >> $LOGFILE 2>&1
-					log "$(umount /tmp/lukskey 2>&1)"
-				else
-					if [ "$PASS"_ == "_" ]  ;  then
-						echo "$LUKS_PASS" >/dev/console
-						PASS=$(ask_pass "$LUKS_PASS")
+
+				if ! [ -b "/dev/mapper/$LUKS_DEV" ] ; then
+					[ "$KEY"_ != "_" ] && [ ! -f $KEY ] && 	KEY=$(find_data "$KEY" "/tmp/lukskey")
+					if [ "$KEY" ] ; then
+						[ ! -f $KEY ] && KEY=$(find_data "$KEY" "/tmp/lukskey")
+						[ -f "$KEY" ] && cryptsetup -d $KEY luksOpen "$DEV" "$LUKS_DEV" >> $LOGFILE 2>&1
 					fi
+				fi
+
+				if ! [ -b "/dev/mapper/$LUKS_DEV" ] ; then
+					echo "$LUKS_PASS" >/dev/console
+					PASS=$(ask_pass "$LUKS_PASS")
 					echo "$PASS" | cryptsetup luksOpen "$DEV" "$LUKS_DEV" >> $LOGFILE 2>&1
 				fi
 			fi 
+
 			if [ -b "/dev/mapper/$LUKS_DEV" ] ; then
 				echolog  accepted!
 				unset PASS KEY
@@ -1084,9 +1008,8 @@ if [ $ERR -ne 0 ] && [ -b "$DEV" ] && $BIN_BLKID "$DEV" -s TYPE | grep -q crypto
 				umount $2 2>/dev/null
 				cryptsetup luksClose "$LUKS_DEV" >> $LOGFILE 2>&1
 				times=$(($times - 1))
-
 	done
-grep -q "/dev/mapper/$LUKS_DEV" /proc/mounts && ERR=0
+	grep -q "/dev/mapper/$LUKS_DEV" /proc/mounts && ERR=0
 fi
 #########################################################
 
@@ -1112,14 +1035,21 @@ fi
 	return $ERR
 }
 
-# Mount http filesystem from the given server
+# Mount btfs (bittorrent) filesystem from the given server
 # $1 = magnet link
 # $2 = mountdir
-#
+# $3 = file with options
 mount_btfs() {
 	debug_log "mount_btfs" "$*"
+	command -v $BIN_BTFS >/dev/null 2>&1 || return
+	init_ifcfg 1>&2
+	if [ "$3" ] ; then
+		for str in  $(sed -n '2,$p' $3)  ; do
+			local |grep -q "$(echo $str |cut  -f1 -d=)=" &&  eval $str 
+		done 
+	fi
 	mkdir -p $2
-	$BIN_BTFS "$1" "$2" 1>&2 || return
+	$BIN_BTFS MNT_OPTS "$1" "$2" 1>&2 || return
 	if [ -f $2/$(basename $1) ]; then
 		echo $2/$(basename $1)
 	else
@@ -1131,8 +1061,10 @@ mount_btfs() {
 # $1 = server
 # $2 = mountdir
 #
-mount_httpfs() {
+mount_http() {
 	debug_log "mount_httpfs" "$*"
+	command -v $BIN_HTTPFS >/dev/null 2>&1 || return
+	init_ifcfg 1>&2
 	mkdir -p $2 1>&2
 	$BIN_HTTPFS $1 $2 1>&2 || return
 	if [ -f $2/$(basename $1) ]; then
@@ -1145,15 +1077,19 @@ mount_httpfs() {
 # Mount curlftpfs filesystem from the given server
 # $1 = server
 # $2 = mountdir
-#
-mount_curlftpfs() {
-	local OPTIONS
+# $3 = file with options
+mount_ftp() {
+	local DEF_OPTIONS MNT_OPTS
 	debug_log "mount_curlftpfs" "$*"
-	OPTIONS=
-	getpar $UIRD_NETFSOPT >/dev/null && OPTIONS="-o $(getpar $UIRD_NETFSOPT 1 1)"
-
+	command -v $BIN_CURLFTPFS >/dev/null 2>&1 || return
+	init_ifcfg 1>&2
+	if [ "$3" ] ; then
+		for str in  $(sed -n '2,$p' $3)  ; do
+			local |grep -q "$(echo $str |cut  -f1 -d=)=" &&  eval $str 
+		done 
+	fi
 	mkdir -p $2
-	$BIN_CURLFTPFS $OPTIONS $1 $2 </dev/console >/dev/console 2>/dev/console || return
+	$BIN_CURLFTPFS $MNT_OPTS $1 $2 </dev/console >/dev/console 2>/dev/console || return
 	if [ -f $2/$(basename $1) ]; then
 		echo $2/$(basename $1)
 	else
@@ -1164,26 +1100,22 @@ mount_curlftpfs() {
 # Mount sshfs filesystem from the given server
 # $1 = server
 # $2 = mountdir
-#
-mount_sshfs() {
-	local OPTIONS ERR
+# $ = file with parameters
+mount_ssh() {
+	local DEF_OPTIONS ERR MNT_OPTS
 	debug_log "mount_sshfs" "$*"
-	OPTIONS=
-	getpar $UIRD_NETFSOPT >/dev/null && OPTIONS="-o $(getpar $UIRD_NETFSOPT 1 1)"
+	command -v $BIN_SSHFS >/dev/null 2>&1 || return
+	init_ifcfg 1>&2
+	if [ "$3" ] ; then
+		for str in  $(sed -n '2,$p' $3)  ; do
+			local |grep -q "$(echo $str |cut  -f1 -d=)=" &&  eval $str 
+		done 
+	fi	
 	mkdir -p $2
 	times=3
-	while [ $times -gt 0 ]; do
-		$BIN_SSHFS ${1/ssh:??/} $2 $OPTIONS </dev/console >/dev/console 2>/dev/console
-		ERR=$?
-		[ $ERR -eq 0 ] && break
-		# is not tested, just guess ############
-		$BIN_SSHFS $(dirname ${1/ssh:??/}) $2 $OPTIONS </dev/console >/dev/console 2>/dev/console
-		ERR=$?
-		[ $ERR -eq 0 ] && break
-		########################################
-		times=$(expr $times - 1)
-	done
-	[ $ERR -eq 0 ] || return
+	$BIN_SSHFS ${1/ssh:??/} $2 $MNT_OPTS </dev/console >/dev/console 2>/dev/console
+	[ "$?" -eq 0 ] || $BIN_SSHFS $(dirname ${1/ssh:??/}) $2 $MNT_OPTS </dev/console >/dev/console 2>/dev/console
+	[ "$?" -eq 0 ] || return
 	if [ -f $2/$(basename $1) ]; then
 		echo $2/$(basename $1)
 	else
@@ -1194,21 +1126,21 @@ mount_sshfs() {
 # Mount via 9p
 # $1 - 9p mount tag
 # $2 - mountdir
+# $3 - file with parameters
 mount_9p() {
-	local TAG ERR OPTIONS
-	TAG=$(echo $1 |sed 's#^9p://##')
-	OPTIONS="trans=virtio,msize=100000000"
-	[ $3 ] && OPTIONS=$3
 	debug_log "mount_9p" "$*"
-	times=2
+	local TAG ERR MNT_OPTS DEF_OPTIONS
+	DEF_OPTIONS="trans=virtio,msize=100000000"
+	if [ "$3" ] ; then
+		for str in  $(sed -n '2,$p' $3)  ; do
+			local |grep -q "$(echo $str |cut  -f1 -d=)=" &&  eval $str 
+		done 
+	fi
+	[ "$MNT_OPTS" ] || MNT_OPTS="$DEF_OPTIONS"
+	TAG=$(echo $1 |sed 's#^9p://##')
 	mkdir -p $2
-	while [ $times -gt 0 ]; do
-		echo "mount -t 9p -o $OPTIONS $TAG $2" 1>&2
-		mount -t 9p -o $OPTIONS $TAG $2
-		ERR=$?
-		[ $ERR -eq 0 ] && break
-		times=$(expr $times - 1)
-	done
+	mount -t 9p -o ${MNT_OPTS//+/,} $TAG $2
+	ERR=$?
 	[ $ERR -eq 0 ] || return
 	echo $2
 }
@@ -1216,51 +1148,69 @@ mount_9p() {
 # Mount nfs filesystem from the given server
 # $1 = server
 # $2 = mountdir
-#
+# $3 - file with parameters
 mount_nfs() {
-	local OPTIONS
 	debug_log "mount_nfs" "$*"
-	OPTIONS="nolock,rsize=4096,wsize=4096"
-	getpar $UIRD_NETFSOPT >/dev/null && OPTIONS="$OPTIONS,$(getpar $UIRD_NETFSOPT 1 1)"
+	local DEF_OPTIONS MNT_OPTS SHARE
+	DEF_OPTIONS="nolock,rsize=4096,wsize=4096"
+	init_ifcfg 1>&2
+	if [ "$3" ] ; then
+		for str in  $(sed -n '2,$p' $3)  ; do
+			local |grep -q "$(echo $str |cut  -f1 -d=)=" &&  eval $str 
+		done 
+	fi
+	[ "$MNT_OPTS" ] || MNT_OPTS="$DEF_OPTIONS"
 	mkdir -p $2
 	modprobe nfs
-	local SHARE=$(echo $1 | sed s-^nfs://--)
-	if mount -t nfs $SHARE $2 -o $OPTIONS 2>/dev/null; then
+	SHARE=$(echo $1 | sed s-^nfs://--)
+	if mount -t nfs $SHARE $2 -o ${MNT_OPTS//+/,} 2>/dev/null; then
 		echo $2
-	elif mount -t nfs $(dirname $SHARE) $2 -o $OPTIONS 2>/dev/null; then
+	elif mount -t nfs $(dirname $SHARE) $2 -o ${MNT_OPTS//+/,} 2>/dev/null; then
 		echo $2/$(basename $SHARE)
 	fi
 }
+
 # Mount cifs filesystem from the given server
 # $1 = server
 # $2 = mountdir
-#
+# $3 = file with options
 mount_cifs() {
-	local OPTIONS SHARE
 	debug_log "mount_cifs" "$*"
-	OPTIONS=""
-	[ $3 ] && OPTIONS=$3
-	getpar $UIRD_NETFSOPT >/dev/null && OPTIONS="$(getpar $UIRD_NETFSOPT 1 1)"
+	local DEF_OPTIONS MNT_OPTS SHARE
+	init_ifcfg 1>&2
+	if [ "$3" ] ; then
+		for str in  $(sed -n '2,$p' $3)  ; do
+			local |grep -q "$(echo $str |cut  -f1 -d=)=" &&  eval $str 
+		done 
+	fi
 	mkdir -p $2
 	modprobe cifs 1>&2
 	SHARE=$(echo $1 | sed s-^cifs://--)
-	if mount -t cifs $SHARE $2 -o $OPTIONS 2>/dev/null 1>&2; then
+	if mount -t cifs $SHARE $2 -o ${MNT_OPTS//+/,} 2>/dev/null 1>&2; then
 		echo $2
-	elif mount -t cifs $(dirname $SHARE) $2 -o $OPTIONS 2>/dev/null 1>&2 ; then
+	elif mount -t cifs $(dirname $SHARE) $2 -o ${MNT_OPTS//+/,} 2>/dev/null 1>&2 ; then
 		echo $2/$(basename $SHARE)
 	fi
 }
+
 # Mount rsync filesystem from the given server
 # $1 = server
 # $2 = mountdir
-#
+# $3 = file with options
 mount_rsync() {
 	debug_log "mount_rsync" "$*"
-	OPTIONS="--progress -a"
-	[ $3 ] && OPTIONS="$3"
-	getpar $UIRD_NETFSOPT >/dev/null && OPTIONS="$(getpar $UIRD_NETFSOPT)"
+	local DEF_OPTIONS MNT_OPTS SHARE
+	command -v $BIN_RSYNC >/dev/null 2>&1 || return
+	init_ifcfg 1>&2
+	DEF_OPTIONS="--progress -a"
+	if [ "$3" ] ; then
+		for str in  $(sed -n '2,$p' $3)  ; do
+			local |grep -q "$(echo $str |cut  -f1 -d=)=" &&  eval $str 
+		done 
+	fi
+	[ "$MNT_OPTS" ] || MNT_OPTS="$DEF_OPTIONS"
 	mkdir -p $2
-	$BIN_RSYNC $OPTIONS $1/* $2/ 1>&2 && echo $2
+	$BIN_RSYNC $MNT_OPTS $1/* $2/ 1>&2 && echo $2
 }
 
 # Format mountdir for device. This function used to append _cdrom or _removable
@@ -1317,7 +1267,7 @@ find_filepath() {
 				local |grep -q "$(echo $str |cut  -f1 -d=)=" &&  eval $str 
 			done 
 	fi
-	MNT_OPTS="$(echo $MNT_OPTS |sed 's/+/,/')"
+	MNT_OPTS=${MNT_OPTS//+/,}
 	DIR=$(device_mountdir $1 $3)
 
 	ismountpoint $DIR
@@ -1391,6 +1341,7 @@ uuid_label_to_dev() {
 	fi
 	echo $DEVPATH | tail -n1
 }
+export -f uuid_label_to_dev
 
 # Find file in computer by mounting disks or other storage devices
 # and searching for $1 in the mounted directory
@@ -1443,7 +1394,7 @@ find_file() {
 # $3 = extended pars in file
 find_data() {
 	debug_log "find_data" "$*"
-	local RESULT FPARS TIMEOUT='' NET_MOUNT
+	local RESULT FPARS TIMEOUT=''
 	FPARS=$3
 	if [ "$FPARS" ] ; then
 			for str in  $(cat $FPARS |sed -n '2,$p')  ; do
@@ -1451,23 +1402,16 @@ find_data() {
 			done 
 	fi
 	[ "$TIMEOUT" ] || TIMEOUT=$(getpar scantimeout 1 1 | sed -r 's/[^0-9]*([0-9]+).*/\1/')
-	if [ "$TIMEOUT" = "" ]; then TIMEOUT=5; fi
+	[ "$TIMEOUT" = "" ] && TIMEOUT=5
 	log "find_file "$1" "$2" "$3" "
-	
 	while [ $TIMEOUT -gt 0 -a "$RESULT" = "" ]; do
 		log "find_file "$1" "$2" "$3" "
-		if echo "$1" | grep -q "9p://"  ; then
-			RESULT=$(mount_9p $1 $2 $MNT_OPTS)
-		elif echo "$1" | grep -q "://"  ; then
-			init_ifcfg 
-			echo $1 | grep -iq ^"http://"	&& RESULT=$(mount_httpfs $1 $2 $MNT_OPTS)
-			echo $1 | grep -iq ^"nfs://"	&& RESULT=$(mount_nfs $1 $2 $MNT_OPTS)
-			echo $1 | grep -iq ^"cifs://"	&& RESULT=$(mount_cifs $1 $2 $MNT_OPTS)
-			echo $1 | grep -iq ^"ssh://"	&& RESULT=$(mount_sshfs $1 $2 $MNT_OPTS)
-			echo $1 | grep -iq ^"ftp://"	&& RESULT=$(mount_curlftpfs $1 $2 $MNT_OPTS)
-			echo $1 | grep -iq ^"rsync://"	&& RESULT=$(mount_rsync $1 $2 $MNT_OPTS)
+		if echo "$1" | grep -q "://"  ; then
+			PROTOCOL=$(echo $1 |cut -f1 -d:)
+			[ -f "/mount_$PROTOCOL" ] && source "/mount_$PROTOCOL" 1>&2 
+			RESULT=$(mount_$PROTOCOL $1 $2 $FPARS)
 		else
-			RESULT=$(find_file "$1" "$2" "$3")
+			RESULT=$(find_file "$1" "$2" "$FPARS")
 		fi
 		if [ -z "$RESULT" ] ; then
 			log "find_data:(${TIMEOUT}): $RESULT"
@@ -1492,23 +1436,6 @@ mounted_device() {
 		TARGET="$(grep -F " $MNT " /proc/mounts | cut -d " " -f 1)"
 		if [ "$TARGET" != "" ]; then
 			echo "$TARGET"
-			return
-		fi
-		MNT="$(dirname "$MNT")"
-	done
-}
-
-# Return mounted dir for given directory
-# $1 = directory
-#
-mounted_dir() {
-	debug_log "mounted_dir" "$*"
-
-	local MNT
-	MNT="$1"
-	while [ "$MNT" != "/" -a "$MNT" != "." -a "$MNT" != "" ]; do
-		if mountpoint -q "$MNT" 2>/dev/null; then
-			echo "$MNT"
 			return
 		fi
 		MNT="$(dirname "$MNT")"
@@ -1651,6 +1578,7 @@ init_network_dev() {
 		fi
 		rmmod $MODULE 2>/dev/null
 	done
+export -f init_network_dev
 
 	# If we are here, none of the above specified modules worked.
 	# As a last chance, try to modprobe everything.
@@ -1667,15 +1595,13 @@ init_network_dev() {
 init_ifcfg() {
 	debug_log "init_ifcfg" "$*"
 	local CLIENT GW MASK ETH
-
+	ifconfig |grep -q 'addr' && return
 	echo_blue_star
 	echolog "$INIT_IFCFG"
-
 	modprobe af_packet 2>/dev/null
 
 	IP=$(getpar $UIRD_IP 1 1)
 	[ "$IP" = "" ] && IP=::
-
 	echo $IP | while IFS=":" read CLIENT GW MASK; do
 		ETH=$(init_network_dev)
 
@@ -1693,55 +1619,7 @@ init_ifcfg() {
 
 	done
 }
-
-# Download data from tftp
-# $1 = target (store downloaded files there)
-#
-download_data_pxe() {
-	debug_log "download_data_pxe" "$*"
-	local CMD CLIENT SERVER GW MASK PORT ETH PROTOCOL
-
-	mkdir -p "$1/$LIVEKITNAME"
-
-	getpar ip 1 1 | while IFS=":" read CLIENT SERVER GW MASK PORT; do
-		echo_green_star
-		echo "Downloading files from $SERVER ..."
-
-		ETH=$(init_network_dev)
-		if [ "$PORT" = "" ]; then PORT="7529"; fi
-
-		# set IP address as given by boot paramter
-		if [ "$CLIENT" != "" -a "$MASK" != "" ]; then
-			ifconfig $ETH "$CLIENT" netmask "$MASK"
-			route add default gw "$GW"
-		else
-			# if client ip is unknown, try to get a DHCP lease
-			udhcpc -i $ETH -f -q
-		fi
-
-		# well known IP address of Google public DNS service
-		echo nameserver 8.8.8.8 >>/etc/resolv.conf
-
-		PROTOCOL=http
-		wget -q -O "$1/PXEFILELIST" "http://$SERVER:$PORT/PXEFILELIST?$(uname -r):$(uname -m)"
-		if [ $? -ne 0 ]; then
-			echo "Error downloading from http://$SERVER:$PORT, trying TFTP" >&2
-			PROTOCOL=tftp
-			tftp -g -r PXEFILELIST -l "$1/PXEFILELIST" $SERVER
-		fi
-
-		cat "$1/PXEFILELIST" | while read FILE; do
-			if [ "$PROTOCOL" = "http" ]; then
-				wget -O "$1/$LIVEKITNAME/$FILE" "http://$SERVER:$PORT/$FILE"
-			else
-				echo "* $FILE ..." >&2
-				tftp -g -r $FILE -l "$1/$LIVEKITNAME/$FILE" $SERVER
-			fi
-		done
-	done
-
-	echo "$1/$LIVEKITNAME"
-}
+export -f init_ifcfg
 
 # init qemu-nbd block devices
 # $1 - virtual machine disk image file
@@ -1779,8 +1657,8 @@ mount_data_source() {
 			local |grep -q "$(echo $str |cut  -f1 -d=)"   && 	eval $str 
 		done 
 	fi
-	MNT_OPTS="$(echo $MNT_OPTS |sed 's/+/,/')" 
-        echo_blue_star
+	MNT_OPTS="${MNT_OPTS//+/,}" 
+	echo_blue_star
 	echolog "$MOUNT_DATA_SOURCE" $yellow"$SOURCE"$default
 
 	mkdir -p $DST_DIR
@@ -1808,7 +1686,7 @@ mount_data_source() {
 			fi
 		fi
 ####################################################################	
-		if [ "$CHECKSPACE" -ne '0' -a "$(df $DST_DIR -m |tail -n1 |awk '{print $4}')" -lt "$CHECKSPACE" ] ; then
+		if [ "$CHECKSPACE" -ne '0' -a "$(df $DST_DIR -mP |tail -n1 |awk '{print $4}')" -lt "$CHECKSPACE" ] ; then
 			echolog $red"$FREE_SPACE_LESS_THEN_CHECK"$default
 			echo -ne $yellow"$FREE_SPACE_LESS_THEN_CHECK_ASK"$default"  "
 			ANS=$(ask_answer  "${FREE_SPACE_LESS_THEN_CHECK}, $FREE_SPACE_LESS_THEN_CHECK_ASK")
@@ -1887,7 +1765,7 @@ syscp() {
 		FILETO=$(getpar $UIRD_SYSCP $NUMPAR 2)
 		mkdir -p ${1}${FILETO}
 		cp -fa ${FILEFROM} ${1}${FILETO}/
-        echo_blue_star
+		echo_blue_star
 		echolog "${FILEFROM} -->  ${FILETO}"
 	done
 }
@@ -1948,6 +1826,7 @@ mount_binds() {
 
 # Test filesystem POSIX compatible
 posix_test() {
+	command -v posixovl >/dev/null 2>&1 || return 
 	# test if the filesystem is writable so changes can be stored to it
 	touch $2/empty 2>/dev/null &&
 		rm -f $2/empty 2>/dev/null
@@ -2001,7 +1880,7 @@ setup_config() {
 	done
 	[ -z "$PATHINI" ] && echolog $red"$SETUP_CONFIG_NOTFOUND"$default || echolog "$SETUP_CONFIG_USING" $yellow"$PATHINI"$default
 	[ -z "$PATHINI" ] && PATHINI=/dev/null
-	echo "PATHINI=$PATHINI" >>/etc/initvars
+	echo "PATHINI=$PATHINI" | update_initvars
 	grep -E -v '^#|^$' "$PATHINI" | sed s-\\\\r-- | gzip >$MEMORY/$LIVEKITNAME.ini.gz
 	if grep -q '^CMDLINE=' "$PATHINI" ; then
 		echo '' >>/tmp/basecfg  
@@ -2143,7 +2022,7 @@ setup_changes() {
 			fi
 		fi
 	fi
-	#   posix_test $1 $2
+	posix_test $1 $2
 }
 
 # calculate machine UID
@@ -2252,61 +2131,6 @@ setup_homes() {
 	fi
 }
 
-# Activate persistent changes
-# $1 = data directory
-# $2 = target changes directory
-#
-persistent_changes() {
-	debug_log "persistent_changes" "$*"
-
-	local CHANGES T1 T2
-
-	CHANGES="$1/$(basename "$2")"
-	T1="$CHANGES/.empty"
-	T2="$T1"2
-
-	# Setup the directory anyway, it will be used in all cases
-	mkdir -p "$2"
-
-	# If persistent changes are not requested, end here
-	if grep -vq perch /proc/cmdline; then
-		return
-	fi
-
-	# check if changes directory exists and is writable
-	touch "$T1" 2>/dev/null && rm -f "$T1" 2>/dev/null
-
-	# if not, simply return back
-	if [ $? -ne 0 ]; then
-		echolog "Persistent changes not writable or not used"
-		return
-	fi
-
-	echo_green_star
-	echolog "Testing persistent changes for posix compatibility"
-	touch "$T1" && ln -sf "$T1" "$T2" 2>/dev/null &&
-		chmod +x "$T1" 2>/dev/null && test -x "$T1" &&
-		chmod -x "$T1" 2>/dev/null && test ! -x "$T1" &&
-		rm "$T1" "$T2" 2>/dev/null
-
-	if [ $? -ne 0 ]; then
-		echo_green_star
-		echolog "Activating dynamic sized storage for persistent changes"
-		rm "$T1" "$T2" 2>/dev/null
-
-		mount.dynfilefs "$CHANGES/changes.dat" 4000 "$2"
-		if [ "$(device_bestfs "$2/loop.fs" | tr -d " ")" = "-t" ]; then
-			mke2fs -F "$2/loop.fs" >/dev/null
-		fi
-		mount -o loop,sync "$2/loop.fs" "$2"
-		rmdir "$2/lost+found" 2>/dev/null
-	else
-		echo_green_star
-		echolog "Activating native persistent changes"
-		mount --bind "$CHANGES" "$2"
-	fi
-}
-
 # Find $UIRD_RO=,$UIRD_RW= modules in given dir
 # $1 = layer directory
 #
@@ -2337,20 +2161,6 @@ list_modules() {
 			echo $LINE
 		fi
 	done
-}
-
-
-# Copy content of rootcopy directory to union
-# $1 = data directory
-# $2 = union directory
-copy_rootcopy_content() {
-	debug_log "copy_rootcopy_content" "$*"
-
-	if [ "$(ls -1 "$1/rootcopy/" 2>/dev/null)" != "" ]; then
-		echo_green_star
-		echolog "Copying content of rootcopy directory..."
-		cp -a "$1"/rootcopy/* "$2"
-	fi
 }
 
 # $1 copy target dir
@@ -2457,144 +2267,6 @@ copy_to_target() {
 	fi
 }
 
-
-# Create empty fstab properly
-# $1 = root directory
-#
-fstab_create() {
-	debug_log "fstab_create" "$*"
-
-	local FSTAB
-	FSTAB="$1/etc/fstab"
-	echo aufs / aufs defaults 0 0 >$FSTAB
-	echo proc /proc proc defaults 0 0 >>$FSTAB
-	echo sysfs /sys sysfs defaults 0 0 >>$FSTAB
-	echo devpts /dev/pts devpts gid=5,mode=620 0 0 >>$FSTAB
-	echo tmpfs /dev/shm tmpfs defaults 0 0 >>$FSTAB
-}
-
-# ===========================================================
-# FSTAB functions
-# ===========================================================
-
-# $1 = fstab file
-# $2 = device name
-dev_is_in_fstab() {
-	debug_log "dev_is_in_fstab" "$*"
-	cat "$1" | sed -r "s/#.*//" | grep -v "^[[:space:]]*none[[:space:]]" | grep -v "^[[:space:]]*tmpfs[[:space:]]" | grep -E -q "^[[:space:]]*$2[[:space:]]"
-}
-
-# update given line in fstab, add new values only if the device is not found
-# $1 = fstab file to parse
-# $2 = device name
-# $3 = mountpoint
-# $4 = filesystem
-# $5 = mount options
-#
-fstab_add_line() {
-	debug_log "fstab_add_line" "$*"
-	local DIR
-
-	if [ "$4" != "swap" ]; then DIR="$3"; else DIR="none"; fi
-	if ! dev_is_in_fstab "$1" "$2"; then
-		echo "$2" "$DIR" "$4" "$5" 0 0 "$FSTABLLFLAG" >>$1
-	fi
-}
-
-# create correct fstab file in $1/etc/fstab and create apropriate
-# mount directories in $1/mnt. This function is only calld once,
-# during liveCD startup (even before init from the distro is started).
-# $1 = root directory (union)
-#
-fstab_update() {
-	debug_log "fstab_update" "$*"
-	local FSTAB FSTABTMP
-
-	FSTAB="$1/etc/fstab"
-	FSTABTMP=$FSTAB$$
-	mkdir -p $1/etc $1/mnt
-	cat $FSTAB 2>/dev/null | grep -v "$FSTABLLFLAG" >$FSTABTMP
-
-	if [ "$UNION_FS" = "overlay" ]; then
-		fstab_add_line $FSTABTMP overlay / overlay defaults
-	else
-		fstab_add_line $FSTABTMP aufs / aufs defaults
-	fi
-	fstab_add_line $FSTABTMP proc /proc proc defaults
-	fstab_add_line $FSTABTMP sysfs /sys sysfs defaults
-	fstab_add_line $FSTABTMP devpts /dev/pts devpts gid=5,mode=620
-
-	# need to fix for UIRD
-	for a in "/$MOUNTDIR/$LIVEMEDIA" "/$MOUNTDIR/$LIVECHANGES" "/$LOOPMOUNT" "/$LIVEREPOSITORY" "/$MOUNTDIR/$LIVEHOME"; do
-		grep -q " $a " /proc/mounts || continue
-		fstab_add_line $FSTABTMP $(grep " $a " /proc/mounts | head -1 | awk '{ print $1 " " $2 " " $3 " noauto," $4 }')
-	done
-
-	mv -f $FSTABTMP $FSTAB
-	return
-
-	list_cdrom_devices | while read DEVICE; do
-		MNT=$(device_mountdir $DEVICE)
-		FS=$(device_filesystem $DEVICE)
-		if [ "$FS" = "" ]; then FS=iso9660; fi
-		mkdir -p "$1/$MNT"
-		fstab_add_line $FSTABTMP $DEVICE $MNT $FS $(fs_options $FS fstab)
-	done
-	list_partition_devices | while read DEVICE; do
-		MNT=$(device_mountdir $DEVICE)
-		FS=$(device_filesystem $DEVICE)
-		OPT=$(fs_options $FS fstab)
-
-		if [ "$FS" = "swap" ]; then
-			fstab_add_line $FSTABTMP $DEVICE $MNT $FS $OPT
-		fi
-
-		# If the partition has a valid filesystem, add it to fstab
-		if is_supported_filesystem "$FS"; then
-			fstab_add_line $FSTABTMP $DEVICE $MNT $FS $OPT
-			mkdir -p "$1/$MNT"
-		fi
-	done
-
-	mv -f $FSTABTMP $FSTAB
-}
-
-freemedia_old() {
-	local devs device notfree dev
-	#DATAMNT=/memory/data
-	#MOUNTDIR=/memory/layer-base
-	devs=$(cat /proc/mounts | grep -E "${DATAMNT}/from|$MOUNTDIR" | cut -d " " -f 1 | sort | uniq -d)
-	for dev in $devs; do
-		umount $(cat /proc/mounts | grep ${dev}.*$MOUNTDIR | cut -d " " -f 2) 2>/dev/null
-		umount $dev 2>/dev/null && echo "$dev is free now"
-	done
-	for device in $(echo $devs | while read a; do echo $a | cut -c 1-8; done | sort | uniq); do
-		cat /proc/mounts | grep -q $device && notfree="$notfree $device"
-	done
-	if [ $notfree ]; then
-		echolog "Media:" $red"$notfree"$default "is not free!!!"
-		echo -ne $yellow"(S)hutdown, (R)eboot, (C)ontinue"$default
-		ANS=$(ask_answer "(S)hutdown, (R)eboot, (C)ontinue")
-		case "$ANS" in
-		"S" | "s")
-			#shutdown
-			poweroff -f
-			;;
-		"R" | "r")
-			#reboot
-			reboot -f
-			;;
-		"C" | "c")
-			#continue
-			;;
-		*)
-			#else - SHELL
-			shell_cmd "shell"
-			;;
-		esac
-	fi
-}
-
 move_run() {
 	ismountpoint "${UNION}/run" && return
 	echo_green_star && echolog "$INITIALIZE /run/initramfs...."
@@ -2605,45 +2277,6 @@ move_run() {
 	rm -rf /lib/modules/*
 	rm -rf /lib/firmware/*
 	cp -a /{bin,dev,etc,li,root,sbin,usr,var,shut}* "${UNION}/run/initramfs/"
-}
-
-
-# Change root and execute init
-# $1 = where to change root
-#
-change_root() {
-	debug_log "change_root" "$*"
-
-	umount /proc
-	umount /sys
-
-	cd "$1"
-
-	# make sure important device files and directories are in union
-	mkdir -p boot dev proc sys tmp mnt run
-	chmod 1777 tmp
-	if [ ! -e dev/console ]; then mknod dev/console c 5 1; fi
-	if [ ! -e dev/tty ]; then mknod dev/tty c 5 0; fi
-	if [ ! -e dev/tty0 ]; then mknod dev/tty0 c 4 0; fi
-	if [ ! -e dev/tty1 ]; then mknod dev/tty1 c 4 1; fi
-	if [ ! -e dev/null ]; then mknod dev/null c 1 3; fi
-	if [ ! -e sbin/fsck.aufs ]; then ln -s /bin/true sbin/fsck.aufs; fi
-
-	# find chroot and init
-	if [ -x bin/chroot ]; then CHROOT=bin/chroot; fi
-	if [ -x sbin/chroot ]; then CHROOT=sbin/chroot; fi
-	if [ -x usr/bin/chroot ]; then CHROOT=usr/bin/chroot; fi
-	if [ -x usr/sbin/chroot ]; then CHROOT=usr/sbin/chroot; fi
-	if [ "$CHROOT" = "" ]; then fatal "Can't find executable chroot command"; fi
-
-	if [ -x bin/init ]; then INIT=bin/init; fi
-	if [ -x sbin/init ]; then INIT=sbin/init; fi
-	if [ "$INIT" = "" ]; then fatal "Can't find executable init command"; fi
-
-	mkdir -p mnt/live
-	mount -n -o remount,ro aufs .
-	pivot_root . mnt/live
-	exec $CHROOT . $INIT <dev/console >dev/console 2>&1
 }
 
 setup_preinit ()  {
@@ -2884,7 +2517,7 @@ expand_part() {
 	    mount -o rw ${device}$partition /tmp/tmpmnt
 	    btrfs filesystem resize max /tmp/tmpmnt ;;
 	*) return ;;
-    esac
+	esac
 	rm -f /tmp/tmpmnt/EXPAND_ME 
 	umount /tmp/tmpmnt
 	rmdir /tmp/tmpmnt
@@ -2922,7 +2555,22 @@ setup_union(){
 }
 
 setfontkeys() {
-    [ -d "/usr/lib/consolefonts/${LANG}" -o -L "/usr/lib/consolefonts/${LANG}" ] && loadfont < /usr/lib/consolefonts/${LANG}/$(ls -1 /usr/lib/consolefonts/${LANG}/)  >/dev/null
-    [ -d "/usr/lib/kbd/${LANG}" -o -L "/usr/lib/kbd/${LANG}" ] && loadkeys /usr/lib/kbd/${LANG}/$(ls -1 /usr/lib/kbd/${LANG}/) >/dev/null
+	[ -d "/usr/lib/consolefonts/${LANG}" -o -L "/usr/lib/consolefonts/${LANG}" ] && loadfont < /usr/lib/consolefonts/${LANG}/$(ls -1 /usr/lib/consolefonts/${LANG}/)  >/dev/null
+	[ -d "/usr/lib/kbd/${LANG}" -o -L "/usr/lib/kbd/${LANG}" ] && loadkeys /usr/lib/kbd/${LANG}/$(ls -1 /usr/lib/kbd/${LANG}/) >/dev/null
 }
 
+getpass_lspci() {
+	busybox lspci |md5sum |cut -f1 -d ' '
+}
+
+update_initvars() {
+	local str nv 
+	read str
+	nv=$(echo $str | awk -F= '{print $1}')
+	if ! grep -q "^[[:space:]]*$nv=" /etc/initvars 2>/dev/null ;then
+		grep -q "^$str$" /etc/initvars 2>/dev/null || echo "$str" >> /etc/initvars
+    else
+		sed -i 's|'"^[[:space:]]*$nv=.*$"'|'"$str"'|' /etc/initvars
+	fi
+	sed -i '/^$/d' /etc/initvars
+}

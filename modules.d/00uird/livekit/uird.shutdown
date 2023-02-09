@@ -1,4 +1,3 @@
-#!/bin/sh
 # Author: Alexander Betkher <http://magos-linux.ru>
 
 uird_shutdown() {
@@ -17,8 +16,7 @@ uird_shutdown() {
 	. /tmp/toxzm.state
 	savesname=$CHANGESMNT
 	savesdir=$(dirname $savesname)
-	savesdev=$(df $savesdir |grep /dev |awk '{print $1}')
-	
+	savesdev=$(df $savesdir |grep /dev |awk '{print $1}')	
 	if [ "$(stat -L -c %t $savesdev)" == "fd" ] ; then
 	# Find LUKS mount point. It may be /dev/dm-0, or link in /dev/mapper/
 		for link in $(ls /dev/mapper/*); do
@@ -33,42 +31,53 @@ uird_shutdown() {
 	MPOINT=$(grep $savesdev /proc/self/mountinfo |head -n1 | grep ".* / .*$savesdev" | cut -d " " -f 5 )
 	MNTOPTS=$(grep $savesdev /proc/mounts | head -n1 | cut -d " " -f 4)
 	RBIND=$(grep $savesdev /proc/self/mountinfo | sed 1d | awk '{print $4 "," $5}')
-	echo "#!/bin/ash" > "${UNION}/run/initramfs/remount"
-	echo 'BUSYBOX=busybox' >> "${UNION}/run/initramfs/remount"
-	echo 'which $BUSYBOX  >/dev/null || BUSYBOX=busybox.static' >> "${UNION}/run/initramfs/remount"
-	echo 'BLKID=blkid' >> "${UNION}/run/initramfs/remount"
-	echo '[ -x /sbin/blkid.real ] && BLKID=/sbin/blkid.real' >> "${UNION}/run/initramfs/remount"
-	echo 'for a in $(ls /dev/sd?) ; do (eject -t "$a" && partprobe "$a") 2>/dev/null ; done' >> "${UNION}/run/initramfs/remount"
-################################################################ 
+
+cat << "EOF" > "${UNION}/run/initramfs/remount"
+#!/bin/bash
+BUSYBOX=busybox
+which $BUSYBOX  >/dev/null || BUSYBOX=busybox.static
+BLKID=blkid
+[ -x /sbin/blkid.real ] && BLKID=/sbin/blkid.real
+for a in $(ls /dev/{sd,nvme}? 2>/dev/null) ; do (eject -t "$a" && partprobe "$a") 2>/dev/null ; done
+EOF
+################################################################
 	if [ $LUKSDEV ] ; then
-		echo 'DEV=$($BLKID 2>/dev/null | grep -m1 $(echo ' " $LUKSUUID " ' ) | awk -F: '\'{print \$1}\'')' >> "${UNION}/run/initramfs/remount"
-		echo 'HARDPASS=$($BUSYBOX lspci |md5sum |cut -f1 -d " ")' >> "${UNION}/run/initramfs/remount"
-		echo 'LUKS_DEV=$(echo $DEV |sed "s#/dev/##" )' >> "${UNION}/run/initramfs/remount"
-		echo 'echo $HARDPASS | cryptsetup luksOpen "$DEV" --test-passphrase && PASS="$HARDPASS"' >> "${UNION}/run/initramfs/remount"
-		echo 'times=3' >> "${UNION}/run/initramfs/remount"
-		echo 'while [ $times -gt 0 ]; do' >> "${UNION}/run/initramfs/remount"
-    		echo '  [ -b "/dev/mapper/$LUKS_DEV" ] && break ' >> "${UNION}/run/initramfs/remount"
-		echo '	if ! [ "$PASS" ] ; then' >> "${UNION}/run/initramfs/remount"
-		echo '		echo "$PASSWD_ENTER - $DEV:"' >> "${UNION}/run/initramfs/remount"
-		echo '		PASS=$(ask_pass "$PASSWD_ENTER - $DEV")' >> "${UNION}/run/initramfs/remount"
-		echo '	fi' >> "${UNION}/run/initramfs/remount"
-		echo '	echo "$PASS" | cryptsetup luksOpen "$DEV" "$LUKS_DEV" >/dev/null 2>&1 & ' >> "${UNION}/run/initramfs/remount"
-		echo '  cspid=$! ' >> "${UNION}/run/initramfs/remount"
-		echo '  echolog "$WAITING_FOR "$DEV" " ' >> "${UNION}/run/initramfs/remount"
-		echo '    for a in $(seq 15) ; do ' >> "${UNION}/run/initramfs/remount"
-    		echo '       [ -b "/dev/mapper/$LUKS_DEV" ] && break ' >> "${UNION}/run/initramfs/remount"
-    		echo '       [ -f "/proc/$cspid/cmdline"  ] || break ' >> "${UNION}/run/initramfs/remount"
-    		echo '       sleep 2 ' >> "${UNION}/run/initramfs/remount"
-    		echo '       [ $a -ge 13 ] && dmsetup mknodes  "$LUKS_DEV"' >> "${UNION}/run/initramfs/remount"
-    		echo '       echo -n . ' >> "${UNION}/run/initramfs/remount"
-		echo '    done ' >> "${UNION}/run/initramfs/remount"
-		echo '	[ -b "/dev/mapper/$LUKS_DEV" ] && break' >> "${UNION}/run/initramfs/remount"
-		echo '	unset PASS' >> "${UNION}/run/initramfs/remount"
-		echo '  echo "!" '  >> "${UNION}/run/initramfs/remount"
-		echo '	times=$(expr $times - 1 ) ' >> "${UNION}/run/initramfs/remount"
-		echo '  [ $times -eq 0 ] && exit 1 ' >> "${UNION}/run/initramfs/remount"
-		echo '	echolog "$LUKS_ERROR ($times)"' >> "${UNION}/run/initramfs/remount"
-		echo 'done' >> "${UNION}/run/initramfs/remount"
+	. /etc/initvars
+	eval getpass=\$getpass_$(basename $LUKSDEV)
+	typeset -f $getpass >> "${UNION}/run/initramfs/remount"
+	echo 'DEV=$($BLKID 2>/dev/null | grep -m1 $(echo ' " $LUKSUUID " ' ) | awk -F: '\'{print \$1}\'')' >> "${UNION}/run/initramfs/remount"
+	cat << "EOF" >> "${UNION}/run/initramfs/remount"
+LUKS_DEV=$(basename $DEV)
+if command -v getpass_$LUKS_DEV >/dev/null ; then
+	echolog "Use: getpass_$LUKS_DEV"
+	PASS=$(getpass_$LUKS_DEV $DEV) 
+	break
+fi 
+times=3
+while [ $times -gt 0 ]; do
+	[ -b "/dev/mapper/$LUKS_DEV" ] && break
+	if ! [ "$PASS" ] ; then
+		echolog "$PASSWD_ENTER - $DEV"
+		PASS=$(ask_pass "$PASSWD_ENTER - $DEV")
+	fi
+	echo "$PASS" | cryptsetup luksOpen "$DEV" "$LUKS_DEV" >/dev/null 2>&1 &
+	cspid=$!
+	echolog "${WAITING_FOR} $DEV"
+	for a in $(seq 15) ; do
+		[ -b "/dev/mapper/$LUKS_DEV" ] && break
+		[ -f "/proc/$cspid/cmdline"  ] || break
+		sleep 2
+		[ $a -ge 13 ] && dmsetup mknodes  "$LUKS_DEV"
+		echo -n .
+	done
+	[ -b "/dev/mapper/$LUKS_DEV" ] && break
+	unset PASS
+	echo "!"
+	times=$(expr $times - 1 )
+	[ $times -eq 0 ] && exit 1
+	echolog "$LUKS_ERROR ($times)"
+done
+EOF
 	fi
 ################################################################
 	echo "mkdir -p $MPOINT" >> "${UNION}/run/initramfs/remount"

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 1.1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-11-17 11:23+0300\n"
+"POT-Creation-Date: 2023-01-31 12:28+0300\n"
 "PO-Revision-Date: 2015-10-20 00:00+0700\n"
 "Last-Translator: Anton Goroshkin <neobht@gmail.com>\n"
 "Language-Team: Russian <http://magos-linux.ru>\n"
@@ -263,70 +263,71 @@ msgstr "Нет такого каталога:"
 msgid "Remount RO:"
 msgstr "Перемонтируется только для чтения (RO)"
 
-#: стандартный ввод:2913
+#: стандартный ввод:2582
 msgid "Starting freemedia...."
 msgstr "Отключаются источники (freemedia)..."
 
-#: стандартный ввод:2914
+#: стандартный ввод:2583
 msgid "Media"
 msgstr "Ресурс"
 
-#: стандартный ввод:2915
+#: стандартный ввод:2584
 msgid "is not free"
 msgstr "не удалось отключить"
 
-#: стандартный ввод:2916
+#: стандартный ввод:2585
 msgid "add the udev rules to remount sources"
 msgstr "создаются правила UDEV для повторного монтирования источников"
 
-#: стандартный ввод:2917
+#: стандартный ввод:2586
 msgid "Can't unmount"
 msgstr "Невозможно размонтировать"
 
-#: стандартный ввод:3055
-msgid "Starting UIRD init <http://magos-linux.ru>"
-msgstr "Запускается UIRD init <http://magos-linux.ru>"
+#: стандартный ввод:2721
+msgid "Starting UIRD"
+msgstr "Запускается UIRD"
 
-#: стандартный ввод:3056
+#: стандартный ввод:2722
 msgid "UIRD init is finished, starting"
 msgstr "UIRD init завершил работу, запускается"
 
-#: стандартный ввод:3057
+#: стандартный ввод:2723
 msgid "Updating directory /mnt"
 msgstr "Обновление директории /mnt"
 
-#: стандартный ввод:3058
+#: стандартный ввод:2724
 msgid "UIRD help system"
 msgstr "Справка по UIRD"
 
-#: стандартный ввод:3059
+#: стандартный ввод:2725
 msgid "No modules found for current kernel"
 msgstr "Модули для текущего ядра не найдены"
 
-#: стандартный ввод:3060
+#: стандартный ввод:2726
 msgid "RAM disk size"
 msgstr "Размер RAM диска"
 
-#: стандартный ввод:3554
+#: стандартный ввод:3223
 msgid "Seting up CHANGES to XZM mode"
 msgstr "Включение режима сохранения в модуль \"toxzm\""
 
-#: стандартный ввод:3555
+#: стандартный ввод:3224
 msgid "File or dir for toxzm mode not found"
 msgstr "Файл или каталог для режима \"toxzm\" не найден"
 
-#: стандартный ввод:3556
+#: стандартный ввод:3225
 msgid "Toxzm  mode disabled!!!"
 msgstr "Режим \"toxzm\" отключен!!!"
 
-#: стандартный ввод:3557
+#: стандартный ввод:3226
 msgid "Parsing"
 msgstr "Разбирается"
 
-#: стандартный ввод:3558
+#: стандартный ввод:3227
 msgid "wrong value - "
 msgstr "неверное значение - "
 
-#: стандартный ввод:3559
+#: стандартный ввод:3228
 msgid "created, trying to setting up CHANGES to XZM mode again"
 msgstr "создан, повторная попытка включения режима \"toxzm\""
+
