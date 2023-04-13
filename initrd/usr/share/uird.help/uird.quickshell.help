@@ -1,6 +1,6 @@
 **************************************************************************************************
 Wellcome to QuickShell - a simple linux command line mode!
-Use it to manage your files and to edit configs before booting main MagOS system.
+Use it to manage your files and to edit configs before booting target OS.
 
 All of your disks are mounted in /mnt dir.
 You can use an all included busybox commands (see output of 'ls /bin').
