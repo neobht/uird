@@ -2506,7 +2506,7 @@ expand_part() {
     partition=$(echo $DEV | sed 's/^.*[^[:digit:]]//')
     echo_green_star
     echolog "$EXPAND_DEVICE" $green"$DEV "$default >/dev/console 2>/dev/console
-    parted -a optimal -s $device resizepart $partition 100% || return 
+    parted --fix -a optimal -s $device resizepart $partition 100% || return 
     # partprobe $device
     mkdir /tmp/tmpmnt
     case $TYPE in
