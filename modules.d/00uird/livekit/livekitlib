@@ -819,7 +819,7 @@ fsck_device() {
 	elif [ "$2" = "btrfs" ]; then
 		$BIN_BTRFSCK "$1" </dev/console >/dev/console 2>/dev/console
 	else
-		$BIN_FSCK -a $([ "$2" ] && echo "-t $2") $1 </dev/console >/dev/console 2>/dev/console
+		$BIN_FSCK -fa $([ "$2" ] && echo "-t $2") $1 </dev/console >/dev/console 2>/dev/console
 	fi
 	echo_green_star
 	echolog "FS $1 was checked,  exitcode  - $?"
@@ -964,10 +964,10 @@ mount_device() {
 	fi
 
 #LUKS####################################################
-if [ $ERR -ne 0 ] && [ -b "$DEV" ] && cryptsetup isLuks "$DEV"  ; then
-	LUKS_DEV=$(echo $DEV |sed 's:/dev/::')
-	times=3
-	while [ $times -gt 0 ]; do
+	if [ $ERR -ne 0 ] && [ -b "$DEV" ] && cryptsetup isLuks "$DEV"  ; then
+		LUKS_DEV=$(echo $DEV |sed 's:/dev/::')
+		times=3
+		while [ $times -gt 0 ]; do
 			echolog "$MOUNT_DEVICE_ENC" "LUKS" $green"$DEV"$default
 			if ! [ -b "/dev/mapper/$LUKS_DEV" ] ; then
 				log "Initialization luks partition $LUKS_DEV"
@@ -1008,9 +1008,9 @@ if [ $ERR -ne 0 ] && [ -b "$DEV" ] && cryptsetup isLuks "$DEV"  ; then
 				umount $2 2>/dev/null
 				cryptsetup luksClose "$LUKS_DEV" >> $LOGFILE 2>&1
 				times=$(($times - 1))
-	done
-	grep -q "/dev/mapper/$LUKS_DEV" /proc/mounts && ERR=0
-fi
+		done
+		grep -q "/dev/mapper/$LUKS_DEV" /proc/mounts && ERR=0
+	fi
 #########################################################
 
 	# not enough loop devices? try to create one.
@@ -1283,7 +1283,7 @@ find_filepath() {
 		PRESERVE=""
 	fi
 
-	FOUND=$(ls -A1d $DIR/$2 2>/dev/null | head -n 1 | tr -s '/')       
+	FOUND=$(ls -A1d $DIR/$2 2>/dev/null | head -n 1 | tr -s '/')
 	if [ "$SGN"_ != "_" ]; then
 		if [ -f "$DIR/$2/$SGN" ]; then
 			FOUND=$FOUND
@@ -2505,22 +2505,23 @@ expand_part() {
     device=$(echo "$DEV" | sed -r "s/p*[0-9]+\$//g")
     partition=$(echo $DEV | sed 's/^.*[^[:digit:]]//')
     echo_green_star
-    echolog "$EXPAND_DEVICE" $green"$DEV "$default >/dev/console 2>/dev/console
-    parted --fix -a optimal -s $device resizepart $partition 100% || return 
-    # partprobe $device
+    echolog "$EXPAND_DEVICE" $green"$DEV "$default
+    parted --fix -a optimal -s $device resizepart $partition 100% 1>&2 || return
+    partprobe $device 2>/dev/null 1>&2 || sleep 1
+    fsck_device ${device}$partition $TYPE 1>&2
     mkdir /tmp/tmpmnt
     case $TYPE in
 	ext* )
-	    resize2fs ${device}$partition
-	    mount -o rw ${device}$partition /tmp/tmpmnt  ;;
+		resize2fs ${device}$partition 1>&2
+		mount -o rw ${device}$partition /tmp/tmpmnt 1>&2  ;;
 	btrfs )
-	    mount -o rw ${device}$partition /tmp/tmpmnt
-	    btrfs filesystem resize max /tmp/tmpmnt ;;
+		mount -o rw ${device}$partition /tmp/tmpmnt 1>&2
+		btrfs filesystem resize max /tmp/tmpmnt 1>&2 ;;
 	*) return ;;
 	esac
-	rm -f /tmp/tmpmnt/EXPAND_ME 
-	umount /tmp/tmpmnt
-	rmdir /tmp/tmpmnt
+	rm -f /tmp/tmpmnt/EXPAND_ME 1>&2
+	umount /tmp/tmpmnt 1>&2
+	rmdir /tmp/tmpmnt 1>&2
 	return 0
 }
 
