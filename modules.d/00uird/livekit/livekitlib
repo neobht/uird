@@ -1688,7 +1688,7 @@ init_ifcfg() {
 		else
 			# if client ip is unknown, try to get a DHCP lease
 			ifconfig $ETH up
-			udhcpc -i $ETH -f -q
+			udhcpc -i $ETH -f -q >/dev/null
 		fi
 
 	done
@@ -1786,6 +1786,8 @@ mount_data_source() {
 	mkdir -p $DST_DIR
 	log "find_data $SOURCE $MNT_DIR  $FPARS"
 	DATA_FROM=$(find_data "$SOURCE" "$MNT_DIR" "$FPARS" )
+	debug_log "DATA_FROM=$DATA_FROM"
+	debug_shell
 ##################################################################
 		if ! [ -e "$DATA_FROM" ] ; then 
 			echo $FPARS |grep -E -q 'uird.home|uird.changes' && mkimg $SOURCE $MNT_DIR $FPARS
