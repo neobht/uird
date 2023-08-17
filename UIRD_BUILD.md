@@ -5,8 +5,9 @@
 Проще всего установить src пакет dracut для вашего дистрибутива.
 ### Приблизительный список:
     * make
-    * pkg-config
+    * pkgconfig
     * kmod
+    * lib64kmod-devel
     * gcc
     * glibc
     * linux-api-headers
