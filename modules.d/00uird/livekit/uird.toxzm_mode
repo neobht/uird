@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Author: Alexander Betkher <http://magos-linux.ru>
 
 # $1 = xzmchanges mount directory
