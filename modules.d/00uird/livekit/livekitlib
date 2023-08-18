@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Functions library :: for Linux Live Kit scripts & UIRD init
 # Author: Tomas M. <http://www.linux-live.org>
 #
@@ -16,18 +16,18 @@
 #Brown/Orange 0;33     Yellow        1;33
 #Light Gray   0;37     White         1;37
 
-	black='\033[0;30m'
-	red='\033[0;31m'
-	green='\033[0;32m'
-	yellow='\033[1;33m'
-	brown='\033[0;33m'
-	blue='\033[0;34m'
-	light_blue='\033[1;34m'
-	magenta='\033[1;35m'
-	cyan='\033[0;36m'
-	white='\033[0;37m'
-	purple='\033[0;35m'
-	default='\033[0m'
+black='\033[0;30m'
+red='\033[0;31m'
+green='\033[0;32m'
+yellow='\033[1;33m'
+brown='\033[0;33m'
+blue='\033[0;34m'
+light_blue='\033[1;34m'
+magenta='\033[1;35m'
+cyan='\033[0;36m'
+white='\033[0;37m'
+purple='\033[0;35m'
+default='\033[0m'
 
 # BINARY
 BIN_BTFS=/sbin/btfs
@@ -50,12 +50,12 @@ LOGFILE=/var/log/uird.dbg.log
 
 f_gettext() {
 	local TEXT='' STR
-	STR="$(echo $1 |sed 's#\/#\\/#g')"
-	TDOMAIN=${TEXTDOMAINDIR}/$(echo $LANG |sed 's/_.*$//')/LC_MESSAGES/${TEXTDOMAIN}.po
-	[ -f $TDOMAIN ] && TEXT="$(cat $TDOMAIN |sed -ne "/\"$STR\"/{n;p;}" |sed  -e 's/^msgstr\ *\"//' -e 's/\"$//')"
-	if [ -n "$TEXT" ] ; then 
+	STR="$(echo $1 | sed 's#\/#\\/#g')"
+	TDOMAIN=${TEXTDOMAINDIR}/$(echo $LANG | sed 's/_.*$//')/LC_MESSAGES/${TEXTDOMAIN}.po
+	[ -f $TDOMAIN ] && TEXT="$(cat $TDOMAIN | sed -ne "/\"$STR\"/{n;p;}" | sed -e 's/^msgstr\ *\"//' -e 's/\"$//')"
+	if [ -n "$TEXT" ]; then
 		echo -n $TEXT
-	else 
+	else
 		echo -n $1
 	fi
 }
@@ -169,7 +169,7 @@ REMOUNT_RO=$($GETTEXT "Remount RO:")
 # debug 		     		 - подробный вывод и приостановка uird-init на нескольких этапах работы
 # uird.silent                - no output
 # uird.hide                  - не перемонтировать $SYSMNT из rootfs initrd в системный rootfs
-# uird.mntlinks              - coздавать ссылки live, livemedia, livedata в /mnt  
+# uird.mntlinks              - coздавать ссылки live, livemedia, livedata в /mnt
 
 [ -f "/uird_configs/uird_aliases" ] && . /uird_configs/uird_aliases
 [ -z $UIRD_BASECFG ] && UIRD_BASECFG=uird.basecfg
@@ -232,44 +232,44 @@ export -f debug_log
 # $1 = text to show
 #
 header() {
-if ! getpar $UIRD_SILENT >/dev/null ; then
-	echo ''
-	echolog $brown"$@"$default
-	echo ''
-fi
+	if ! getpar $UIRD_SILENT >/dev/null; then
+		echo ''
+		echolog $brown"$@"$default
+		echo ''
+	fi
 }
 
 # echo green star
 #
 echo_green_star() {
-if ! getpar $UIRD_SILENT > /dev/null ; then
-	echo -ne $green"* "$default >/dev/console 2>/dev/console
-fi
+	if ! getpar $UIRD_SILENT >/dev/null; then
+		echo -ne $green"* "$default >/dev/console 2>/dev/console
+	fi
 }
 export -f echo_green_star
 
 echo_blue_star() {
-if ! getpar $UIRD_SILENT > /dev/null ; then
-	echo -ne $blue"  * "$default >/dev/console 2>/dev/console
-fi
+	if ! getpar $UIRD_SILENT >/dev/null; then
+		echo -ne $blue"  * "$default >/dev/console 2>/dev/console
+	fi
 }
 export -f echo_blue_star
 
 # log - store given text in /var/log/uird.dbg.log
 log() {
-	echo "$@" 2>/dev/null >> $LOGFILE 
+	echo "$@" 2>/dev/null >>$LOGFILE
 }
 export -f log
 
 echolog() {
 	local text
-	text="$(echo "$@" |sed 's:\\\033\[[[:digit:]];*[[:digit:]]*m::g')"
+	text="$(echo "$@" | sed 's:\\\033\[[[:digit:]];*[[:digit:]]*m::g')"
 	log "$text"
-	if ! getpar $UIRD_SILENT >/dev/null ; then
-		if plymouth --ping 2>/dev/null; then 
+	if ! getpar $UIRD_SILENT >/dev/null; then
+		if plymouth --ping 2>/dev/null; then
 			plymouth display-message --text="$text"
 		else
-			echo -e "$@"  >/dev/console 2>&1
+			echo -e "$@" >/dev/console 2>&1
 		fi
 	fi
 }
@@ -301,7 +301,7 @@ shell_cmd() {
 	[ "$SECLEVEL" -gt 2 ] && return
 	plymouth --ping >/dev/null 2>&1 && plymouth quit
 	ln -s /root/bash_profile /root/.bash_profile 2>/dev/null
-cat << EOF > /root/.bashrc
+	cat <<EOF >/root/.bashrc
 # .bashrc
 PATH=.:/:/usr/sbin:/usr/bin:/sbin:/bin
 ENV=/root/.bashrc
@@ -332,7 +332,7 @@ export -f shell_cmd
 
 # start quickshell
 start_quickshell() {
-	if getpar qs  > /dev/null ; then
+	if getpar qs >/dev/null; then
 		[ "$SECLEVEL" -gt 2 ] && return
 		mkdir -p /mnt
 		automount
@@ -349,7 +349,7 @@ start_quickshell() {
 
 # Resume from swsuspend
 resume_from_suspend() {
-        if ! getpar noresume > /dev/null ; then
+	if ! getpar noresume >/dev/null; then
 		RESUME_DEV=$($BIN_BLKID | grep -m1 swsuspend | awk -F: '{print $1}')
 		[ -z "$RESUME_DEV" ] || resume $RESUME_DEV
 	fi
@@ -392,105 +392,105 @@ echodebug() {
 }
 
 cfg_parser_pre() {
-getcmdline >/tmp/cmdline
-if [ "$SECLEVEL" -gt 0 ] ; then
-	echo $(cat /proc/cmdline /tmp/cmdline 2>/dev/null |sed 's/(.*)//' | tr -s ";" ",") >/tmp/cmdline
-else
-	eval echo $(cat /proc/cmdline /tmp/cmdline 2>/dev/null |sed 's/(.*)//' | tr -s ";" ",") >/tmp/cmdline
-fi
-BASECFG=$(echo -n " " | cat - /tmp/cmdline 2>/dev/null | grep -E -m1 -o "(^|[[:space:]])uird.basecfg=[^[:space:]]+" | cut -d "=" -f 2- | head -n1)
-[ -f "$BASECFG" -o "$BASECFG" == "help" ] || BASECFG=/uird_configs/$BASECFG
-if ! [ -f "$BASECFG" -o "$BASECFG" == "help" ]; then
-	echo "$BASECFG is not correct uird.basecfg value"
-	shell_cmd "help"
-fi
-echo $(cat  $BASECFG |grep -v "^[[:space:]]*\#"  2>/dev/null | tr -s ";" ",") >/tmp/basecfg
-echo '' >>/tmp/basecfg
-[ "$SECLEVEL" -lt 5 ] && echo $(cat  /tmp/cmdline  | tr -s ";" "," |sed 's/ /\n/g' | sort -u ) >>/tmp/basecfg
-echo '' >>/tmp/basecfg
-cfg_parser
+	getcmdline >/tmp/cmdline
+	if [ "$SECLEVEL" -gt 0 ]; then
+		echo $(cat /proc/cmdline /tmp/cmdline 2>/dev/null | sed 's/(.*)//' | tr -s ";" ",") >/tmp/cmdline
+	else
+		eval echo $(cat /proc/cmdline /tmp/cmdline 2>/dev/null | sed 's/(.*)//' | tr -s ";" ",") >/tmp/cmdline
+	fi
+	BASECFG=$(echo -n " " | cat - /tmp/cmdline 2>/dev/null | grep -E -m1 -o "(^|[[:space:]])uird.basecfg=[^[:space:]]+" | cut -d "=" -f 2- | head -n1)
+	[ -f "$BASECFG" -o "$BASECFG" == "help" ] || BASECFG=/uird_configs/$BASECFG
+	if ! [ -f "$BASECFG" -o "$BASECFG" == "help" ]; then
+		echo "$BASECFG is not correct uird.basecfg value"
+		shell_cmd "help"
+	fi
+	echo $(cat $BASECFG | grep -v "^[[:space:]]*\#" 2>/dev/null | tr -s ";" ",") >/tmp/basecfg
+	echo '' >>/tmp/basecfg
+	[ "$SECLEVEL" -lt 5 ] && echo $(cat /tmp/cmdline | tr -s ";" "," | sed 's/ /\n/g' | sort -u) >>/tmp/basecfg
+	echo '' >>/tmp/basecfg
+	cfg_parser
 }
 
 cfg_parser() {
-for par in $(cat  /tmp/basecfg) ; do
-	echo $par |grep -q "^-" && continue
-	if echo "$par" |grep -q "+=" ; then
-		parDir=$(echo "$par" |cut -d "+" -f1)
-		separ="+="
-	else 
-		parDir=$(echo "$par" |cut -d "=" -f1)
-		rm -rf /tmp/parameters/$parDir 2>/dev/null
-		separ="="
-	fi
-	mkdir -p /tmp/parameters/$parDir
-	NUM_PAR=$(( $(ls -1 /tmp/parameters/$parDir |wc -l) +1 ))
-	set -f
-	if echo $par |grep -q "=" ; then
-		for val in $(echo "$par" |sed "s/${parDir}${separ}//" | tr -s ";," " ") ; do
-			echo "$val" |grep -q ^\{.*}$  &&  val="$(echo "$val" |sed 's/[\{,\}]//g')::FORCE=yes"
-			for value in $(echo "$val" | sed 's/::/ /g') ; do
-				[ ! -e /tmp/parameters/$parDir/$NUM_PAR ] && 	value=$(uuid_label_to_dev "$value")
-	            echo "$value" >> /tmp/parameters/$parDir/$NUM_PAR
-		done
-		NUM_PAR=$((NUM_PAR + 1))
-		done
-		
-	echo "$par" | sed -re 's/^([^=]*)\.([^=]*\=.*)$/\1_\2/' -e 's/^([[:digit:]].*)$/_&/'  | update_initvars
-	else
-		: > /tmp/parameters/$parDir/enabled
-		echo "${par}=enabled" | sed -re 's/^(.*)\.(.*\=.*)$/\1_\2/' -e 's/^([[:digit:]].*)$/_&/' | update_initvars
-	fi
-	set +f
-done
-#tar -czf $SYSMNT/parameters.tar.gz /tmp/parameters &
+	for par in $(cat /tmp/basecfg); do
+		echo $par | grep -q "^-" && continue
+		if echo "$par" | grep -q "+="; then
+			parDir=$(echo "$par" | cut -d "+" -f1)
+			separ="+="
+		else
+			parDir=$(echo "$par" | cut -d "=" -f1)
+			rm -rf /tmp/parameters/$parDir 2>/dev/null
+			separ="="
+		fi
+		mkdir -p /tmp/parameters/$parDir
+		NUM_PAR=$(($(ls -1 /tmp/parameters/$parDir | wc -l) + 1))
+		set -f
+		if echo $par | grep -q "="; then
+			for val in $(echo "$par" | sed "s/${parDir}${separ}//" | tr -s ";," " "); do
+				echo "$val" | grep -q ^\{.*}$ && val="$(echo "$val" | sed 's/[\{,\}]//g')::FORCE=yes"
+				for value in $(echo "$val" | sed 's/::/ /g'); do
+					[ ! -e /tmp/parameters/$parDir/$NUM_PAR ] && value=$(uuid_label_to_dev "$value")
+					echo "$value" >>/tmp/parameters/$parDir/$NUM_PAR
+				done
+				NUM_PAR=$((NUM_PAR + 1))
+			done
+
+			echo "$par" | sed -re 's/^([^=]*)\.([^=]*\=.*)$/\1_\2/' -e 's/^([[:digit:]].*)$/_&/' | update_initvars
+		else
+			: >/tmp/parameters/$parDir/enabled
+			echo "${par}=enabled" | sed -re 's/^(.*)\.(.*\=.*)$/\1_\2/' -e 's/^([[:digit:]].*)$/_&/' | update_initvars
+		fi
+		set +f
+	done
+	#tar -czf $SYSMNT/parameters.tar.gz /tmp/parameters &
 }
 
 old_pars_compat() {
 	local sgn par str
-	for par in $UIRD_FROM $UIRD_HOME $UIRD_MOUNTS ; do
-		for file in $(getpar $par ) ; do
-			getpar $par $file "2,$" |while read str ; do
-			if echo $str |grep -q ^/[[:alnum:]]?*.*$ ; then 
-				echo "MNT=$str" >> /tmp/parameters/$par/$file
-				continue
-			fi
-			echo $str |grep -q ^[[:alnum:]].*=.*$ && continue
-			echo "MNT_OPTS=$str" >> /tmp/parameters/$par/$file
-			 done
+	for par in $UIRD_FROM $UIRD_HOME $UIRD_MOUNTS; do
+		for file in $(getpar $par); do
+			getpar $par $file "2,$" | while read str; do
+				if echo $str | grep -q ^/[[:alnum:]]?*.*$; then
+					echo "MNT=$str" >>/tmp/parameters/$par/$file
+					continue
+				fi
+				echo $str | grep -q ^[[:alnum:]].*=.*$ && continue
+				echo "MNT_OPTS=$str" >>/tmp/parameters/$par/$file
+			done
 		done
 	done
-	for sgn in $(getpar $UIRD_SGNFILES) ; do
-		echo "SGN=$(getpar $UIRD_SGNFILES $sgn 1)" >> /tmp/parameters/uird.from/$sgn
+	for sgn in $(getpar $UIRD_SGNFILES); do
+		echo "SGN=$(getpar $UIRD_SGNFILES $sgn 1)" >>/tmp/parameters/uird.from/$sgn
 	done
-	if ! getpar $UIRD_ROOTFS >/dev/null ; then
-	mkdir -p /tmp/parameters/uird.rootfs
-		if getpar $UIRD_ZRAM >/dev/null ; then
-			echo zram > /tmp/parameters/uird.rootfs/1
+	if ! getpar $UIRD_ROOTFS >/dev/null; then
+		mkdir -p /tmp/parameters/uird.rootfs
+		if getpar $UIRD_ZRAM >/dev/null; then
+			echo zram >/tmp/parameters/uird.rootfs/1
 		else
-			echo tmpfs > /tmp/parameters/uird.rootfs/1
+			echo tmpfs >/tmp/parameters/uird.rootfs/1
 		fi
-		echo $(getpar UIRD_RAMSIZE 1 1) >> /tmp/parameters/uird.rootfs/1
+		echo $(getpar UIRD_RAMSIZE 1 1) >>/tmp/parameters/uird.rootfs/1
 	fi
 }
 
 short_pars_compat() {
 	[ "$SECLEVEL" -gt 4 ] && return
 	local par
-	cat /proc/cmdline | grep -E -q " -|^-" || return 
-	for par in $(cat /proc/cmdline | sed 's/^.* -//' |cut -d " " -f 1 |fold -w 1) ; do
-		case $par in 
-		q)	mkdir -p /tmp/parameters/qs && : > /tmp/parameters/qs/enabled;;
-		Q)	mkdir -p /tmp/parameters/qse && : > /tmp/parameters/qse/enabled;;
-		p)	mkdir -p /tmp/parameters/uird.preinit && : > /tmp/parameters/uird.preinit/enabled;;
-		S)	mkdir -p /tmp/parameters/uird.shutdown && : > /tmp/parameters/uird.shutdown/enabled;;
-		C)	mkdir -p /tmp/parameters/uird.copy2ram && : > /tmp/parameters/uird.copy2ram/enabled;;
-		F)	mkdir -p /tmp/parameters/uird.freemedia && : > /tmp/parameters/uird.freemedia/enabled;;
-		f)	mkdir -p /tmp/parameters/uird.force && : > /tmp/parameters/uird.force/enabled;;
-		z)	mkdir -p /tmp/parameters/uird.rootfs && echo zram > /tmp/parameters/uird.rootfs/1;;
-		s)	mkdir -p /tmp/parameters/uird.swap && rm -f /tmp/parameters/uird.swap/* && echo auto > /tmp/parameters/uird.swap/1;;
-		o)	mkdir -p /tmp/parameters/uird.union && echo overlay > /tmp/parameters/uird.union/1;;
-		c)	mkdir -p /tmp/parameters/uird.mode && echo clean > /tmp/parameters/uird.mode/1;;
-        L)	mkdir -p /tmp/parameters/uird.silent && : > /tmp/parameters/uird.silent/enabled;;
+	cat /proc/cmdline | grep -E -q " -|^-" || return
+	for par in $(cat /proc/cmdline | sed 's/^.* -//' | cut -d " " -f 1 | fold -w 1); do
+		case $par in
+		q) mkdir -p /tmp/parameters/qs && : >/tmp/parameters/qs/enabled ;;
+		Q) mkdir -p /tmp/parameters/qse && : >/tmp/parameters/qse/enabled ;;
+		p) mkdir -p /tmp/parameters/uird.preinit && : >/tmp/parameters/uird.preinit/enabled ;;
+		S) mkdir -p /tmp/parameters/uird.shutdown && : >/tmp/parameters/uird.shutdown/enabled ;;
+		C) mkdir -p /tmp/parameters/uird.copy2ram && : >/tmp/parameters/uird.copy2ram/enabled ;;
+		F) mkdir -p /tmp/parameters/uird.freemedia && : >/tmp/parameters/uird.freemedia/enabled ;;
+		f) mkdir -p /tmp/parameters/uird.force && : >/tmp/parameters/uird.force/enabled ;;
+		z) mkdir -p /tmp/parameters/uird.rootfs && echo zram >/tmp/parameters/uird.rootfs/1 ;;
+		s) mkdir -p /tmp/parameters/uird.swap && rm -f /tmp/parameters/uird.swap/* && echo auto >/tmp/parameters/uird.swap/1 ;;
+		o) mkdir -p /tmp/parameters/uird.union && echo overlay >/tmp/parameters/uird.union/1 ;;
+		c) mkdir -p /tmp/parameters/uird.mode && echo clean >/tmp/parameters/uird.mode/1 ;;
+		L) mkdir -p /tmp/parameters/uird.silent && : >/tmp/parameters/uird.silent/enabled ;;
 		esac
 	done
 }
@@ -505,22 +505,22 @@ short_pars_compat() {
 # getpar $UIRD_PAR N M  && exitcode 0, stdout: поле М подпараметра N || exitcode 3
 # getpar $UIRD_PAR N '2,4' && exitcode 0, stdout: поля с 2 по 4 подпараметра N || exitcode 3
 getpar() {
-[ "$1" == "$BREAKSTEP"  -a "$DEBUG_IS_ENABLED" != "1" ]   && shell_cmd "break"
-tdir=/tmp/parameters
-if [ $3 ] ; then
-	cat  $tdir/$1/$2 2>/dev/null |sed -n "${3}p"  && return
-	return 3
-elif [ $2 ] ; then
-	cat  $tdir/$1/$2 2>/dev/null  && return
-	return 2
-else
-	if  [ -f  "$tdir/$1/enabled" ] ; then
-		echo "enabled" && 	return
-	elif [ -f  "$tdir/$1/1" ] ; then
-		ls "$tdir/$1" && 	return
+	[ "$1" == "$BREAKSTEP" -a "$DEBUG_IS_ENABLED" != "1" ] && shell_cmd "break"
+	tdir=/tmp/parameters
+	if [ $3 ]; then
+		cat $tdir/$1/$2 2>/dev/null | sed -n "${3}p" && return
+		return 3
+	elif [ $2 ]; then
+		cat $tdir/$1/$2 2>/dev/null && return
+		return 2
+	else
+		if [ -f "$tdir/$1/enabled" ]; then
+			echo "enabled" && return
+		elif [ -f "$tdir/$1/1" ]; then
+			ls "$tdir/$1" && return
+		fi
+		return 1
 	fi
-	return 1
-fi
 }
 export -f getpar
 
@@ -532,7 +532,6 @@ allow_only_root() {
 		exit 1
 	fi
 }
-
 
 # make sure some devices are there
 init_devs() {
@@ -547,28 +546,28 @@ init_devs() {
 # Activate zram (auto-compression of RAM)
 init_zram_swap() {
 	local ALG='none' SIZE='0'
-	if [ "$1" != "yes" ] ; then
-			for str in  $(getpar $UIRD_SWAP $1 '2,$p')  ; do
-				local |grep -q "$(echo $str |cut  -f1 -d=)=" &&  eval $str 
-			done 
+	if [ "$1" != "yes" ]; then
+		for str in $(getpar $UIRD_SWAP $1 '2,$p'); do
+			local | grep -q "$(echo $str | cut -f1 -d=)=" && eval $str
+		done
 	fi
 	[ $SIZE == 0 ] && SIZE=70
-	[ $ALG != 'none' ] && 	modprobe -q $ALG 2>/dev/null
+	[ $ALG != 'none' ] && modprobe -q $ALG 2>/dev/null
 	memtotal=$(grep MemTotal /proc/meminfo | awk ' { print $2 } ')
 	memzram=$(($memtotal * ${SIZE} / 100 * 1024))
 	modprobe -q zram num_devices=2 2>/dev/null
-	[ $ALG != 'none' ] && echo $ALG > /sys/block/zram0/comp_algorithm 2>/dev/null
-	ALG=$(cat /sys/block/zram0/comp_algorithm |sed -e 's/^.*\[//' -e 's/\].*$//')
+	[ $ALG != 'none' ] && echo $ALG >/sys/block/zram0/comp_algorithm 2>/dev/null
+	ALG=$(cat /sys/block/zram0/comp_algorithm | sed -e 's/^.*\[//' -e 's/\].*$//')
 	echo $memzram >/sys/block/zram0/disksize
-	mkswap /dev/zram0 > /dev/null
-	swapon -p 100 /dev/zram0 
+	mkswap /dev/zram0 >/dev/null
+	swapon -p 100 /dev/zram0
 	[ $? == 0 ] && echo_green_star && echolog "$INITIALIZE zram swap. Alg: $ALG, size: ${SIZE}%"
 }
 
 init_zswap() {
 	#echo lz4 >/sys/module/zswap/parameters/compressor
 	echo 1 >/sys/module/zswap/parameters/enabled
-	echo_green_star && echolog "$INITIALIZE Zswap" 
+	echo_green_star && echolog "$INITIALIZE Zswap"
 }
 
 # Mount squashfs filesystem bundles to aufs/ovelray union fs
@@ -582,19 +581,19 @@ init_union() {
 	debug_log "init_union" "$*"
 	local BUN MOD RW RO CP FS OPTIONS PRESERVE MID_BUN BUNDLE
 	local LBASE='' LBUNDLES='' LUNION='' LCP2RAM='' LCACHE='' LCHANGES='' LOWER_DIRS=''
-	for par in  $@  ; do
-		local |grep -q "$(echo $par |cut  -f1 -d=)"   &&  eval $par 
-	done 
+	for par in $@; do
+		local | grep -q "$(echo $par | cut -f1 -d=)" && eval $par
+	done
 	RW=$(echo $(getpar $UIRD_RW [[:digit:]]) | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/ /|/g')
 	RO=$(echo $(getpar $UIRD_RO [[:digit:]]) | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/ /|/g')
 	CP=$(echo $(getpar $UIRD_CP [[:digit:]]) | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/ /|/g')
 	[ "$SECLEVEL" -lt 2 ] && RUN=$(echo $(getpar $UIRD_RUN [[:digit:]]) | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/ /|/g')
-	if [ "$UNION_FS" = "overlay" ] ; then
+	if [ "$UNION_FS" = "overlay" ]; then
 		mkdir -p "$OVERLAY/workdir" "$OVERLAY/changes"
 		CPDEST="$OVERLAY/changes"
-	elif [ "$UNION_FS" = "aufs" ] ; then
+	elif [ "$UNION_FS" = "aufs" ]; then
 		CPDEST="$LCHANGES"
-	fi	
+	fi
 
 	echo_green_star
 	echolog "${PREPARING_BUNDLES}: $UNION_FS" $brown$LUNION$default
@@ -604,11 +603,11 @@ init_union() {
 		BUNDLE="$1"
 		BUN="$(basename "$BUNDLE")"
 		mkdir -p "$LBUNDLES/$BUN"
-		if ismountpoint "$LBUNDLES/$BUN" ; then 
+		if ismountpoint "$LBUNDLES/$BUN"; then
 			echolog "  $blue-->" $purple"$BUNDLE"$red" - has alredy been procesed! "$default
 			return
 		fi
-		if [ "$2" ] ; then 
+		if [ "$2" ]; then
 			MODE="$2"
 		else
 			MID_BUN=${BUNDLE#*$LBASE}
@@ -625,7 +624,7 @@ init_union() {
 			echolog "  $blue-->" $purple"$BUNDLE"$green" [CP mode] "$default
 			mount -o $OPTIONS $FS "$BUNDLE" "$LBUNDLES/$BUN"
 			cp -a "$LBUNDLES/$BUN"/. "${CPDEST}/" 2>/dev/null
-			umount "$LBUNDLES/$BUN" && rmdir "$LBUNDLES/$BUN" # it need to freemedia 
+			umount "$LBUNDLES/$BUN" && rmdir "$LBUNDLES/$BUN" # it need to freemedia
 			return
 		elif [ "$RUN" -a "$(echo $BUNDLE | grep -E -i "$RUN")" ]; then
 			echolog "  $blue-->" $purple"$BUNDLE"$yellow" [RUN mode] "$default
@@ -643,28 +642,28 @@ init_union() {
 		elif [ "$UNION_FS" = "aufs" ]; then
 			LOWER_DIRS="$LBUNDLES/$BUN=$MOD:$LOWER_DIRS"
 		fi
-		LOWER_DIRS=$(echo $LOWER_DIRS |sed 's/\:[[:space:]]*$//') 
+		LOWER_DIRS=$(echo $LOWER_DIRS | sed 's/\:[[:space:]]*$//')
 	}
 
 	for BUNDLE in $(list_modules "$LBASE"); do
 		add_bundle $BUNDLE
 	done
-	if [ -f /tmp/toxzm_modules ] ; then
-		for BUNDLE_MODE in $(cat /tmp/toxzm_modules)  ; do
-			add_bundle $(echo "$BUNDLE_MODE" |cut -f1 -d '#') $(echo "$BUNDLE_MODE" |cut -f2 -d '#')
+	if [ -f /tmp/toxzm_modules ]; then
+		for BUNDLE_MODE in $(cat /tmp/toxzm_modules); do
+			add_bundle $(echo "$BUNDLE_MODE" | cut -f1 -d '#') $(echo "$BUNDLE_MODE" | cut -f2 -d '#')
 		done
-	fi	
+	fi
 	echo_green_star
 	echolog "${INIT_UNION}: $UNION_FS"
 	log "lowerdir - $LOWER_DIRS"
-	if [ "$UNION_FS" = "overlay" ] ; then
+	if [ "$UNION_FS" = "overlay" ]; then
 		log "mount -t overlay -o redirect_dir=on,metacopy=off,index=on,lowerdir=${LOWER_DIRS},upperdir=${OVERLAY}/changes,workdir=${OVERLAY}/workdir overlay $LUNION"
 		mount -t overlay -o redirect_dir=on,metacopy=off,index=on,lowerdir=${LOWER_DIRS},upperdir=${OVERLAY}/changes,workdir=${OVERLAY}/workdir overlay $LUNION
 		mount --bind ${OVERLAY}/changes $LCHANGES
-	elif [ "$UNION_FS" = "aufs" ] ; then
+	elif [ "$UNION_FS" = "aufs" ]; then
 		log "mount -t aufs -o nowarn_perm,xino=$MEMORY/.xino_union,trunc_xino,br=${LCHANGES}:${LOWER_DIRS} aufs $LUNION"
 		mount -t aufs -o nowarn_perm,xino=$MEMORY/.xino_union,trunc_xino,br=${LCHANGES}:${LOWER_DIRS} aufs $LUNION
-	fi	
+	fi
 }
 
 # Make sure the part of a script after 'mutex_lock' call is atomic,
@@ -746,7 +745,7 @@ list_partition_devices() {
 	MOUNTED=$(cat /proc/mounts | grep -E '/dev/(sd|nbd).*[[:digit:]]' | cut -d " " -f 1 | sort -u)
 	#not mounted
 	for DEV in $MOUNTED $(grep -E -v 'ram|loop|major|sr|^$| [0-9] [a-z]' /proc/partitions | grep [0-9] | sed -r "s:^[0-9 ]+:/dev/:"); do
-		$BIN_BLKID -s TYPE "$DEV" |grep -q "crypto_LUKS" || echo $DEV
+		$BIN_BLKID -s TYPE "$DEV" | grep -q "crypto_LUKS" || echo $DEV
 	done | sort | uniq -u
 	if [ -e /dev/mapper/control ]; then # list LVM partitions if available
 		ls -1 /dev/mapper/ | grep -v "^control\$" | sed -r "s:^:/dev/mapper/:"
@@ -777,9 +776,9 @@ uird_scan() {
 		/uird.scan
 		shell_cmd help
 	else
-		if [ "$(getpar $UIRD_SCAN 1 1)"  == "legacy" ] ; then
+		if [ "$(getpar $UIRD_SCAN 1 1)" == "legacy" ]; then
 			/uird.scan --legacy $(getpar $UIRD_SCAN 1 '2,$') || shell_cmd "help"
-		elif [ "$(getpar $UIRD_SCAN 1 1)"  == "modules" ]; then
+		elif [ "$(getpar $UIRD_SCAN 1 1)" == "modules" ]; then
 			/uird.scan --modules || shell_cmd "help"
 		else
 			echolog "$(getpar $UIRD_SCAN 1 1)"
@@ -804,7 +803,7 @@ device_filesystem() {
 # $1 = /dev device, eg. /dev/hda1, or loop file
 # $2 = optional filesystem name, in order to skip autodetection
 fsck_device() {
-	local FS 
+	local FS
 	debug_log "fsck_device" "$*"
 	echo $FSCHECKED | grep -q "$1" && return
 	[ -b "$1" -o -f "$1" ] || return
@@ -880,10 +879,10 @@ mount_device() {
 	fi
 	getpar fsck >/dev/null && FSCK="yes"
 	FPARS=$5
-	if [ "$FPARS" ] ; then
-		for str in  $(cat $FPARS |sed -n '2,$p')  ; do
-			local |grep -q "$(echo $str |cut  -f1 -d=)"   &&  eval $str 
-		done 
+	if [ "$FPARS" ]; then
+		for str in $(cat $FPARS | sed -n '2,$p'); do
+			local | grep -q "$(echo $str | cut -f1 -d=)" && eval $str
+		done
 	fi
 	# skipping MBR
 	echo $(basename $1) | grep -q [a-z]$ && grep -q $(basename $1)[0-9] /proc/partitions && return 1
@@ -904,7 +903,7 @@ mount_device() {
 		ntfsmount "$DEV" "$2" -o $OPTIONS >>$LOGFILE 2>&1
 		ERR=$?
 	else
-		if [ $FSCK == "yes" ] ; then
+		if [ $FSCK == "yes" ]; then
 			FS_T=$(echo $FS | sed "s/-t //" | tr -d " ")
 			if [ "$FS_T" == "ext2" -o "$FS_T" == "ext3" -o "$FS_T" == "ext4" -o "$FS_T" == "btrfs" -o "$FS_T" == "vfat" -o "$FS_T" == "exfat" -o "$FS_T" == "xfs" ]; then
 				fsck_device "$DEV" $FS_T
@@ -914,14 +913,14 @@ mount_device() {
 		mount -n -o $OPTIONS $FS "$DEV" "$2" >>$LOGFILE 2>&1
 		ERR=$?
 	fi
-	if [ -f ${2}/EXPAND_ME ] ; then
+	if [ -f ${2}/EXPAND_ME ]; then
 		umount $2
-		expand_part $DEV 
+		expand_part $DEV
 		mount -n -o $OPTIONS $FS "$DEV" "$2" >>$LOGFILE 2>&1
 		ERR=$?
 	fi
 
-#LOOPAES####################################################
+	#LOOPAES####################################################
 	if [ $ERR -ne 0 ] && [ -f "$DEV" ] && echo "$DEV" | grep -q .enc$; then
 		echolog "$MOUNT_DEVICE_ENC" $green"$DEV"$default
 		OPTIONS=$(echo "$OPTIONS" | sed -r "s/,loop//g")
@@ -932,86 +931,86 @@ mount_device() {
 			break
 		done
 		times=3
-		if  [  -n "$KEY"  -a ! -f "$KEY"  ] ; then
-				echo_blue_star
-				echolog "find key:  $KEY"
-				KEY=$(find_data "$KEY" "$AESKEY")
+		if [ -n "$KEY" -a ! -f "$KEY" ]; then
+			echo_blue_star
+			echolog "find key:  $KEY"
+			KEY=$(find_data "$KEY" "$AESKEY")
 		fi
 		echo_blue_star
 		while [ $times -gt 0 ]; do
-			if [ -f "$KEY" ] ; then 
+			if [ -f "$KEY" ]; then
 				echolog "Found keyfile:  $KEY "
-				cryptsetup open --type loopaes "$DEV" "$LOOPDEV" --key-file  "$KEY" >> $LOGFILE 2>&1
+				cryptsetup open --type loopaes "$DEV" "$LOOPDEV" --key-file "$KEY" >>$LOGFILE 2>&1
 			else
 				echo "$ENC_PASS" >/dev/console
 				PASS=$(ask_pass "$ENC_PASS")
 				echo $PASS | cryptsetup open --type loopaes "$DEV" "$LOOPDEV" --key-file -
 			fi
 
-			if [ -b "/dev/mapper/$LOOPDEV" ]  ;  then
+			if [ -b "/dev/mapper/$LOOPDEV" ]; then
 				echolog "accepted!"
 				getpar fsck && fsck_device "/dev/mapper/$LOOPDEV"
-				mount_device "/dev/mapper/$LOOPDEV" "$2" "$3" "$4" "$5" >> $LOGFILE 2>&1
+				mount_device "/dev/mapper/$LOOPDEV" "$2" "$3" "$4" "$5" >>$LOGFILE 2>&1
 				ERR=$?
 				[ "$?" -eq 0 ] && break
 			fi
 			echolog "Mounting ecrypted contaner - ERROR, try again"
-			cryptsetup close "$LOOPDEV" >> $LOGFILE 2>&1
+			cryptsetup close "$LOOPDEV" >>$LOGFILE 2>&1
 			unset PASS
-			times=$(( $times - 1 ))
+			times=$(($times - 1))
 		done
-		grep -q "/dev/mapper/$LOOPDEV"  /proc/mounts  &&  ERR=0
+		grep -q "/dev/mapper/$LOOPDEV" /proc/mounts && ERR=0
 	fi
 
-#LUKS####################################################
-	if [ $ERR -ne 0 ] && [ -b "$DEV" ] && cryptsetup isLuks "$DEV"  ; then
-		LUKS_DEV=$(echo $DEV |sed 's:/dev/::')
+	#LUKS####################################################
+	if [ $ERR -ne 0 ] && [ -b "$DEV" ] && cryptsetup isLuks "$DEV"; then
+		LUKS_DEV=$(echo $DEV | sed 's:/dev/::')
 		times=3
 		while [ $times -gt 0 ]; do
 			echolog "$MOUNT_DEVICE_ENC" "LUKS" $green"$DEV"$default
-			if ! [ -b "/dev/mapper/$LUKS_DEV" ] ; then
+			if ! [ -b "/dev/mapper/$LUKS_DEV" ]; then
 				log "Initialization luks partition $LUKS_DEV"
-				if [ "$PASS" == '//hardware//' ] ; then
+				if [ "$PASS" == '//hardware//' ]; then
 					# try all getpass_* functions
-					for getpass_func in $(typeset -f |grep '^getpass_.*(.*)' |sed 's#(.*)##') ; do
-						if $getpass_func $DEV | cryptsetup luksOpen "$DEV" "$LUKS_DEV" >> $LOGFILE 2>&1 ; then 
+					for getpass_func in $(typeset -f | grep '^getpass_.*(.*)' | sed 's#(.*)##'); do
+						if $getpass_func $DEV | cryptsetup luksOpen "$DEV" "$LUKS_DEV" >>$LOGFILE 2>&1; then
 							echo getpass_${LUKS_DEV}=${getpass_func} | update_initvars
 							break
 						fi
 					done
 				fi
 
-				if ! [ -b "/dev/mapper/$LUKS_DEV" ] ; then
-					[ "$KEY"_ != "_" ] && [ ! -f $KEY ] && 	KEY=$(find_data "$KEY" "/tmp/lukskey")
-					if [ "$KEY" ] ; then
+				if ! [ -b "/dev/mapper/$LUKS_DEV" ]; then
+					[ "$KEY"_ != "_" ] && [ ! -f $KEY ] && KEY=$(find_data "$KEY" "/tmp/lukskey")
+					if [ "$KEY" ]; then
 						[ ! -f $KEY ] && KEY=$(find_data "$KEY" "/tmp/lukskey")
-						[ -f "$KEY" ] && cryptsetup -d $KEY luksOpen "$DEV" "$LUKS_DEV" >> $LOGFILE 2>&1
+						[ -f "$KEY" ] && cryptsetup -d $KEY luksOpen "$DEV" "$LUKS_DEV" >>$LOGFILE 2>&1
 					fi
 				fi
 
-				if ! [ -b "/dev/mapper/$LUKS_DEV" ] ; then
+				if ! [ -b "/dev/mapper/$LUKS_DEV" ]; then
 					echo "$LUKS_PASS" >/dev/console
 					PASS=$(ask_pass "$LUKS_PASS")
-					echo "$PASS" | cryptsetup luksOpen "$DEV" "$LUKS_DEV" >> $LOGFILE 2>&1
+					echo "$PASS" | cryptsetup luksOpen "$DEV" "$LUKS_DEV" >>$LOGFILE 2>&1
 				fi
-			fi 
+			fi
 
-			if [ -b "/dev/mapper/$LUKS_DEV" ] ; then
-				echolog  accepted!
+			if [ -b "/dev/mapper/$LUKS_DEV" ]; then
+				echolog accepted!
 				unset PASS KEY
 				getpar fsck && fsck_device "/dev/mapper/$LUKS_DEV"
-				mount_device "/dev/mapper/$LUKS_DEV" "$2" "$3" "$4" "$5" >> $LOGFILE 2>&1
+				mount_device "/dev/mapper/$LUKS_DEV" "$2" "$3" "$4" "$5" >>$LOGFILE 2>&1
 				[ "$?" -eq 0 ] && break
 			fi
-				echolog "Mount - error!, try again"
-				unset PASS
-				umount $2 2>/dev/null
-				cryptsetup luksClose "$LUKS_DEV" >> $LOGFILE 2>&1
-				times=$(($times - 1))
+			echolog "Mount - error!, try again"
+			unset PASS
+			umount $2 2>/dev/null
+			cryptsetup luksClose "$LUKS_DEV" >>$LOGFILE 2>&1
+			times=$(($times - 1))
 		done
 		grep -q "/dev/mapper/$LUKS_DEV" /proc/mounts && ERR=0
 	fi
-#########################################################
+	#########################################################
 
 	# not enough loop devices? try to create one.
 	if [ $ERR -eq 2 ]; then
@@ -1043,10 +1042,10 @@ mount_btfs() {
 	debug_log "mount_btfs" "$*"
 	command -v $BIN_BTFS >/dev/null 2>&1 || return
 	init_ifcfg 1>&2
-	if [ "$3" ] ; then
-		for str in  $(sed -n '2,$p' $3)  ; do
-			local |grep -q "$(echo $str |cut  -f1 -d=)=" &&  eval $str 
-		done 
+	if [ "$3" ]; then
+		for str in $(sed -n '2,$p' $3); do
+			local | grep -q "$(echo $str | cut -f1 -d=)=" && eval $str
+		done
 	fi
 	mkdir -p $2
 	$BIN_BTFS MNT_OPTS "$1" "$2" 1>&2 || return
@@ -1083,10 +1082,10 @@ mount_ftp() {
 	debug_log "mount_curlftpfs" "$*"
 	command -v $BIN_CURLFTPFS >/dev/null 2>&1 || return
 	init_ifcfg 1>&2
-	if [ "$3" ] ; then
-		for str in  $(sed -n '2,$p' $3)  ; do
-			local |grep -q "$(echo $str |cut  -f1 -d=)=" &&  eval $str 
-		done 
+	if [ "$3" ]; then
+		for str in $(sed -n '2,$p' $3); do
+			local | grep -q "$(echo $str | cut -f1 -d=)=" && eval $str
+		done
 	fi
 	mkdir -p $2
 	$BIN_CURLFTPFS $MNT_OPTS $1 $2 </dev/console >/dev/console 2>/dev/console || return
@@ -1106,11 +1105,11 @@ mount_ssh() {
 	debug_log "mount_sshfs" "$*"
 	command -v $BIN_SSHFS >/dev/null 2>&1 || return
 	init_ifcfg 1>&2
-	if [ "$3" ] ; then
-		for str in  $(sed -n '2,$p' $3)  ; do
-			local |grep -q "$(echo $str |cut  -f1 -d=)=" &&  eval $str 
-		done 
-	fi	
+	if [ "$3" ]; then
+		for str in $(sed -n '2,$p' $3); do
+			local | grep -q "$(echo $str | cut -f1 -d=)=" && eval $str
+		done
+	fi
 	mkdir -p $2
 	times=3
 	$BIN_SSHFS ${1/ssh:??/} $2 $MNT_OPTS </dev/console >/dev/console 2>/dev/console
@@ -1131,13 +1130,13 @@ mount_9p() {
 	debug_log "mount_9p" "$*"
 	local TAG ERR MNT_OPTS DEF_OPTIONS
 	DEF_OPTIONS="trans=virtio,msize=100000000"
-	if [ "$3" ] ; then
-		for str in  $(sed -n '2,$p' $3)  ; do
-			local |grep -q "$(echo $str |cut  -f1 -d=)=" &&  eval $str 
-		done 
+	if [ "$3" ]; then
+		for str in $(sed -n '2,$p' $3); do
+			local | grep -q "$(echo $str | cut -f1 -d=)=" && eval $str
+		done
 	fi
 	[ "$MNT_OPTS" ] || MNT_OPTS="$DEF_OPTIONS"
-	TAG=$(echo $1 |sed 's#^9p://##')
+	TAG=$(echo $1 | sed 's#^9p://##')
 	mkdir -p $2
 	mount -t 9p -o ${MNT_OPTS//+/,} $TAG $2
 	ERR=$?
@@ -1154,10 +1153,10 @@ mount_nfs() {
 	local DEF_OPTIONS MNT_OPTS SHARE
 	DEF_OPTIONS="nolock,rsize=4096,wsize=4096"
 	init_ifcfg 1>&2
-	if [ "$3" ] ; then
-		for str in  $(sed -n '2,$p' $3)  ; do
-			local |grep -q "$(echo $str |cut  -f1 -d=)=" &&  eval $str 
-		done 
+	if [ "$3" ]; then
+		for str in $(sed -n '2,$p' $3); do
+			local | grep -q "$(echo $str | cut -f1 -d=)=" && eval $str
+		done
 	fi
 	[ "$MNT_OPTS" ] || MNT_OPTS="$DEF_OPTIONS"
 	mkdir -p $2
@@ -1178,17 +1177,17 @@ mount_cifs() {
 	debug_log "mount_cifs" "$*"
 	local DEF_OPTIONS MNT_OPTS SHARE
 	init_ifcfg 1>&2
-	if [ "$3" ] ; then
-		for str in  $(sed -n '2,$p' $3)  ; do
-			local |grep -q "$(echo $str |cut  -f1 -d=)=" &&  eval $str 
-		done 
+	if [ "$3" ]; then
+		for str in $(sed -n '2,$p' $3); do
+			local | grep -q "$(echo $str | cut -f1 -d=)=" && eval $str
+		done
 	fi
 	mkdir -p $2
 	modprobe cifs 1>&2
 	SHARE=$(echo $1 | sed s-^cifs://--)
 	if mount -t cifs $SHARE $2 -o ${MNT_OPTS//+/,} 2>/dev/null 1>&2; then
 		echo $2
-	elif mount -t cifs $(dirname $SHARE) $2 -o ${MNT_OPTS//+/,} 2>/dev/null 1>&2 ; then
+	elif mount -t cifs $(dirname $SHARE) $2 -o ${MNT_OPTS//+/,} 2>/dev/null 1>&2; then
 		echo $2/$(basename $SHARE)
 	fi
 }
@@ -1203,10 +1202,10 @@ mount_rsync() {
 	command -v $BIN_RSYNC >/dev/null 2>&1 || return
 	init_ifcfg 1>&2
 	DEF_OPTIONS="--progress -a"
-	if [ "$3" ] ; then
-		for str in  $(sed -n '2,$p' $3)  ; do
-			local |grep -q "$(echo $str |cut  -f1 -d=)=" &&  eval $str 
-		done 
+	if [ "$3" ]; then
+		for str in $(sed -n '2,$p' $3); do
+			local | grep -q "$(echo $str | cut -f1 -d=)=" && eval $str
+		done
 	fi
 	[ "$MNT_OPTS" ] || MNT_OPTS="$DEF_OPTIONS"
 	mkdir -p $2
@@ -1224,10 +1223,10 @@ device_mountdir() {
 	if ! [ -b "$1" ]; then
 		echo "$1" | tr -s /
 	else
-		if grep "^$1 " /proc/mounts |grep -qv subvol ; then
+		if grep "^$1 " /proc/mounts | grep -qv subvol; then
 			grep "^$1 " /proc/mounts | awk '{print $2}' | head -1 | tr -s /
-		elif grep -q "^${1}.*,subvol=/ " /proc/mounts ; then
-			grep "^${1}.*,subvol=/ " /proc/mounts | head -1 | awk '{print $2}' |  tr -s /
+		elif grep -q "^${1}.*,subvol=/ " /proc/mounts; then
+			grep "^${1}.*,subvol=/ " /proc/mounts | head -1 | awk '{print $2}' | tr -s /
 		else
 			if [ "$2" = "" ]; then
 				echo "/$MOUNTDIR/$(basename "$1")" | tr -s /
@@ -1260,12 +1259,12 @@ ismountpoint() {
 # $4 = extended pars from file
 find_filepath() {
 	debug_log "find_filepath" "$*"
-	local DIR FOUND PRESERVE SGN=""  MNTOPTS=""
+	local DIR FOUND PRESERVE SGN="" MNTOPTS=""
 	FPARS=$4
-	if [ "$FPARS" ] ; then
-			for str in  $(cat $FPARS |sed -n '2,$p')  ; do
-				local |grep -q "$(echo $str |cut  -f1 -d=)=" &&  eval $str 
-			done 
+	if [ "$FPARS" ]; then
+		for str in $(cat $FPARS | sed -n '2,$p'); do
+			local | grep -q "$(echo $str | cut -f1 -d=)=" && eval $str
+		done
 	fi
 	MNT_OPTS=${MNT_OPTS//+/,}
 	DIR=$(device_mountdir $1 $3)
@@ -1319,22 +1318,23 @@ find_filepath() {
 # $1 = LABEL@/path/to/file
 uuid_label_to_dev() {
 	local DEV DEVPATH TIMEOUT=""
-	if ! echo $1 |grep -q ^.*@[\ ,/] ;then
-		echo $1 ;	return
+	if ! echo $1 | grep -q ^.*@[\ ,/]; then
+		echo $1
+		return
 	fi
 	DEV=$($BIN_BLKID | grep -m1 $(echo $1 | sed 's:@.*$::') 2>/dev/null | awk -F: '{print $1}')
-	if [ -z $DEV ] ; then
+	if [ -z $DEV ]; then
 		[ "$TIMEOUT" ] || TIMEOUT=$(getpar scantimeout 1 1 | sed -r 's/[^0-9]*([0-9]+).*/\1/')
 		[ "$TIMEOUT" = "" ] && TIMEOUT=10
-		while [ $TIMEOUT -gt 0  ] ; do
+		while [ $TIMEOUT -gt 0 ]; do
 			echo -ne "." >&2
 			sleep 1
 			TIMEOUT=$((TIMEOUT - 1))
 			DEV=$($BIN_BLKID | grep -m1 $(echo $1 | sed 's:@.*$::') 2>/dev/null | awk -F: '{print $1}')
-			[ -z $DEV ] || break 
+			[ -z $DEV ] || break
 		done
-	fi	
-	if [ -z $DEV ] ; then
+	fi
+	if [ -z $DEV ]; then
 		DEVPATH=$1
 	else
 		DEVPATH=$(echo $1 | sed "s:^.*@/\|^.*@$:${DEV}/:")
@@ -1381,7 +1381,7 @@ find_file() {
 		PATHPART=$(echo "$FIND" | sed -r 's:^/dev/[^/]+(.*):\1:') #'
 		[ $PATHPART ] || PATHPART="/"
 		log "find_filepath "$DEVPART" "$PATHPART" "$2" "$3" "
-		find_filepath "$DEVPART" "$PATHPART" "$2" "$3" 
+		find_filepath "$DEVPART" "$PATHPART" "$2" "$3"
 	fi
 }
 
@@ -1396,24 +1396,24 @@ find_data() {
 	debug_log "find_data" "$*"
 	local RESULT FPARS TIMEOUT=''
 	FPARS=$3
-	if [ "$FPARS" ] ; then
-			for str in  $(cat $FPARS |sed -n '2,$p')  ; do
-				local |grep -q "$(echo $str |cut  -f1 -d=)=" &&  eval $str 
-			done 
+	if [ "$FPARS" ]; then
+		for str in $(cat $FPARS | sed -n '2,$p'); do
+			local | grep -q "$(echo $str | cut -f1 -d=)=" && eval $str
+		done
 	fi
 	[ "$TIMEOUT" ] || TIMEOUT=$(getpar scantimeout 1 1 | sed -r 's/[^0-9]*([0-9]+).*/\1/')
 	[ "$TIMEOUT" = "" ] && TIMEOUT=5
 	log "find_file "$1" "$2" "$3" "
 	while [ $TIMEOUT -gt 0 -a "$RESULT" = "" ]; do
 		log "find_file "$1" "$2" "$3" "
-		if echo "$1" | grep -q "://"  ; then
-			PROTOCOL=$(echo $1 |cut -f1 -d:)
-			[ -f "/mount_$PROTOCOL" ] && source "/mount_$PROTOCOL" 1>&2 
+		if echo "$1" | grep -q "://"; then
+			PROTOCOL=$(echo $1 | cut -f1 -d:)
+			[ -f "/mount_$PROTOCOL" ] && source "/mount_$PROTOCOL" 1>&2
 			RESULT=$(mount_$PROTOCOL $1 $2 $FPARS)
 		else
 			RESULT=$(find_file "$1" "$2" "$FPARS")
 		fi
-		if [ -z "$RESULT" ] ; then
+		if [ -z "$RESULT" ]; then
 			log "find_data:(${TIMEOUT}): $RESULT"
 			TIMEOUT=$((TIMEOUT - 1))
 			sleep 1
@@ -1500,8 +1500,8 @@ fs_options() {
 	local NOAUTO IOCHARSET CODEPAGE
 
 	NOAUTO="$(getpar noauto 2>/dev/null)"
-	if [ "$NOAUTO" = "enabled" ]; then 
-		NOAUTO="noauto" 
+	if [ "$NOAUTO" = "enabled" ]; then
+		NOAUTO="noauto"
 	else
 		NOAUTO="auto"
 	fi
@@ -1520,7 +1520,7 @@ fs_options() {
 	IOCHARSET=$(iocharset)
 	CODEPAGE=$(codepage)
 
-	MUID=$(getpar users 1 1| awk -F: '{print $2}')
+	MUID=$(getpar users 1 1 | awk -F: '{print $2}')
 	[ "$MUID" = "" ] && MUID=500
 
 	if [ "$1" = "vfat" ]; then
@@ -1578,13 +1578,13 @@ init_network_dev() {
 		fi
 		rmmod $MODULE 2>/dev/null
 	done
-export -f init_network_dev
+	export -f init_network_dev
 
 	# If we are here, none of the above specified modules worked.
 	# As a last chance, try to modprobe everything.
-	find /lib/modules/ -type f -name '*.ko.*' |while read a ;do
-		echo $(basename $a) |sed 's/\..*$//' |xargs modprobe
-	done 2>/dev//null 
+	find /lib/modules/ -type f -name '*.ko.*' | while read a; do
+		echo $(basename $a) | sed 's/\..*$//' | xargs modprobe
+	done 2>/dev//null
 	cat /proc/net/dev | grep : | grep -v lo: | cut -d : -f 1 | tr -d " " | head -n 1
 }
 
@@ -1595,7 +1595,7 @@ export -f init_network_dev
 init_ifcfg() {
 	debug_log "init_ifcfg" "$*"
 	local CLIENT GW MASK ETH
-	ifconfig |grep -q 'addr' && return
+	ifconfig | grep -q 'addr' && return
 	echo_blue_star
 	echolog "$INIT_IFCFG"
 	modprobe af_packet 2>/dev/null
@@ -1647,75 +1647,79 @@ mount_data_source() {
 	local SOURCE DST_DIR MNT_DIR SGN_CHECK MNT_OPTS par iPARS FPARS SRC FORCE
 	local CHECKSPACE='0'
 	debug_log "mount_data_source" "$*"
-	MNT_OPTS='' ; FORCE='' 
+	MNT_OPTS=''
+	FORCE=''
 	SOURCE=$1
 	DST_DIR=$2
 	MNT_DIR=$3
 	FPARS=$4
-	if [ "$FPARS" ] ; then
-		for str in  $(cat $FPARS |sed -n '2,$p')  ; do
-			local |grep -q "$(echo $str |cut  -f1 -d=)"   && 	eval $str 
-		done 
+	if [ "$FPARS" ]; then
+		for str in $(cat $FPARS | sed -n '2,$p'); do
+			local | grep -q "$(echo $str | cut -f1 -d=)" && eval $str
+		done
 	fi
-	MNT_OPTS="${MNT_OPTS//+/,}" 
+	MNT_OPTS="${MNT_OPTS//+/,}"
 	echo_blue_star
 	echolog "$MOUNT_DATA_SOURCE" $yellow"$SOURCE"$default
 
 	mkdir -p $DST_DIR
 	log "find_data $SOURCE $MNT_DIR  $FPARS"
-	DATA_FROM=$(find_data "$SOURCE" "$MNT_DIR" "$FPARS" )
-##################################################################
-		if ! [ -e "$DATA_FROM" ] ; then 
-			echo $FPARS |grep -E -q 'uird.home|uird.changes' && mkimg $SOURCE $MNT_DIR $FPARS
-			log "mkimg maked DATA_FROM - $DATA_FROM"
-		fi
-##################################################################
-	[ -b "$DATA_FROM" ] && mount_device "$DATA_FROM" "$DST_DIR" "$MNT_OPTS"  ""  "$FPARS" # mount block device
+	DATA_FROM=$(find_data "$SOURCE" "$MNT_DIR" "$FPARS")
+	##################################################################
+	if ! [ -e "$DATA_FROM" ]; then
+		echo $FPARS | grep -E -q 'uird.home|uird.changes' && mkimg $SOURCE $MNT_DIR $FPARS
+		log "mkimg maked DATA_FROM - $DATA_FROM"
+	fi
+	##################################################################
+	[ -b "$DATA_FROM" ] && mount_device "$DATA_FROM" "$DST_DIR" "$MNT_OPTS" "" "$FPARS" # mount block device
 	log "DATA_FROM - $DATA_FROM"
 	if [ -r "$DATA_FROM" ]; then
 		log "mount_device $DATA_FROM $DST_DIR  $MNT_OPTS"
-		[ -d "$DATA_FROM" ] && mount_device "$DATA_FROM" "$DST_DIR" "$MNT_OPTS"  "" "$FPARS"  # mount dir
+		[ -d "$DATA_FROM" ] && mount_device "$DATA_FROM" "$DST_DIR" "$MNT_OPTS" "" "$FPARS" # mount dir
 		if [ -f "$DATA_FROM" ]; then
 			if qemu-img info "$DATA_FROM" 2>/dev/null | grep "^file" | grep -vq "file.*raw$"; then
 				init_nbd "$DATA_FROM"
 				>$DST_DIR/qemu_ndb_layer
 			else
 				log "mount_device $DATA_FROM $DST_DIR $MNT_OPTS  ""  $FPARS # mount again, it may be loop device"
-				mount_device "$DATA_FROM" "$DST_DIR" "$MNT_OPTS"  ""  "$FPARS"  # mount again, it may be loop device
+				mount_device "$DATA_FROM" "$DST_DIR" "$MNT_OPTS" "" "$FPARS" # mount again, it may be loop device
 				echolog "$MOUNT_DATA_SOURCE_USING" $yellow$DATA_FROM$default
 			fi
 		fi
-####################################################################	
-		if [ "$CHECKSPACE" -ne '0' -a "$(df $DST_DIR -mP |tail -n1 |awk '{print $4}')" -lt "$CHECKSPACE" ] ; then
+		####################################################################
+		if [ "$CHECKSPACE" -ne '0' -a "$(df $DST_DIR -mP | tail -n1 | awk '{print $4}')" -lt "$CHECKSPACE" ]; then
 			echolog $red"$FREE_SPACE_LESS_THEN_CHECK"$default
 			echo -ne $yellow"$FREE_SPACE_LESS_THEN_CHECK_ASK"$default"  "
-			ANS=$(ask_answer  "${FREE_SPACE_LESS_THEN_CHECK}, $FREE_SPACE_LESS_THEN_CHECK_ASK")
+			ANS=$(ask_answer "${FREE_SPACE_LESS_THEN_CHECK}, $FREE_SPACE_LESS_THEN_CHECK_ASK")
 			case "$ANS" in
-				"S" | "s")
-					#shutdown
-					poweroff -f
-					;;
-				"R" | "r")
-					#reboot
-					reboot -f
-					;;
-				"C" | "c")
-					#continue
-					;;
-				"E" | "e")
-					#erase
-					echo -n "You have 15 seconds to power off the machine and save your data"
-					for a in {0..15} ; do echo -n . ; sleep 1 ;done
-					rm -fr ${DST_DIR}/*
-					;;
-				*)
-					#else - SHELL
-					shell_cmd "shell"
-					;;
+			"S" | "s")
+				#shutdown
+				poweroff -f
+				;;
+			"R" | "r")
+				#reboot
+				reboot -f
+				;;
+			"C" | "c")
+				#continue
+				;;
+			"E" | "e")
+				#erase
+				echo -n "You have 15 seconds to power off the machine and save your data"
+				for a in {0..15}; do
+					echo -n .
+					sleep 1
+				done
+				rm -fr ${DST_DIR}/*
+				;;
+			*)
+				#else - SHELL
+				shell_cmd "shell"
+				;;
 			esac
 		fi
-####################################################################		
-	elif [ "$(getpar $UIRD_FORCE)_" == "enabled_" -o  "$FORCE" == "yes"  ] ; then
+		####################################################################
+	elif [ "$(getpar $UIRD_FORCE)_" == "enabled_" -o "$FORCE" == "yes" ]; then
 		rmdir $DST_DIR
 		echolog $red"$MOUNT_DATA_SOURCE_NOT_FOUND"$default
 		echolog $yellow"Source $SOURCE droped. Continue..."$default
@@ -1723,7 +1727,7 @@ mount_data_source() {
 		rmdir $DST_DIR
 		echolog $red"$MOUNT_DATA_SOURCE_NOT_FOUND"$default
 		echo -ne $yellow"$MOUNT_DATA_SOURCE_ASK"$default"  "
-		ANS=$(ask_answer  "${MOUNT_DATA_SOURCE_NOT_FOUND}, $MOUNT_DATA_SOURCE_ASK")
+		ANS=$(ask_answer "${MOUNT_DATA_SOURCE_NOT_FOUND}, $MOUNT_DATA_SOURCE_ASK")
 		case "$ANS" in
 		"S" | "s")
 			#shutdown
@@ -1760,7 +1764,7 @@ syscp() {
 	echolog "$SETUP_SYSCP"
 	local SYSCP ARR_SYSCP FILEFROM FILETO FILEFROMTO UNION
 	ARR_SYSCP=$(echo $1 | tr -s ";," "\n" | uniq)
-	for NUMPAR in $(getpar $UIRD_SYSCP ); do
+	for NUMPAR in $(getpar $UIRD_SYSCP); do
 		FILEFROM=$(getpar $UIRD_SYSCP $NUMPAR 1)
 		FILETO=$(getpar $UIRD_SYSCP $NUMPAR 2)
 		mkdir -p ${1}${FILETO}
@@ -1781,18 +1785,18 @@ init_layer() {
 	local NUM_SUBL FROM CMD_PARAM DATAFROM MNT INIT DATA DATAMNTM FPARS
 	NUM_SUBL=0
 	CMD_PARAM=$3
-	for PARNUM in $(getpar $CMD_PARAM) ; do
+	for PARNUM in $(getpar $CMD_PARAM); do
 		FPARS="/tmp/parameters/$CMD_PARAM/$PARNUM"
 		DATAFROM=$(getpar $CMD_PARAM $PARNUM 1)
 		MNT=''
-		INIT='no' 
-		for str in  $(cat $FPARS |sed -n '2,$p')  ; do
-			local |grep -q "$(echo $str |cut  -f1 -d=)"   && 	eval $str 
-		done 
+		INIT='no'
+		for str in $(cat $FPARS | sed -n '2,$p'); do
+			local | grep -q "$(echo $str | cut -f1 -d=)" && eval $str
+		done
 		if [ "$DATAFROM" ]; then
 			DATA=$2/$NUM_SUBL
 			DATAMNTM=$1/$NUM_SUBL
-			mount_data_source "$DATAFROM" "$DATA" "$DATAMNTM"  "$FPARS"
+			mount_data_source "$DATAFROM" "$DATA" "$DATAMNTM" "$FPARS"
 			if [ "$MNT" ]; then
 				MOUNTBINDS="${MOUNTBINDS} ${DATA};${MNT};${INIT}"
 				log "MOUNTBINDS: $MOUNTBINDS"
@@ -1805,15 +1809,15 @@ init_layer() {
 mount_binds() {
 	local str INIT SOURCE DEST
 	if [ "$MOUNTBINDS" ]; then
-	echo_green_star
-	echolog "${BINDING_TO_UNION}:"$default
+		echo_green_star
+		echolog "${BINDING_TO_UNION}:"$default
 		for str in ${MOUNTBINDS}; do
 			SOURCE=$(echo $str | cut -f1 -d ";")
 			DEST=${UNION}$(echo $str | cut -f2 -d ";")
 			INIT=$(echo $str | cut -f3 -d ";")
 			mkdir -p $DEST
 			echo_blue_star
-			if [ "$INIT" != 'no' -a  "$(ls -1A $SOURCE |wc -l)" -eq 0 ] ; then
+			if [ "$INIT" != 'no' -a "$(ls -1A $SOURCE | wc -l)" -eq 0 ]; then
 				cp -fa ${DEST}/. ${SOURCE}/ >>$LOGFILE 2>&1
 				echolog "Binding"$brown" $SOURCE --> $DEST"$yellow" --> Initialized"$default
 			else
@@ -1826,14 +1830,14 @@ mount_binds() {
 
 # Test filesystem POSIX compatible
 posix_test() {
-	command -v posixovl >/dev/null 2>&1 || return 
+	command -v posixovl >/dev/null 2>&1 || return
 	# test if the filesystem is writable so changes can be stored to it
 	touch $2/empty 2>/dev/null &&
 		rm -f $2/empty 2>/dev/null
 	# if changes can't be mounted or the filesystem is not writable,
 	# fallback to the default: tmpfs
 	if [ $? -ne 0 ]; then
-        echo_blue_star
+		echo_blue_star
 		echolog "$POSIX_TEST"
 		fumount $2
 		fumount $1
@@ -1843,7 +1847,7 @@ posix_test() {
 		# So it is writable, we will keep the filesystem mounted.
 		# Check if it supports links and chmod.
 		# If not, overmount CHANGES using posixovl
-        echo_blue_star
+		echo_blue_star
 		echolog "$TESTING_FOR_POSIX"
 		touch $2/.empty1 &&
 			ln -sf $2/.empty1 $2/.empty2 2>/dev/null &&
@@ -1872,8 +1876,8 @@ setup_config() {
 	check_true $INIFILE || return
 	echo_green_star
 	echolog "$SETUP_CONFIG" $brown"$INIFILE"$default
-	for n in $(ls -1 $LAYER_BASE |sort -r) ; do
-		if [ -f $LAYER_BASE/$n/$INIFILE ] ; then
+	for n in $(ls -1 $LAYER_BASE | sort -r); do
+		if [ -f $LAYER_BASE/$n/$INIFILE ]; then
 			PATHINI="$LAYER_BASE/$n/$INIFILE"
 			break
 		fi
@@ -1882,9 +1886,9 @@ setup_config() {
 	[ -z "$PATHINI" ] && PATHINI=/dev/null
 	echo "PATHINI=$PATHINI" | update_initvars
 	grep -E -v '^#|^$' "$PATHINI" | sed s-\\\\r-- | gzip >$MEMORY/$LIVEKITNAME.ini.gz
-	if grep -q '^CMDLINE=' "$PATHINI" ; then
-		echo '' >>/tmp/basecfg  
-		grep '^CMDLINE=' "$PATHINI"| sed s/^CMDLINE=// | tr -d [:cntrl:]\'\" >> /tmp/basecfg
+	if grep -q '^CMDLINE=' "$PATHINI"; then
+		echo '' >>/tmp/basecfg
+		grep '^CMDLINE=' "$PATHINI" | sed s/^CMDLINE=// | tr -d [:cntrl:]\'\" >>/tmp/basecfg
 		cfg_parser
 	fi
 	chmod 400 $MEMORY/$LIVEKITNAME.ini.gz $MEMORY/cmdline 2>/dev/null
@@ -1893,37 +1897,38 @@ setup_config() {
 # Init swap
 init_swap() {
 	local newsize total FSWAP ASWAP DSWAP SOURCE SWAP_FROM NEEDZRAM NEEDZSWAP
-	NEEDZSWAP=no ;	NEEDZRAM=no
+	NEEDZSWAP=no
+	NEEDZRAM=no
 	debug_log "setting up swap"
 	echo_green_star
 	echolog "$SETUP_SWAP"
 	FSWAP=""
-	for NSWAP in $(getpar $UIRD_SWAP ); do
+	for NSWAP in $(getpar $UIRD_SWAP); do
 		DSWAP=$(getpar $UIRD_SWAP $NSWAP 1)
 		if [ -b "$DSWAP" ]; then
 			swapon "$DSWAP"
 		elif [ "$DSWAP" == "auto" ]; then
 			ASWAP=$(list_swap_devices | head -n 1)
 			[ -b "$ASWAP" ] && swapon $ASWAP
-			if [ $(cat /proc/swaps | wc -l) -gt 1  ]; then
-				[ $(getpar $UIRD_SWAP |wc -l) -eq 1 -a -z "$(getpar $UIRD_SWAP $NSWAP |grep nozswap)" ] && NEEDZSWAP=yes
+			if [ $(cat /proc/swaps | wc -l) -gt 1 ]; then
+				[ $(getpar $UIRD_SWAP | wc -l) -eq 1 -a -z "$(getpar $UIRD_SWAP $NSWAP | grep nozswap)" ] && NEEDZSWAP=yes
 			else
-				[ $(getpar $UIRD_SWAP |wc -l) -eq 1 -a -z "$(getpar $UIRD_SWAP $NSWAP |grep nozram)" ] && NEEDZRAM=yes
+				[ $(getpar $UIRD_SWAP | wc -l) -eq 1 -a -z "$(getpar $UIRD_SWAP $NSWAP | grep nozram)" ] && NEEDZRAM=yes
 			fi
-		echo "90" > /proc/sys/vm/swappiness
-		elif [ "$DSWAP" == "zram" ]  ; then
-				NEEDZRAM=$NSWAP
+			echo "90" >/proc/sys/vm/swappiness
+		elif [ "$DSWAP" == "zram" ]; then
+			NEEDZRAM=$NSWAP
 		elif [ "$DSWAP" == "zswap" ]; then
-				NEEDZSWAP=yes
+			NEEDZSWAP=yes
 		else
 			FSWAP="$DSWAP $FSWAP"
 		fi
 	done
 	SWAPFILES="$FSWAP"
-	if [ $NEEDZRAM != "no" ] ; then 
-		init_zram_swap $NEEDZRAM 
-	elif [ $NEEDZSWAP != "no" ] ; then
-		init_zswap 
+	if [ $NEEDZRAM != "no" ]; then
+		init_zram_swap $NEEDZRAM
+	elif [ $NEEDZSWAP != "no" ]; then
+		init_zswap
 	fi
 }
 
@@ -1937,12 +1942,12 @@ init_swapfiles() {
 	for SOURCE in $1; do
 		if [ "$(echo $SOURCE | grep "nfs://")" != "" ]; then
 			init_ifcfg
-			echo $SOURCE | grep -iq ^"nfs://" && SWAP_FROM=$(mount_nfs $SOURCE $MNT_DIR/$(basename $SOURCE) )
+			echo $SOURCE | grep -iq ^"nfs://" && SWAP_FROM=$(mount_nfs $SOURCE $MNT_DIR/$(basename $SOURCE))
 		else
 			SWAP_FROM=$(find_data $SOURCE $MNT_DIR "")
 		fi
 		if [ -f "$SWAP_FROM" ]; then
-			file  "$SWAP_FROM" 2>/dev/null | grep -iq "linux.*swap file" || mkswap "$SWAP_FROM" >/dev/null
+			file "$SWAP_FROM" 2>/dev/null | grep -iq "linux.*swap file" || mkswap "$SWAP_FROM" >/dev/null
 			if swapon "$SWAP_FROM" >/dev/null 2>&1; then
 				echo_green_star
 				echolog "swap file $SOURCE enabled"
@@ -1972,20 +1977,20 @@ setup_changes() {
 	UMODE="$(getpar $UIRD_MODE 1 1)"
 	[ "$UMODE" != "changes" -a "$UMODE" != "clear" -a "$UMODE" != "hybrid" ] && return
 
-	CHANGESVAL=$(getpar $UIRD_CHANGES 1 1 )
-	FPARS="/tmp/parameters/$UIRD_CHANGES/1" 
+	CHANGESVAL=$(getpar $UIRD_CHANGES 1 1)
+	FPARS="/tmp/parameters/$UIRD_CHANGES/1"
 	[ -z "$CHANGESVAL" ] && CHANGESVAL="changes"
-	
+
 	echo_green_star
 	echolog "$SETUP_CHANGES" $brown"$2"$default
 
 	if ! echo "$CHANGESVAL" | grep -q [XxLl][Zz][Mm]$; then
 		log "mount_data_source $CHANGESVAL $2 $1  "$FPARS""
-		if [ "$UNION_FS" == 'aufs' ] ; then
+		if [ "$UNION_FS" == 'aufs' ]; then
 			mount_data_source $CHANGESVAL $2 $1 "$FPARS"
 		else
 			mkdir -p $OVERLAY
-			mount_data_source $CHANGESVAL $OVERLAY  $1 "$FPARS"
+			mount_data_source $CHANGESVAL $OVERLAY $1 "$FPARS"
 		fi
 	else
 		echo_green_star
@@ -2010,13 +2015,13 @@ setup_changes() {
 		if [ -f "$CHANGESMNT" ]; then
 			echolog $default"  $SETUP_MACHINES_UNPACKING $yellow$CHANGESMNT$default $SETUP_MACHINES_TO_RAM ($2)"
 			unsquashfs -f -d "$2" "$CHANGESMNT" # >/dev/null 2>&1
-		elif 	[ "$DATA_FROM_DIR" ] ; then
+		elif [ "$DATA_FROM_DIR" ]; then
 			CHANGESMNT="$DATA_FROM_DIR/$(basename $SOURCE)"
 		fi
-		
+
 		if [ "$CHANGESMNT" ]; then
 			echo "$CHANGESMNT" >$2/.savetomodule
-			if  ! getpar $UIRD_SHUTDOWN >/dev/null ; then
+			if ! getpar $UIRD_SHUTDOWN >/dev/null; then
 				touch $(dirname $CHANGESMNT)/.lock
 				losetup $(losetup -f) $(dirname $CHANGESMNT)/.lock
 			fi
@@ -2029,9 +2034,9 @@ setup_changes() {
 get_MUID() {
 	MUID=mac-$(cat /sys/class/net/e*/address 2>/dev/null | head -1 | tr -d :)
 	[ "$MUID" = "mac-" ] && MUID=mac-$(cat /sys/class/net/*/address 2>/dev/null | head -1 | tr -d :)
-	[ "$MUID" = "mac-"  -o "$MUID" = "mac-000000000000" ] && MUID=vga-$(lspci -mm | grep -i vga | md5sum | cut -c 1-12)
+	[ "$MUID" = "mac-" -o "$MUID" = "mac-000000000000" ] && MUID=vga-$(lspci -mm | grep -i vga | md5sum | cut -c 1-12)
 	echo "$MUID"
-	}
+}
 
 # $1 = machines directory
 # $2 = machines mount directory
@@ -2041,16 +2046,16 @@ setup_machines() {
 	debug_log "setup_machines" "$*"
 	local CHANGESMNT MACHINES SOURCE MNT_DIR MUID
 	[ "$(getpar $UIRD_MODE 1 1)" == "machines" ] || return
-	
+
 	MUID=$(get_MUID)
-	
-	if [ "$UNION_FS" == 'aufs' ] ; then
-			CHANGES_DIR=$3
+
+	if [ "$UNION_FS" == 'aufs' ]; then
+		CHANGES_DIR=$3
 	else
-			mkdir -p $OVERLAY/changes
-			CHANGES_DIR=$OVERLAY/changes
+		mkdir -p $OVERLAY/changes
+		CHANGES_DIR=$OVERLAY/changes
 	fi
-		
+
 	# locate machines folders
 	if cat /proc/cmdline | grep -q "uird.changes="; then
 		# machine source was specified, we have to mount it
@@ -2082,7 +2087,7 @@ setup_machines() {
 	# save module filename
 	echo "$CHANGESMNT" >$CHANGES_DIR/.savetomodule
 	# lock media from systemd umount
-	if  ! getpar $UIRD_SHUTDOWN >/dev/null ; then
+	if ! getpar $UIRD_SHUTDOWN >/dev/null; then
 		touch $1/.lock
 		losetup $(losetup -f) $1/.lock 2>/dev/null
 	fi
@@ -2096,7 +2101,7 @@ setup_homes() {
 
 	local MNT_HOME LAYER_HOMES HOMES_BR HOMES HOME
 
-	HOMES=$(getpar $UIRD_HOMES [[:digit:]] )
+	HOMES=$(getpar $UIRD_HOMES [[:digit:]])
 	HOME=$(getpar $UIRD_HOME 1 1)
 	[ -z "$HOMES" ] && [ -z "$HOME" ] && return
 
@@ -2105,7 +2110,7 @@ setup_homes() {
 
 	echo_green_star
 	echolog "$SETUP_HOMES" $brown"$(basename $LAYER_HOMES)" " -> " "$MNT_HOME"$default
-	
+
 	if [ "$HOMES" ]; then
 		for d_dirs in "$LAYER_HOMES"/*; do
 			if [ -z $HOMES_BR ]; then
@@ -2114,14 +2119,13 @@ setup_homes() {
 				HOMES_BR="$HOMES_BR:$d_dirs=rw+wh"
 			fi
 		done
-		
 
-		if [ "$UNION_FS" == 'aufs' ] ; then
+		if [ "$UNION_FS" == 'aufs' ]; then
 			mount -t aufs -o nowarn_perm,xino="$MEMORY/.xino",trunc_xino,br=$HOMES_BR aufs $MNT_HOME
 		else
 			# Overlayfs mount
 			# WARNING!!!!!NOT TESTED!!!!!!!!!!!!!!!
-			mkdir -p ${OVERLAY}/homes 
+			mkdir -p ${OVERLAY}/homes
 			mkdir -p ${OVERLAY}/homes_workdir
 			mount -t overlay -o redirect_dir=on,metacopy=off,index=on,lowerdir=${HOMES_BR},upperdir=${OVERLAY}/homes,workdir=${OVERLAY}/homes_workdir overlay $MNT_HOME
 		fi
@@ -2137,8 +2141,8 @@ setup_homes() {
 find_modules() {
 	debug_log "find_modules" "$*"
 	local ARR_FILTER FIND_PARAMS filter
-	ARR_FILTER=$(echo $(getpar $UIRD_RO [[:digit:]] )" "$(getpar $UIRD_RW [[:digit:]])" "$(getpar $UIRD_RUN [[:digit:]])" "$(getpar $UIRD_CP [[:digit:]] ) )
-	FIND_PARAMS=$(echo $(getpar $UIRD_FIND_PARAMS 1 1) |sed 's/_/ /g')
+	ARR_FILTER=$(echo $(getpar $UIRD_RO [[:digit:]])" "$(getpar $UIRD_RW [[:digit:]])" "$(getpar $UIRD_RUN [[:digit:]])" "$(getpar $UIRD_CP [[:digit:]]))
+	FIND_PARAMS=$(echo $(getpar $UIRD_FIND_PARAMS 1 1) | sed 's/_/ /g')
 	#    echolog "======================"$FIND_PARAMS"================="
 	for filter in $ARR_FILTER; do
 		find "$1" -path "$filter" $FIND_PARAMS 2>/dev/null | sort
@@ -2152,8 +2156,8 @@ find_modules() {
 list_modules() {
 	debug_log "list_modules" "$*"
 	local LOAD NOLOAD MODNAME LINE
-	LOAD=$(echo $(getpar $UIRD_LOAD [[:digit:]]) |sed 's/ /|/g')
-	NOLOAD=$(echo $(getpar $UIRD_NOLOAD [[:digit:]]) |sed 's/ /|/g')
+	LOAD=$(echo $(getpar $UIRD_LOAD [[:digit:]]) | sed 's/ /|/g')
+	NOLOAD=$(echo $(getpar $UIRD_NOLOAD [[:digit:]]) | sed 's/ /|/g')
 	find_modules "$1" | sort | uniq | while read LINE; do
 		MODNAME=$(echo $LINE | cut -b ${#1}- | cut -b 2-)
 		if [ "$LOAD" -a "$(echo $MODNAME | grep -E -i "$LOAD")" ]; then
@@ -2178,11 +2182,11 @@ Copy_timer() {
 		echo -ne $green
 		traff="$(cat /proc/net/dev | grep ':' | grep -v lo: | tail -n1 | awk '{print $2}') "
 		iface="$(cat /proc/net/dev | grep ':' | grep -v lo: | tail -n1 | awk '{print $1}') "
-		if [ "$traff" -eq 0 -o -z "$traff" ] ; then
+		if [ "$traff" -eq 0 -o -z "$traff" ]; then
 			iface=""
 			traff=""
 		else
-			traff=$(( (${traff} + 1) / 1048576 ))
+			traff=$(((${traff} + 1) / 1048576))
 		fi
 		echo -e "${REWRITE}* Time: ${sek};   ${TARGET_DIR}: $(du -hd 0 $TARGET_DIR | cut -f1);   $iface  $traff "
 		for file in $MARKERS_LIST; do
@@ -2198,8 +2202,8 @@ Copy_timer() {
 aria2_preload() {
 	local PiD ARIA_IN
 	mkdir -p $1/data
-	ARIA_IN=$(getpar $UIRD_ARIA2RAM [[:digit:]]| sed 's/+/  /g')
-	[ "$(getpar $UIRD_ARIA2RAM 2 )" ] && ARIA_IN="$ARIA_IN -Z"
+	ARIA_IN=$(getpar $UIRD_ARIA2RAM [[:digit:]] | sed 's/+/  /g')
+	[ "$(getpar $UIRD_ARIA2RAM 2)" ] && ARIA_IN="$ARIA_IN -Z"
 	init_ifcfg
 	echolog "Aria2c preload media" $green${ARIA_IN} " -> " $brown$1$default
 	aria2c -q --no-netrc --seed-time=0 $ARIA_IN -d $1/data >/dev/null 2>&1 &
@@ -2237,17 +2241,16 @@ copy_to() {
 	for BUNDLE in $fullist; do
 		[ "$C2PARAM" ] && ! [ "$(echo $BUNDLE | grep -E -i "$C2PARAM")" ] && continue
 		echolog $yellow"  $3 $blue<- $purple$(basename "$BUNDLE")"$green
-		( c2 "$1" "$2" "$BUNDLE" ) &
+		(c2 "$1" "$2" "$BUNDLE") &
 		PIDSS="$PIDSS /proc/$!"
 	done
 	Copy_timer $2 $PIDSS
 	#wait
 }
 
-
 # Copy modules to target directory
 # $1 = data directory
-# $2 = target directory 
+# $2 = target directory
 # $3 = short name (it shows in boot log, and using as alias to $4 in cmdline)
 # $4 = cmdline par
 copy_to_target() {
@@ -2257,7 +2260,7 @@ copy_to_target() {
 		echolog "$COPY_TO $3"
 		log "$(getpar $3)$(getpar $4)"
 		FILTER="$(getpar $3 1 1)$(getpar $4 1 1)"
-		if [ "$(getpar $4)" == "enabled" -o "$FILTER" == '*' ] ; then
+		if [ "$(getpar $4)" == "enabled" -o "$FILTER" == '*' ]; then
 			FILTER='.'
 		else
 			FILTER=$(echo $(getpar $4 [[:digit:]]) | sed -r 's/\?/./g' | sed -r 's/\*/.\*/g' | sed -r 's/ /|/g')
@@ -2279,159 +2282,167 @@ move_run() {
 	cp -a /{bin,dev,etc,li,root,sbin,usr,var,shut}* "${UNION}/run/initramfs/"
 }
 
-setup_preinit ()  {
-local  FNAME FMODE runscript str
-INIGZFILE=$MEMORY/$LIVEKITNAME.ini.gz
-# OS.ini processing
-if [ -f $MEMORY/$LIVEKITNAME.ini.gz ] ;  then
-FNAME="/dev/null" ; FMOD=""
-zcat  $INIGZFILE |  while read a ;do
-   echo "$a" | grep -E -q '^[[:space:]]*#|^[[:space:]]*$' && continue
-   if echo "$a" | grep -q "^\[.*\][[:space:]]*" ;then
-      FNAME=$(echo "$a" | tr '[]' '|' | awk -F'|' '{print $2}' | sed s-^/--)
-      FMOD=$(echo "$a" | tr '[]' '|' | awk -F'|' '{print $3}' | tr -d ' ')
-      FEXEC=$(echo "$a" | tr '[]' '|' | awk -F'|' '{print $4}')
-      [ ! -z "$FEXEC" ]  && echo "$FEXEC  $FNAME" >> /tmp/exec
-      if [ ! -z "$FMOD" ] ;then
-         mkdir -p "$(dirname "$FNAME")"
-         [ -e "$FNAME" ] || touch "$FNAME"
-         chmod "$FMOD" "$FNAME"
-      fi
-   elif echo "$a" | grep -q "^-" ;then
-      nv="`echo "$a" |sed 's/^-//'`"
-      sed -i /^"$nv"$/d "$FNAME"
-   elif echo "$a" | grep -q "^|" ;then
-      echo "$a" | sed 's/^|//' >> "$FNAME"
-   elif echo "$a" | grep -q "^+" ;then
-      nv="`echo "$a" |sed 's/^+//'`"
-      grep -q "$nv" "$FNAME" || echo "$nv" >> "$FNAME"
-   else
-      nv=`echo $a | awk -F= '{print $1}'`
-      [ "$nv" = "" ] && continue
-      if ! grep -q "^[[:space:]]*$nv=" "$FNAME" 2>/dev/null ;then
-         grep -q "^$a$" "$FNAME" 2>/dev/null || echo "$a" >>"$FNAME"
-      else
-         sed -i 's|'"^[[:space:]]*$nv=.*$"'|'"$a"'|' "$FNAME"
-      fi
-   fi
-done
-fi
-#run preinit scripts
-[ -f /tmp/exec ] && . /tmp/exec
-if getpar $UIRD_PREINIT && check_true  $(getpar $UIRD_PREINIT 1 1) ; then
-	for NUMPAR in $(getpar $UIRD_PREINIT ) ;do 
-		runscript="$(getpar $UIRD_PREINIT $NUMPAR 1)"
-		[ -x "$runscript" ]  && /bin/bash $runscript
-	done
-fi
+setup_preinit() {
+	local FNAME FMODE runscript str
+	INIGZFILE=$MEMORY/$LIVEKITNAME.ini.gz
+	# OS.ini processing
+	if [ -f $MEMORY/$LIVEKITNAME.ini.gz ]; then
+		FNAME="/dev/null"
+		FMOD=""
+		zcat $INIGZFILE | while read a; do
+			echo "$a" | grep -E -q '^[[:space:]]*#|^[[:space:]]*$' && continue
+			if echo "$a" | grep -q "^\[.*\][[:space:]]*"; then
+				FNAME=$(echo "$a" | tr '[]' '|' | awk -F'|' '{print $2}' | sed s-^/--)
+				FMOD=$(echo "$a" | tr '[]' '|' | awk -F'|' '{print $3}' | tr -d ' ')
+				FEXEC=$(echo "$a" | tr '[]' '|' | awk -F'|' '{print $4}')
+				[ ! -z "$FEXEC" ] && echo "$FEXEC  $FNAME" >>/tmp/exec
+				if [ ! -z "$FMOD" ]; then
+					mkdir -p "$(dirname "$FNAME")"
+					[ -e "$FNAME" ] || touch "$FNAME"
+					chmod "$FMOD" "$FNAME"
+				fi
+			elif echo "$a" | grep -q "^-"; then
+				nv="$(echo "$a" | sed 's/^-//')"
+				sed -i /^"$nv"$/d "$FNAME"
+			elif echo "$a" | grep -q "^|"; then
+				echo "$a" | sed 's/^|//' >>"$FNAME"
+			elif echo "$a" | grep -q "^+"; then
+				nv="$(echo "$a" | sed 's/^+//')"
+				grep -q "$nv" "$FNAME" || echo "$nv" >>"$FNAME"
+			else
+				nv=$(echo $a | awk -F= '{print $1}')
+				[ "$nv" = "" ] && continue
+				if ! grep -q "^[[:space:]]*$nv=" "$FNAME" 2>/dev/null; then
+					grep -q "^$a$" "$FNAME" 2>/dev/null || echo "$a" >>"$FNAME"
+				else
+					sed -i 's|'"^[[:space:]]*$nv=.*$"'|'"$a"'|' "$FNAME"
+				fi
+			fi
+		done
+	fi
+	#run preinit scripts
+	[ -f /tmp/exec ] && . /tmp/exec
+	if getpar $UIRD_PREINIT && check_true $(getpar $UIRD_PREINIT 1 1); then
+		for NUMPAR in $(getpar $UIRD_PREINIT); do
+			runscript="$(getpar $UIRD_PREINIT $NUMPAR 1)"
+			[ -x "$runscript" ] && /bin/bash $runscript
+		done
+	fi
 }
 
 mkimg() {
-	local  DIR newimg SIZE FS MNT_DIR PASS KEY FORCE
-	newimg=$1 #new img (or new dir) name
+	local DIR newimg SIZE FS MNT_DIR PASS KEY FORCE
+	newimg=$1  #new img (or new dir) name
 	MNT_DIR=$2 #mount point
-	SIZE='' ; FS='' ; KEY='' ; FORCE=""
+	SIZE=''
+	FS=''
+	KEY=''
+	FORCE=""
 	FPARS=$3
-	if [ "$FPARS" ] ; then
-		for str in  $(cat $FPARS |sed -n '2,$p')  ; do
-				local |grep -q "$(echo $str |cut  -f1 -d=)=" &&  eval $str 
-		done 
+	if [ "$FPARS" ]; then
+		for str in $(cat $FPARS | sed -n '2,$p'); do
+			local | grep -q "$(echo $str | cut -f1 -d=)=" && eval $str
+		done
 	fi
 	log "mkimg: $FS $SIZE"
-	echo '' ; echo_green_star
+	echo ''
+	echo_green_star
 	echolog "$TRY_CREATE $SOURCE $FS ${SIZE}"
-	if $(dirname $newimg |grep -q ^$SYSMNT ) ; then
-			DIR=$(dirname $newimg)
-			mkdir -p $DIR
-			SIZE=512 ; FS=btrfs
+	if $(dirname $newimg | grep -q ^$SYSMNT); then
+		DIR=$(dirname $newimg)
+		mkdir -p $DIR
+		SIZE=512
+		FS=btrfs
 	else
-			ANS="y"
-			if ! [  "$(getpar $UIRD_FORCE)_" == "enabled_" -o  "$FORCE" == "yes"   ]  ; then 
-				echo "$SOURCE $NOT_FOUND_CREATE (Y/N):" 
-				ANS=$(ask_answer "$SOURCE  $NOT_FOUND_CREATE (Y/N):")
+		ANS="y"
+		if ! [ "$(getpar $UIRD_FORCE)_" == "enabled_" -o "$FORCE" == "yes" ]; then
+			echo "$SOURCE $NOT_FOUND_CREATE (Y/N):"
+			ANS=$(ask_answer "$SOURCE  $NOT_FOUND_CREATE (Y/N):")
+		fi
+		if [ "$ANS" == "y" -o "$ANS" == "Y" ]; then
+			if $(dirname $newimg | grep -q [[:alnum:]]); then
+				DIR=$(find_data $(dirname $newimg) $MNT_DIR "")
+			else
+				DIR="$(find $LAYER_BASE -maxdepth 1 -type d | sort | tail -n1)"
 			fi
-			if [ "$ANS" == "y" -o "$ANS" == "Y" ] ; then
-				if $(dirname $newimg |grep -q [[:alnum:]] ); then
-					DIR=$(find_data $(dirname $newimg) $MNT_DIR "")
-				else
-					DIR="$(find $LAYER_BASE  -maxdepth 1 -type d |sort | tail -n1)"
-				fi
-				if ! [ "$FS" ] ; then
-					echo "$ENTER_FS_TYPE (default ext4): " 
-					FS=$(ask_answer "$ENTER_FS_TYPE (default ext4): ")
-					[ "$FS" == "" ] && FS='ext4'
-				fi
-				if ! [ "$SIZE" ] ; then
-					maxsize=$(df -m $DIR |tail -n1 |awk '{print $4}')
-					echo "$ENTER_SIZE  (default: 1024, max: $maxsize): " 
-					SIZE=$(ask_answer "$ENTER_SIZE (default: 1024, max: $maxsize): ")
-					[ "$SIZE" == "" ] && SIZE='1024'
-				fi
+			if ! [ "$FS" ]; then
+				echo "$ENTER_FS_TYPE (default ext4): "
+				FS=$(ask_answer "$ENTER_FS_TYPE (default ext4): ")
+				[ "$FS" == "" ] && FS='ext4'
 			fi
+			if ! [ "$SIZE" ]; then
+				maxsize=$(df -m $DIR | tail -n1 | awk '{print $4}')
+				echo "$ENTER_SIZE  (default: 1024, max: $maxsize): "
+				SIZE=$(ask_answer "$ENTER_SIZE (default: 1024, max: $maxsize): ")
+				[ "$SIZE" == "" ] && SIZE='1024'
+			fi
+		fi
 	fi
-	if  basename $newimg |grep -E -q '\.img$|\.enc$'  ; then
-			FNAME="$DIR/$(basename $newimg)"
-			dd if=/dev/zero of="$FNAME" bs=1 count=0 seek=${SIZE}M >/dev/null
-			if  basename $newimg |grep -q 'enc$' ; then
-				if  [  -n "$KEY"  -a ! -f "$KEY"  ] ; then
-					EXIST_KEY=$(find_data "$KEY" "/tmp/aeskey")
-					if ! [ -f "$EXIST_KEY" ] ; then
-						if $(dirname $KEY |grep -q [[:alnum:]] ); then
-							KEYDIR=$(find_data $(dirname $KEY) $MNT_DIR "")
-						else
-							KEYDIR="$(find $LAYER_BASE  -maxdepth 1 -type d |sort | tail -n1)"
-						fi
-						EXIST_KEY="${KEYDIR}/$(basename $KEY)"
-						[ -f "$EXIST_KEY" ] || 	head -c 3705 /dev/urandom | uuencode -m - | head -n 66 | tail -n 65 > "$EXIST_KEY"
-						echo "" ; echo_blue_star
-						echolog "Keyfile   "$EXIST_KEY" generated"
+	if basename $newimg | grep -E -q '\.img$|\.enc$'; then
+		FNAME="$DIR/$(basename $newimg)"
+		dd if=/dev/zero of="$FNAME" bs=1 count=0 seek=${SIZE}M >/dev/null
+		if basename $newimg | grep -q 'enc$'; then
+			if [ -n "$KEY" -a ! -f "$KEY" ]; then
+				EXIST_KEY=$(find_data "$KEY" "/tmp/aeskey")
+				if ! [ -f "$EXIST_KEY" ]; then
+					if $(dirname $KEY | grep -q [[:alnum:]]); then
+						KEYDIR=$(find_data $(dirname $KEY) $MNT_DIR "")
+					else
+						KEYDIR="$(find $LAYER_BASE -maxdepth 1 -type d | sort | tail -n1)"
 					fi
-					KEY="$EXIST_KEY"
-					echo "KEY=$EXIST_KEY" >> $FPARS # to do not find it again
+					EXIST_KEY="${KEYDIR}/$(basename $KEY)"
+					[ -f "$EXIST_KEY" ] || head -c 3705 /dev/urandom | uuencode -m - | head -n 66 | tail -n 65 >"$EXIST_KEY"
+					echo ""
+					echo_blue_star
+					echolog "Keyfile   "$EXIST_KEY" generated"
 				fi
-				if [ -f "$KEY" ] ; then
-					cryptsetup open --type loopaes "$FNAME"  uirdnewenc --key-file "$KEY"
-				else
-					echo "$ENTER_PASSWORD (default: linuxforever) " 
-					PASS=$(ask_answer "$ENTER_PASSWORD:(default: linuxforever) ") 
-					[  -z "$PASS" ] && PASS='linuxforever'
-					echo "$PASS" | cryptsetup open --type loopaes "$FNAME"  uirdnewenc --key-file -
-				fi
-				FNAME="/dev/mapper/uirdnewenc"
+				KEY="$EXIST_KEY"
+				echo "KEY=$EXIST_KEY" >>$FPARS # to do not find it again
 			fi
-			mkfs.$FS  "$FNAME" >/dev/null 	
-			basename $newimg |grep -q 'enc$' && cryptsetup close uirdnewenc
-			DATA_FROM="$DIR/$(basename $newimg)" 
-	elif 
-			basename $newimg | grep -qv "\." ; then
-			mkdir "$DIR/$(basename $newimg)" && DATA_FROM="$DIR/$(basename $newimg)"
+			if [ -f "$KEY" ]; then
+				cryptsetup open --type loopaes "$FNAME" uirdnewenc --key-file "$KEY"
+			else
+				echo "$ENTER_PASSWORD (default: linuxforever) "
+				PASS=$(ask_answer "$ENTER_PASSWORD:(default: linuxforever) ")
+				[ -z "$PASS" ] && PASS='linuxforever'
+				echo "$PASS" | cryptsetup open --type loopaes "$FNAME" uirdnewenc --key-file -
+			fi
+			FNAME="/dev/mapper/uirdnewenc"
+		fi
+		mkfs.$FS "$FNAME" >/dev/null
+		basename $newimg | grep -q 'enc$' && cryptsetup close uirdnewenc
+		DATA_FROM="$DIR/$(basename $newimg)"
+	elif
+		basename $newimg | grep -qv "\."
+	then
+		mkdir "$DIR/$(basename $newimg)" && DATA_FROM="$DIR/$(basename $newimg)"
 	fi
 }
 
 setup_rootfs() {
 	local SIZE='70%' ALG='none' FSTYPE RAM SWAP
-	if [ "$1" != "yes" ] ; then
-			for str in  $(getpar $UIRD_ROOTFS 1 '2,$p')  ; do
-				local |grep -q "$(echo $str |cut  -f1 -d=)=" &&  eval $str 
-			done 
+	if [ "$1" != "yes" ]; then
+		for str in $(getpar $UIRD_ROOTFS 1 '2,$p'); do
+			local | grep -q "$(echo $str | cut -f1 -d=)=" && eval $str
+		done
 	fi
 	FSTYPE=$(getpar $UIRD_ROOTFS 1 1)
-	
+
 	[ -z "$FSTYPE" ] && FSTYPE=tmpfs
 	RAM=$(free -m | grep -i "^mem.*: " | awk '{print $2}')
 	SWAP=$(free -m | grep -i "^swap.*:" | awk '{print $2}')
 	[ "_$swap" == "_" ] && swap="0"
-	if [ "$FSTYPE" == 'tmpfs' ] ; then
+	if [ "$FSTYPE" == 'tmpfs' ]; then
 		[ "$SIZE" == 'auto' ] && SIZE="$(expr \( $RAM + $SWAP \) \* 70 \/ $RAM)%"
 		mount -t tmpfs -o "size=${SIZE%%%}%" tmpfs $MEMORY
-	elif [ "$FSTYPE" == 'zram' ] ; then
+	elif [ "$FSTYPE" == 'zram' ]; then
 		[ $SIZE == 'auto' ] && SIZE=90%
 		modprobe -q zram num_devices=2 2>/dev/null
-		if [ "$ALG" != 'none' ] ; then 
+		if [ "$ALG" != 'none' ]; then
 			modprobe -q $ALG 2>/dev/null
-			echo $ALG > /sys/block/zram1/comp_algorithm 2>/dev/null
+			echo $ALG >/sys/block/zram1/comp_algorithm 2>/dev/null
 		fi
-		ALG=$(cat /sys/block/zram1/comp_algorithm |sed -e 's/^.*\[//' -e 's/\].*$//')
+		ALG=$(cat /sys/block/zram1/comp_algorithm | sed -e 's/^.*\[//' -e 's/\].*$//')
 		mem_zram=$(expr $(grep MemTotal /proc/meminfo | awk ' { print $2 } ') \* ${SIZE%%%} / 100 \* 1024)
 		echo $mem_zram >/sys/block/zram1/disksize
 		echo $mem_zram >/sys/block/zram1/mem_limit
@@ -2439,13 +2450,13 @@ setup_rootfs() {
 		mount -t ext4 -o discard,rw /dev/zram1 $MEMORY
 	else
 		echolog "unknown rootfs type: $FSTYPE"
-		debug_shell 
+		debug_shell
 	fi
 
-echo_green_star
-echolog "RAM: $RAM,  SWAP: $SWAP"
-echo_green_star
-echolog "ROOTFS TYPE: ${FSTYPE} ${ALG}, ${RAMDISK_SIZE}: ${SIZE%%%}% RAM"
+	echo_green_star
+	echolog "RAM: $RAM,  SWAP: $SWAP"
+	echo_green_star
+	echolog "ROOTFS TYPE: ${FSTYPE} ${ALG}, ${RAMDISK_SIZE}: ${SIZE%%%}% RAM"
 
 }
 
@@ -2453,70 +2464,78 @@ unsquashfs() {
 	local force='' filexzm='' destdir
 	log "using unsquashfs function, not binary"
 	destdir=$(pwd)
-	for a in "$@" ; do
+	for a in "$@"; do
 		[ -f "$a" ] && filexzm="$a"
 	done
-	set -- `getopt "fd:"  "$@"`
-	while [ ! -z "$1" ] ; do
-	case "$1" in
-		-f)  force="f"; shift ;;
-		-d)  destdir="$2"; shift 2 ;;
-    *) break;;
-	esac
+	set -- $(getopt "fd:" "$@")
+	while [ ! -z "$1" ]; do
+		case "$1" in
+		-f)
+			force="f"
+			shift
+			;;
+		-d)
+			destdir="$2"
+			shift 2
+			;;
+		*) break ;;
+		esac
 	done
-	if ! [ -f $filexzm ] ; then
+	if ! [ -f $filexzm ]; then
 		echolog " $filexzm -- no such file"
-		return 
+		return
 	fi
 	mkdir -p /tmp/tmpmntdir
-	mount_device  "$filexzm" /tmp/tmpmntdir
-	cp  -a"$force" /tmp/tmpmntdir/. ${destdir}/
+	mount_device "$filexzm" /tmp/tmpmntdir
+	cp -a"$force" /tmp/tmpmntdir/. ${destdir}/
 	[ $? != 0 ] && echolog "ERROR: $0 $@"
-	umount  /tmp/tmpmntdir
+	umount /tmp/tmpmntdir
 	rm -rf /tmp/tmpmntdir
 }
 
-ask_answer()  {
+ask_answer() {
 	local ANSWER
-	if plymouth  --ping 2>/dev/null ; then
+	if plymouth --ping 2>/dev/null; then
 		ANSWER=$(plymouth ask-question --prompt="$1")
 	else
-		read ANSWER 
+		read ANSWER
 	fi
 	echo "$ANSWER"
 }
 
-ask_pass()  {
+ask_pass() {
 	local ANSWER
-	if plymouth  --ping 2>/dev/null; then
+	if plymouth --ping 2>/dev/null; then
 		ANSWER=$(plymouth ask-for-password --prompt="$1")
 	else
-		read -s ANSWER 
+		read -s ANSWER
 	fi
 	echo "$ANSWER"
 }
 
 expand_part() {
-    local device partition TYPE
-    which parted >/dev/null 2>&1 || return
-    [ $1 ] && DEV=$1 || return
-    [ -b $DEV ] || return
-    eval $($BIN_BLKID -s TYPE $DEV |cut -f2 -d ' ')
-    device=$(echo "$DEV" | sed -r "s/p*[0-9]+\$//g")
-    partition=$(echo $DEV | sed 's/^.*[^[:digit:]]//')
-    echo_green_star
-    echolog "$EXPAND_DEVICE" $green"$DEV "$default
-    parted --fix -a optimal -s $device resizepart $partition 100% 1>&2 || return
-    partprobe $device 2>/dev/null 1>&2 || sleep 1
-    fsck_device ${device}$partition $TYPE 1>&2
-    mkdir /tmp/tmpmnt
-    case $TYPE in
-	ext* )
+	local device partition TYPE
+	which parted >/dev/null 2>&1 || return
+	[ $1 ] && DEV=$1 || return
+	[ -b $DEV ] || return
+	eval $($BIN_BLKID -s TYPE $DEV | cut -f2 -d ' ')
+	device=$(echo "$DEV" | sed -r "s/p*[0-9]+\$//g")
+	partition=$(echo $DEV | sed 's/^.*[^[:digit:]]//')
+	echo_green_star
+	echolog "$EXPAND_DEVICE" $green"$DEV "$default
+	parted --fix -a optimal -s $device resizepart $partition 100% 1>&2 || return
+	partprobe $device 2>/dev/null 1>&2 || sleep 1
+	fsck_device ${device}$partition $TYPE 1>&2
+	mkdir /tmp/tmpmnt
+	case $TYPE in
+	ext*)
 		resize2fs ${device}$partition 1>&2
-		mount -o rw ${device}$partition /tmp/tmpmnt 1>&2  ;;
-	btrfs )
 		mount -o rw ${device}$partition /tmp/tmpmnt 1>&2
-		btrfs filesystem resize max /tmp/tmpmnt 1>&2 ;;
+		;;
+	btrfs)
+		mount -o rw ${device}$partition /tmp/tmpmnt 1>&2
+		btrfs filesystem resize max /tmp/tmpmnt 1>&2
+		;;
 	*) return ;;
 	esac
 	rm -f /tmp/tmpmnt/EXPAND_ME 1>&2
@@ -2537,18 +2556,18 @@ check_true() {
 	return 0
 }
 
-setup_union(){
+setup_union() {
 	local UNION_FS
-	if [ "$(getpar $UIRD_UNION 1 1 )" == 'auto' ] ; then
+	if [ "$(getpar $UIRD_UNION 1 1)" == 'auto' ]; then
 		modprobe aufs 2>/dev/null
-		if cat /proc/filesystems |grep -q "aufs" ; then
-			echo "aufs" 
+		if cat /proc/filesystems | grep -q "aufs"; then
+			echo "aufs"
 			return
 		else
 			UNION_FS='overlay'
-		fi  
+		fi
 	else
-		UNION_FS="$(getpar $UIRD_UNION 1 1 )"
+		UNION_FS="$(getpar $UIRD_UNION 1 1)"
 		[ -z $UNION_FS ] && UNION_FS='aufs'
 	fi
 	modprobe "$UNION_FS" 2>/dev/null
@@ -2556,21 +2575,21 @@ setup_union(){
 }
 
 setfontkeys() {
-	[ -d "/usr/lib/consolefonts/${LANG}" -o -L "/usr/lib/consolefonts/${LANG}" ] && loadfont < /usr/lib/consolefonts/${LANG}/$(ls -1 /usr/lib/consolefonts/${LANG}/)  >/dev/null
+	[ -d "/usr/lib/consolefonts/${LANG}" -o -L "/usr/lib/consolefonts/${LANG}" ] && loadfont </usr/lib/consolefonts/${LANG}/$(ls -1 /usr/lib/consolefonts/${LANG}/) >/dev/null
 	[ -d "/usr/lib/kbd/${LANG}" -o -L "/usr/lib/kbd/${LANG}" ] && loadkeys /usr/lib/kbd/${LANG}/$(ls -1 /usr/lib/kbd/${LANG}/) >/dev/null
 }
 
 getpass_lspci() {
-	busybox lspci |md5sum |cut -f1 -d ' '
+	busybox lspci | md5sum | cut -f1 -d ' '
 }
 
 update_initvars() {
-	local str nv 
+	local str nv
 	read str
 	nv=$(echo $str | awk -F= '{print $1}')
-	if ! grep -q "^[[:space:]]*$nv=" /etc/initvars 2>/dev/null ;then
-		grep -q "^$str$" /etc/initvars 2>/dev/null || echo "$str" >> /etc/initvars
-    else
+	if ! grep -q "^[[:space:]]*$nv=" /etc/initvars 2>/dev/null; then
+		grep -q "^$str$" /etc/initvars 2>/dev/null || echo "$str" >>/etc/initvars
+	else
 		sed -i 's|'"^[[:space:]]*$nv=.*$"'|'"$str"'|' /etc/initvars
 	fi
 	sed -i '/^$/d' /etc/initvars

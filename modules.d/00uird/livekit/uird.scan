@@ -7,11 +7,10 @@
 [ -f $BIN_BLKID ] || BIN_BLKID=/sbin/blkid
 . /etc/initvars 2>/dev/null
 
-FIND_PARAMS=$(echo $(getpar $UIRD_FIND_PARAMS [[:digit:]] |tr '_' ' '))
+FIND_PARAMS=$(echo $(getpar $UIRD_FIND_PARAMS [[:digit:]] | tr '_' ' '))
 
 >/tmp/uird_sources
 >/tmp/uird_homes
-
 
 mount_cycle() {
 	local DIR FOUND PRESERVE
@@ -106,7 +105,7 @@ legacy_cfg() {
 		exit 2
 	fi
 	rm -rf /tmp/parameters/uird.from/*
-	echo "$LEGACY" > /tmp/parameters/uird.from/1
+	echo "$LEGACY" >/tmp/parameters/uird.from/1
 	rm -rf /tmp/parameters/uird.ro/*
 	echo "*layer-base/0" >/tmp/parameters/uird.ro/1
 	rm -rf /tmp/parameters/uird.load/*
@@ -115,28 +114,28 @@ legacy_cfg() {
 
 modules() {
 	mount_cycle find_markers
-	SOURCES=$(for a in $(cat /tmp/uird_sources | sort | uniq | grep -E "base|modules" |grep -v ".bak"); do dirname $a; done | sort | uniq)
+	SOURCES=$(for a in $(cat /tmp/uird_sources | sort | uniq | grep -E "base|modules" | grep -v ".bak"); do dirname $a; done | sort | uniq)
 	if [ -z "$SOURCES" ]; then
 		echo "can't find modules"
 		exit 3
 	fi
 	rm -rf /tmp/parameters/uird.from/*
 	n=1
-	for a in $SOURCES ; do
+	for a in $SOURCES; do
 		echo "$a" >/tmp/parameters/uird.from/$n
-		n=$(( $n + 1 ))
+		n=$(($n + 1))
 	done
 	rm -rf /tmp/parameters/uird.ro/*
 	n=1
-	for a in '*.xzm' '*.pfs' ; do
+	for a in '*.xzm' '*.pfs'; do
 		echo "$a" >/tmp/parameters/uird.ro/$n
-		n=$(( $n + 1 ))
+		n=$(($n + 1))
 	done
 	rm -rf /tmp/parameters/uird.load/*
 	n=1
-	for a in '/base/' '/modules' ; do
+	for a in '/base/' '/modules'; do
 		echo "$a" >/tmp/parameters/uird.load/$n
-		n=$(( $n + 1 ))
+		n=$(($n + 1))
 	done
 }
 

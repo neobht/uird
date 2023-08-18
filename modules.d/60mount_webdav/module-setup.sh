@@ -7,7 +7,7 @@ depends() {
 
 install() {
     inst "$moddir/mount_webdav" "/mount_webdav"
-    inst_multiple  mount.davfs
+    inst_multiple mount.davfs
 }
 
 installkernel() {
