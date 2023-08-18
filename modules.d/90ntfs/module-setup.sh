@@ -15,10 +15,9 @@ installkernel() {
 }
 
 install() {
-    for a in $(find /lib /usr/lib  -name 'libntfs*so*') ;do
+    for a in $(find /lib /usr/lib -name 'libntfs*so*'); do
         inst $a $a
     done
     inst "$moddir/ntfsmount" /bin/ntfsmount
     dracut_install mount.ntfs-3g ntfs-3g ntfsfix ntfs-3g.probe
 }
-

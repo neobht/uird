@@ -8,31 +8,30 @@ check() {
 
 depends() {
     # We depend on magos modules being loaded
-#    echo magos
+    #    echo magos
     return 0
 }
-
 
 install() {
     #dracut_install /usr/bin/vim
 
     inst /usr/bin/git
-#    inst_multiple \
-#		/usr/lib64/git-core/git-sh-i18n \
-#		/usr/lib64/git-core/git-sh-i18n--envsubst \
-#		/usr/lib64/git-core/git-sh-setup \
-#		/usr/lib64/git-core/git-http-backend \
-#		/usr/lib64/git-core/git-http-fetch \
-#		/usr/lib64/git-core/git-http-push \
-#		/usr/lib64/git-core/git-stash \
-#		/usr/lib64/git-core/git-remote-https \
-#		/usr/lib64/git-core/git-svn \
-#		/usr/lib64/git-core/git-submodule \
-#		/usr/lib64/git-core/git-parse-remote \ 
-#		/usr/lib64/git-core/git-rebase \
-#		/usr/lib64/git-core/git-rebase--am \
-#		/usr/lib64/git-core/git-rebase--interactive \
-#		/usr/lib64/git-core/git-rebase--merge
+    #    inst_multiple \
+    #		/usr/lib64/git-core/git-sh-i18n \
+    #		/usr/lib64/git-core/git-sh-i18n--envsubst \
+    #		/usr/lib64/git-core/git-sh-setup \
+    #		/usr/lib64/git-core/git-http-backend \
+    #		/usr/lib64/git-core/git-http-fetch \
+    #		/usr/lib64/git-core/git-http-push \
+    #		/usr/lib64/git-core/git-stash \
+    #		/usr/lib64/git-core/git-remote-https \
+    #		/usr/lib64/git-core/git-svn \
+    #		/usr/lib64/git-core/git-submodule \
+    #		/usr/lib64/git-core/git-parse-remote \
+    #		/usr/lib64/git-core/git-rebase \
+    #		/usr/lib64/git-core/git-rebase--am \
+    #		/usr/lib64/git-core/git-rebase--interactive \
+    #		/usr/lib64/git-core/git-rebase--merge
     inst_multiple /usr/lib64/git-core/*
 
     inst_multiple /usr/lib64/gcc/x86_64-unknown-linux-gnu/5.5.0/*
@@ -57,19 +56,19 @@ install() {
     inst_multiple /usr/include/mtd/*
     inst_multiple /usr/include/netpacket/*
     inst_multiple /usr/include/scsi/*
-#    inst_multiple /usr/include/.../*
+    #    inst_multiple /usr/include/.../*
 
     inst /usr/lib64/crt1.o
     inst /usr/lib64/crti.o
     inst /usr/lib64/crtn.o
-    
+
     inst /usr/lib64/libc.so
     inst /usr/lib64/libkmod.so
     inst /usr/lib64/libc_nonshared.a
     inst /usr/lib64/libm.so
     inst /lib64/libmvec.so.1
     inst /usr/lib64/libmvec_nonshared.a
-    
+
     inst pkg-config
     inst /usr/lib64/pkgconfig/libkmod.pc
 
@@ -95,4 +94,3 @@ install() {
     inst grep
     inst hardlink /bin/hardlink
 }
-

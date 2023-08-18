@@ -46,27 +46,27 @@ install() {
 	done
 	#busybox
 	#_busybox=$(type -p busybox.static || type -p busybox )
-	if [ "$BINBUSYBOX" ] ; then
-	    _busybox="$BINBUSYBOX"
+	if [ "$BINBUSYBOX" ]; then
+		_busybox="$BINBUSYBOX"
 	else
-	    _busybox=./busybox/busybox
+		_busybox=./busybox/busybox
 	fi
 	inst $_busybox /usr/bin/busybox
 	_progs=""
 	_filter="lsmod insmod modprobe rmmod modinfo depmod"
 	for _i in $($_busybox --list); do
-		echo "$_filter bash sh" |grep -wq $_i || _progs="$_progs $_i"
+		echo "$_filter bash sh" | grep -wq $_i || _progs="$_progs $_i"
 	done
 
-    for _i in $_progs; do
+	for _i in $_progs; do
 		_path=$(find_binary "$_i")
 		[ -z "$_path" -o "$_path" = "$_i" ] && _path=/bin/$_i
 		[[ -x $initdir/$_path ]] && continue
 		ln_r /usr/bin/busybox "$_path"
 	done
-    for _m in $_filter ; do
+	for _m in $_filter; do
 		ln_r /bin/kmod "/sbin/$_m"
-    done
+	done
 	echo "version: $(date +%Y%m%d), built for kernel: $kernel" >$initdir/uird_version
 	inst_hook cmdline 95 "$moddir/parse-root-uird.sh"
 	inst_hook mount 99 "$moddir/mount-uird.sh"

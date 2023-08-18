@@ -8,12 +8,10 @@ check() {
 
 depends() {
     # We depend on magos modules being loaded
-#    echo magos
+    #    echo magos
     return 0
 }
 
-
 install() {
     return 0
-    }
-
+}
