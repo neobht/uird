@@ -19,7 +19,7 @@ install() {
 
     # inst $(type -p sshfs) /sbin/sshfs
     # inst $(type -p curlftpfs) /sbin/curlftpfs
-    # inst /usr/lib/magos/scripts/httpfs /sbin/httpfs
+    inst /usr/lib/magos/scripts/httpfs /sbin/httpfs
 
     _arch=$(uname -m)
 
