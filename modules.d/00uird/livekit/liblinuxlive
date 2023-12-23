@@ -41,7 +41,7 @@ LIVECDNAME="MagOS"
 # =================================================================
 
 # global variable
-DEBUG_IS_ENABLED=$(cat /proc/cmdline 2>/dev/null | grep debug)
+DEBUG_IS_ENABLED=$(sed s/$/" "/ /proc/cmdline 2>/dev/null | grep " debug ")
 
 debug_log() {
 	if [ "$DEBUG_IS_ENABLED" ]; then
