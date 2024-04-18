@@ -966,6 +966,8 @@ mount_device() {
 	if [ $ERR -ne 0 ] && [ -b "$DEV" ] && cryptsetup isLuks "$DEV"; then
 		LUKS_DEV=$(echo $DEV | sed 's:/dev/::')
 		times=3
+		modprobe kuznyechik 2> /dev/null
+		modprobe magma 2> /dev/null
 		while [ $times -gt 0 ]; do
 			echolog "$MOUNT_DEVICE_ENC" "LUKS" $green"$DEV"$default
 			if ! [ -b "/dev/mapper/$LUKS_DEV" ]; then
