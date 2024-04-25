@@ -85,6 +85,7 @@ WORKDIR="$(realpath $WORKDIR)"
 [ "$_KMODPATH" ] && KMODPATH="$(realpath $_KMODPATH)"
 [ "$_EXCLUDE" ]  && EXCLUDE="$_EXCLUDE"
 [ "$_NAME" ]     && NAME="$_NAME"
+[ "$_KERNEL" ]   && KERNEL="$_KERNEL"
 
 mkdir -p "$LOGD" "$OUTD"
 [ "$BINBUSYBOX" ] || BINBUSYBOX="${WORKDIR}/busybox/busybox"
@@ -144,15 +145,16 @@ if [ "$SECURE" ] ; then
 fi
 
 if [ $KERNELCFG ] ; then
-    KRNAUFS=$(grep -E 'CONFIG_AUFS.*=[ym]' $KERNELCFG)
-    KRNSQFS=$(grep -E 'CONFIG_SQUASHFS.*=[ym]' $KERNELCFG)
-    if [ $(echo "$KRNAUFS" |wc -l) -eq 1 ] ; then
-        echo "$KERNEL built with no AUFS, continue?" 
+    grep -E 'CONFIG_AUFS.*=[ym]' $KERNELCFG && KRNAUFS=yes
+    grep -E 'CONFIG_OVERLAY_FS=[ym]' $KERNELCFG && KRNOVERLAY=yes
+    if [ "$KRNAUFS" ] || [ $KRNOVERLAY ]  ; then
+	echo AUFS: ${KRNAUFS:-no}
+	echo OVERLAY: ${KRNOVERLAY:-}
+    else
+        echo "$KERNEL built with no AUFS or OVERLAYFS, continue?" 
         echo "(ENTER to continue or ctrl+c to abort)"
-        read qqq
+        [ $FORCE ] || read qqq
     fi
-    echo -e "\n${KRNAUFS}\n\n${KRNSQFS}\n"
-
 else
     echo "Kernel config for $KERNEL not found" 
 fi
