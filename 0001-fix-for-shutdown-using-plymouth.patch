@@ -9,10 +9,11 @@ diff --git a/modules.d/99shutdown/shutdown.sh b/modules.d/99shutdown/shutdown.sh
 index d611d4469..7a09ab5fb 100755
 --- a/modules.d/99shutdown/shutdown.sh
 +++ b/modules.d/99shutdown/shutdown.sh
-@@ -1,4 +1,10 @@
+@@ -1,4 +1,11 @@
  #!/bin/sh
-+if plymouth --ping 2>/dev/null ; then
++if grep -q 'plymouth.enable=1 /proc/cmdline' ; then
 +    plymouth quit
++    killall plymouthd 2>/dev/null
 +    sleep 0.1
 +    plymouthd
 +    plymouth show-splash
