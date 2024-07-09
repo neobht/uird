@@ -11,7 +11,7 @@ index d611d4469..7a09ab5fb 100755
 +++ b/modules.d/99shutdown/shutdown.sh
 @@ -1,4 +1,11 @@
  #!/bin/sh
-+if grep -q 'plymouth.enable=1 /proc/cmdline' ; then
++if grep -q 'plymouth.enable=1' /proc/cmdline ; then
 +    plymouth quit
 +    killall plymouthd 2>/dev/null
 +    sleep 0.1
