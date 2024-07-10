@@ -41,17 +41,17 @@ for a in $(ls /dev/{sd,nvme}? 2>/dev/null) ; do (eject -t "$a" && partprobe "$a"
 EOF
 	################################################################
 	if [ $LUKSDEV ]; then
+		echo 'DEV=$($BLKID 2>/dev/null | grep -m1 $(echo ' " $LUKSUUID " ' ) | awk -F: '\'{print \$1}\'')' >>"${UNION}/run/initramfs/remount"
 		. /etc/initvars
 		eval getpass=\$getpass_$(basename $LUKSDEV)
-		typeset -f $getpass >>"${UNION}/run/initramfs/remount"
-		echo 'DEV=$($BLKID 2>/dev/null | grep -m1 $(echo ' " $LUKSUUID " ' ) | awk -F: '\'{print \$1}\'')' >>"${UNION}/run/initramfs/remount"
+		if [ -n $getpass ] ; then
+		    typeset -f $getpass                                        >>"${UNION}/run/initramfs/remount"
+		    echo "if command -v $getpass >/dev/null ; then"            >>"${UNION}/run/initramfs/remount"
+		    echo        "PASS=\$($getpass $DEV)"                       >>"${UNION}/run/initramfs/remount"
+		    echo 'fi'                                                  >>"${UNION}/run/initramfs/remount"
+		fi
 		cat <<"EOF" >>"${UNION}/run/initramfs/remount"
 LUKS_DEV=$(basename $DEV)
-if command -v getpass_$LUKS_DEV >/dev/null ; then
-	echolog "Use: getpass_$LUKS_DEV"
-	PASS=$(getpass_$LUKS_DEV $DEV) 
-	break
-fi 
 times=3
 while [ $times -gt 0 ]; do
 	[ -b "/dev/mapper/$LUKS_DEV" ] && break
