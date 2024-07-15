@@ -18,7 +18,7 @@ uird_shutdown() {
 	savesdev=$(df $savesdir | grep /dev | awk '{print $1}')
 	if [ "$(stat -L -c %t $savesdev)" == "fd" ]; then
 		# Find LUKS mount point. It may be /dev/dm-0, or link in /dev/mapper/
-		for link in $(ls /dev/mapper/*); do
+		for link in /dev/mapper/* ; do
 			if [ "$(realpath $link)" == "$(realpath $savesdev)" ]; then
 				LUKSDEV=$(echo $link | sed 's#/mapper##')
 				break
@@ -44,12 +44,14 @@ EOF
 		echo 'DEV=$($BLKID 2>/dev/null | grep -m1 $(echo ' " $LUKSUUID " ' ) | awk -F: '\'{print \$1}\'')' >>"${UNION}/run/initramfs/remount"
 		. /etc/initvars
 		eval getpass=\$getpass_$(basename $LUKSDEV)
-		if [ -n $getpass ] ; then
-		    typeset -f $getpass                                        >>"${UNION}/run/initramfs/remount"
-		    echo "if command -v $getpass >/dev/null ; then"            >>"${UNION}/run/initramfs/remount"
-		    echo        "PASS=\$($getpass $DEV)"                       >>"${UNION}/run/initramfs/remount"
-		    echo 'fi'                                                  >>"${UNION}/run/initramfs/remount"
+		if ! command -v $getpass ; then
+		    getpass=$getpass_lspci
 		fi
+		typeset -f $getpass                                        >>"${UNION}/run/initramfs/remount"
+		echo "if command -v $getpass >/dev/null ; then"            >>"${UNION}/run/initramfs/remount"
+		echo        "PASS=\$($getpass $DEV)"                       >>"${UNION}/run/initramfs/remount"
+		echo 'fi'                                                  >>"${UNION}/run/initramfs/remount"
+
 		cat <<"EOF" >>"${UNION}/run/initramfs/remount"
 LUKS_DEV=$(basename $DEV)
 times=3
@@ -64,7 +66,7 @@ while [ $times -gt 0 ]; do
 	echolog "${WAITING_FOR} $DEV"
 	for a in $(seq 15) ; do
 		[ -b "/dev/mapper/$LUKS_DEV" ] && break
-		[ -f "/proc/$cspid/cmdline"  ] || break
+		#[ -f "/proc/$cspid/cmdline"  ] || break
 		sleep 2
 		[ $a -ge 13 ] && dmsetup mknodes  "$LUKS_DEV"
 		echo -n .
