@@ -1,4 +1,5 @@
 #!/bin/sh
+
 uird_shutdown() {
 	local UUID MPOINT MNTOPTS RBIND savesdir savesname savesdev ARR_CFG
 	move_run
@@ -43,10 +44,8 @@ EOF
 	if [ $LUKSDEV ]; then
 		echo 'DEV=$($BLKID 2>/dev/null | grep -m1 $(echo ' " $LUKSUUID " ' ) | awk -F: '\'{print \$1}\'')' >>"${UNION}/run/initramfs/remount"
 		. /etc/initvars
-		eval getpass=\$getpass_$(basename $LUKSDEV)
-		if ! command -v $getpass ; then
-		    getpass=$getpass_lspci
-		fi
+		getpass=getpass_$(basename $LUKSDEV)
+		command -v "$getpass" || getpass=getpass_lspci
 		typeset -f $getpass                                        >>"${UNION}/run/initramfs/remount"
 		echo "if command -v $getpass >/dev/null ; then"            >>"${UNION}/run/initramfs/remount"
 		echo        "PASS=\$($getpass $DEV)"                       >>"${UNION}/run/initramfs/remount"
