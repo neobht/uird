@@ -434,7 +434,6 @@ cfg_parser() {
 				done
 				NUM_PAR=$((NUM_PAR + 1))
 			done
-
 			echo "$par" | sed -re 's/^([^=]*)\.([^=]*\=.*)$/\1_\2/' -e 's/^([[:digit:]].*)$/_&/' | update_initvars
 		else
 			: >/tmp/parameters/$parDir/enabled
@@ -1323,11 +1322,14 @@ uuid_label_to_dev() {
 	if ! echo $1 | grep -q ^.*@[\ ,/]; then
 		echo $1
 		return
+	elif echo $1 | grep -q '[[:alnum:]]\+://[[:alnum:]]\+' ; then
+		echo $1
+		return
 	fi
 	DEV=$($BIN_BLKID | grep -m1 $(echo $1 | sed 's:@.*$::') 2>/dev/null | awk -F: '{print $1}')
 	if [ -z $DEV ]; then
 		[ "$TIMEOUT" ] || TIMEOUT=$(getpar scantimeout 1 1 | sed -r 's/[^0-9]*([0-9]+).*/\1/')
-		[ "$TIMEOUT" = "" ] && TIMEOUT=10
+		[ "$TIMEOUT" = "" ] && TIMEOUT=5
 		while [ $TIMEOUT -gt 0 ]; do
 			echo -ne "." >&2
 			sleep 1
@@ -1396,7 +1398,7 @@ find_file() {
 # $3 = extended pars in file
 find_data() {
 	debug_log "find_data" "$*"
-	local RESULT FPARS TIMEOUT=''
+	local RESULT FPARS PROTOCOL TIMEOUT=''
 	FPARS=$3
 	if [ "$FPARS" ]; then
 		for str in $(cat $FPARS | sed -n '2,$p'); do
@@ -1405,12 +1407,10 @@ find_data() {
 	fi
 	[ "$TIMEOUT" ] || TIMEOUT=$(getpar scantimeout 1 1 | sed -r 's/[^0-9]*([0-9]+).*/\1/')
 	[ "$TIMEOUT" = "" ] && TIMEOUT=5
-	log "find_file "$1" "$2" "$3" "
 	while [ $TIMEOUT -gt 0 -a "$RESULT" = "" ]; do
-		log "find_file "$1" "$2" "$3" "
+		log "find_file, attempts ${TIMEOUT}: "$1" "$2" "$3" "
 		if echo "$1" | grep -q "://"; then
 			PROTOCOL=$(echo $1 | cut -f1 -d:)
-			[ -f "/mount_$PROTOCOL" ] && source "/mount_$PROTOCOL" 1>&2
 			RESULT=$(mount_$PROTOCOL $1 $2 $FPARS)
 		else
 			RESULT=$(find_file "$1" "$2" "$FPARS")

@@ -44,7 +44,7 @@ EOF
 	if [ $LUKSDEV ]; then
 		echo 'DEV=$($BLKID 2>/dev/null | grep -m1 $(echo ' " $LUKSUUID " ' ) | awk -F: '\'{print \$1}\'')' >>"${UNION}/run/initramfs/remount"
 		. /etc/initvars
-		getpass=getpass_$(basename $LUKSDEV)
+		eval getpass=\$pass_$(basename $LUKSDEV)
 		command -v "$getpass" || getpass=getpass_lspci
 		typeset -f $getpass                                        >>"${UNION}/run/initramfs/remount"
 		echo "if command -v $getpass >/dev/null ; then"            >>"${UNION}/run/initramfs/remount"
