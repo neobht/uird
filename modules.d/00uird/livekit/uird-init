@@ -29,9 +29,11 @@ export LOCALE=$LANG
 . /livekitlib
 
 # additional mount libs
-for lib in /mount_* ; do
-    . $lib
-done
+if ls -1 / |grep -q '^mount_' ; then
+    for lib in /mount_* ; do
+	source $lib
+    done
+fi
 
 setfontkeys
 #Messages

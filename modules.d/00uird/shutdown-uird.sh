@@ -125,11 +125,11 @@ banner() {
 		printf "%*s\n" $[$(("$TERMLEN" + "$len"))/2] "$a"
 
 	done
+	echo -e $black
 	for a in $(seq 70); do
 		echo ''
 		sleep $t
 	done
-	echo -e $black
 }
 
 rebuild() {
