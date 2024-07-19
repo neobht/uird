@@ -47,33 +47,32 @@ EOF
 		eval getpass=\$pass_$(basename $LUKSDEV)
 		command -v "$getpass" || getpass=getpass_lspci
 		typeset -f $getpass                                        >>"${UNION}/run/initramfs/remount"
-		echo "if command -v $getpass >/dev/null ; then"            >>"${UNION}/run/initramfs/remount"
-		echo        "PASS=\$($getpass $DEV)"                       >>"${UNION}/run/initramfs/remount"
-		echo 'fi'                                                  >>"${UNION}/run/initramfs/remount"
+		echo "PASS=\$($getpass \$DEV)"                             >>"${UNION}/run/initramfs/remount"
 
 		cat <<"EOF" >>"${UNION}/run/initramfs/remount"
 LUKS_DEV=$(basename $DEV)
 times=3
+timeout=10
 while [ $times -gt 0 ]; do
 	[ -b "/dev/mapper/$LUKS_DEV" ] && break
+	dmsetup remove_all
 	if ! [ "$PASS" ] ; then
 		echolog "$PASSWD_ENTER - $DEV"
 		PASS=$(ask_pass "$PASSWD_ENTER - $DEV")
 	fi
 	echo "$PASS" | cryptsetup luksOpen "$DEV" "$LUKS_DEV" >/dev/null 2>&1 &
-	cspid=$!
 	echolog "${WAITING_FOR} $DEV"
-	for a in $(seq 15) ; do
+	for a in $(seq $timeout) ; do
+		sleep 1
 		[ -b "/dev/mapper/$LUKS_DEV" ] && break
-		#[ -f "/proc/$cspid/cmdline"  ] || break
-		sleep 2
-		[ $a -ge 13 ] && dmsetup mknodes  "$LUKS_DEV"
+		[ $a -ge 5 ] && dmsetup mknodes  "$LUKS_DEV"
 		echo -n .
 	done
-	[ -b "/dev/mapper/$LUKS_DEV" ] && break
-	unset PASS
 	echo "!"
+	unset PASS
 	times=$(expr $times - 1 )
+	timeout=$(expr $timeout + 5 )
+	[ -b "/dev/mapper/$LUKS_DEV" ] && break
 	[ $times -eq 0 ] && exit 1
 	echolog "$LUKS_ERROR ($times)"
 done
