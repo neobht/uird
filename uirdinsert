@@ -39,7 +39,7 @@ if [ "$INTERACTIVE" ] ; then
     echo -e "\n\t$UIRD 
 unpacket to: 
 \t$TMPD
-push ENTER to pack it to: 
+modify and push ENTER to pack it to: 
 \t$NEWUIRD
 "
     read qqq

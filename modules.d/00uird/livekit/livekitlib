@@ -1896,9 +1896,23 @@ setup_config() {
 	chmod 400 $MEMORY/$LIVEKITNAME.ini.gz $MEMORY/cmdline 2>/dev/null
 }
 
+crypto_swap () {
+	local KEY swapname
+	echo_blue_star
+	echolog "Setup crypto swap"
+	swapname=swap$$
+	KEY=$(dd if=/dev/urandom bs=512 count=1 |base64)
+	echo "$KEY" | cryptsetup luksFormat "$1" --force-password
+	cryptsetup config "$1" --label "crypto_swap"
+	echo "$KEY" | cryptsetup luksOpen $1 $swapname
+	mkswap -L $swapname /dev/mapper/${swapname}
+	swapon /dev/mapper/${swapname} || \
+		echolog "Error: setup crypto swap - $1"
+}
+
 # Init swap
 init_swap() {
-	local newsize total FSWAP ASWAP DSWAP SOURCE SWAP_FROM NEEDZRAM NEEDZSWAP
+	local newsize total FSWAP ASWAP DSWAP SOURCE SWAP_FROM NEEDZRAM NEEDZSWAP CRYPTO=no
 	NEEDZSWAP=no
 	NEEDZRAM=no
 	debug_log "setting up swap"
@@ -1906,12 +1920,21 @@ init_swap() {
 	echolog "$SETUP_SWAP"
 	FSWAP=""
 	for NSWAP in $(getpar $UIRD_SWAP); do
-		DSWAP=$(getpar $UIRD_SWAP $NSWAP 1)
+		DSWAP=$(uuid_label_to_dev $(getpar $UIRD_SWAP $NSWAP 1))
+		getpar $UIRD_SWAP $NSWAP | grep -qw 'crypto' && CRYPTO='yes'
 		if [ -b "$DSWAP" ]; then
-			swapon "$DSWAP"
-		elif [ "$DSWAP" == "auto" ]; then
-			ASWAP=$(list_swap_devices | head -n 1)
-			[ -b "$ASWAP" ] && swapon $ASWAP
+			if [ "$CRYPTO" == 'yes'; then
+				crypto_swap "$DSWAP"
+			else
+				swapon "$DSWAP"
+			fi
+		elif [ "$DSWAP" == "auto" ]; theт
+			if [ "$CRYPTO" == 'yes'; then
+				echolog "Error: auto crypto_swap - not supported"
+			else
+				ASWAP=$(list_swap_devices | head -n 1)
+				[ -b "$ASWAP" ] && swapon $ASWAP
+			fi
 			if [ $(cat /proc/swaps | wc -l) -gt 1 ]; then
 				[ $(getpar $UIRD_SWAP | wc -l) -eq 1 -a -z "$(getpar $UIRD_SWAP $NSWAP | grep nozswap)" ] && NEEDZSWAP=yes
 			else
