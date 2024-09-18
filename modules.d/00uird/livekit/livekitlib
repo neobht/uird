@@ -1928,8 +1928,8 @@ init_swap() {
 			else
 				swapon "$DSWAP"
 			fi
-		elif [ "$DSWAP" == "auto" ]; theт
-			if [ "$CRYPTO" == 'yes'; then
+		elif [ "$DSWAP" == "auto" ] ; then
+			if [ "$CRYPTO" == 'yes' ] ; then
 				echolog "Error: auto crypto_swap - not supported"
 			else
 				ASWAP=$(list_swap_devices | head -n 1)
