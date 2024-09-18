@@ -131,6 +131,7 @@ SAVING_CHANGES=$($GETTEXT "Please wait. Saving changes to module")
 WAS_NOT_SAVED=$($GETTEXT "System changes was not saved to")
 NO_DIR=$($GETTEXT "No such directory:")
 REMOUNT_RO=$($GETTEXT "Remount RO:")
+PART_IS_NOT_CRYPTO_SWAP=" $($GETTEXT "is not crypto swap, [C]ontinue, [A]bort")"
 
 ##### UIRD cmdline parameters aliases
 
@@ -152,21 +153,21 @@ REMOUNT_RO=$($GETTEXT "Remount RO:")
 # uird.homes[+]=             - источники, где хранятся домашние директории пользователей
 # uird.home=                 - источник, где хранится домашняя директория пользователей
 # uird.changes=              - источник, где хранить персистентные изменения
-# uird.mode= 		     	 - режим работы с сохрананиями
+# uird.mode=                 - режим работы с сохрананиями
 # uird.mounts[+]=            - источники, которые необходимо примонтировать
 # uird.find_params[+]=       - параметры для утилиты find при поиске модулей
 # uird.help                  - печатает подсказку по параметрам UIRD
 # uird.break=                - остановка загрузки на определенном этапе и включение режима отладки
 # uird.syscp[+]=             - список файлов (каталогов) для копирования из UIRD в систему /путь/файл::/путь/каталог
-# uird.parallel				 - параллельное монтирование модулей
+# uird.parallel              - параллельное монтирование модулей
 # uird.run[+]=               - запуск внешних исполняемых файлов
 # устаревший: uird.zram      - использовать zram вместо tmpfs
 # uird.rootfs=               - zram/tmpfs тип фс для /memory
 # uird.preinit               - обработка ини файла задданного в uird.config
 # uird.shutdown              - создание /run/initramfs
-# quickshell, qs 	     	 - консоль на начальном этапе работы uird-init
-# qse 			     		 - консоль в конце работы uird-init
-# debug 		     		 - подробный вывод и приостановка uird-init на нескольких этапах работы
+# quickshell, qs             - консоль на начальном этапе работы uird-init
+# qse                        - консоль в конце работы uird-init
+# debug                      - подробный вывод и приостановка uird-init на нескольких этапах работы
 # uird.silent                - no output
 # uird.hide                  - не перемонтировать $SYSMNT из rootfs initrd в системный rootfs
 # uird.mntlinks              - coздавать ссылки live, livemedia, livedata в /mnt
@@ -1900,6 +1901,17 @@ crypto_swap () {
 	local KEY swapname
 	echo_blue_star
 	echolog "Setup crypto swap"
+	if ! $BIN_BLKID "$1" -o value -s LABEL |grep -q "crypto_swap" ; then
+		echo "$1 $PART_IS_NOT_CRYPTO_SWAP"
+		ANS=$(ask_answer "$1 $PART_IS_NOT_CRYPTO_SWAP")
+		case "$ANS" in
+		"C" | "c")
+			echo_blue_star
+			echolog "Setup crypto swap" ;;
+		*) 
+			return ;;
+		esac
+	fi
 	swapname=swap$$
 	KEY=$(dd if=/dev/urandom bs=512 count=1 |base64)
 	echo "$KEY" | cryptsetup luksFormat "$1" --force-password
@@ -1923,10 +1935,10 @@ init_swap() {
 		DSWAP=$(uuid_label_to_dev $(getpar $UIRD_SWAP $NSWAP 1))
 		getpar $UIRD_SWAP $NSWAP | grep -qw 'crypto' && CRYPTO='yes'
 		if [ -b "$DSWAP" ]; then
-			if [ "$CRYPTO" == 'yes'; then
+			if [ "$CRYPTO" == 'yes' ] ; then
 				crypto_swap "$DSWAP"
 			else
-				swapon "$DSWAP"
+				swapon "$DSWAP" 
 			fi
 		elif [ "$DSWAP" == "auto" ] ; then
 			if [ "$CRYPTO" == 'yes' ] ; then
