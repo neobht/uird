@@ -1320,11 +1320,11 @@ find_filepath() {
 # $1 = LABEL@/path/to/file
 uuid_label_to_dev() {
 	local DEV DEVPATH TIMEOUT=""
-	if ! echo $1 | grep -q ^.*@[\ ,/]; then
-		echo $1
+	if ! echo "$1" | grep -q '^.\+@/*' ; then
+		echo "$1"
 		return
-	elif echo $1 | grep -q '[[:alnum:]]\+://[[:alnum:]]\+' ; then
-		echo $1
+	elif echo "$1" | grep -q '[[:alnum:]]\+://[[:alnum:]]\+' ; then
+		echo "$1"
 		return
 	fi
 	DEV=$($BIN_BLKID | grep -m1 $(echo $1 | sed 's:@.*$::') 2>/dev/null | awk -F: '{print $1}')
@@ -1339,10 +1339,10 @@ uuid_label_to_dev() {
 			[ -z $DEV ] || break
 		done
 	fi
-	if [ -z $DEV ]; then
-		DEVPATH=$1
+	if [ -z $DEV ] ; then
+		DEVPATH="$1"
 	else
-		DEVPATH=$(echo $1 | sed "s:^.*@/\|^.*@$:${DEV}/:")
+		DEVPATH=$(echo "$1" | sed "s:^.\+@:${DEV}:")
 	fi
 	echo $DEVPATH | tail -n1
 }
@@ -1900,7 +1900,7 @@ setup_config() {
 crypto_swap () {
 	local KEY swapname
 	echo_blue_star
-	echolog "Setup crypto swap"
+	echolog "Setup crypto swap: ${1}"
 	if ! $BIN_BLKID "$1" -o value -s LABEL |grep -q "crypto_swap" ; then
 		echo "$1 $PART_IS_NOT_CRYPTO_SWAP"
 		ANS=$(ask_answer "$1 $PART_IS_NOT_CRYPTO_SWAP")
