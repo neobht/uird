@@ -1,6 +1,6 @@
 [submodule "busybox"]
 	path = busybox
-	url = https://github.com/mirror/busybox
+	url = git@github.com:mirror/busybox
 
 [submodule "dracut-ng"]
 	path = dracut-ng
