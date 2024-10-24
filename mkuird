@@ -52,13 +52,13 @@ PARAMETERS:
 until [ -z $1 ] ; do
   case "$1" in
     "-h" | "--help" ) HLP ;;
-    "-c" | "--config" ) shift ; CONFIG="$(realpath $1)";;
-    "-o" | "--outdir" ) shift; _OUTD="$1";;
-    "-e" | "--exclude" ) shift; _EXCLUDE="$1";;
-    "-n" | "--name" ) shift; _NAME="$1";;
-    "-k" | "--kernel" ) shift ; _KERNEL="$1";;
-    "-m" | "--kmodpath" ) shift; _KMODPATH="$1";;
-    "-L" | "--logdir" ) shift; _LOGD="$$1";;
+    "-c" | "--config" ) shift ; CONFIG="$1";;
+    "-o" | "--outdir" ) shift; OUTD="$1";;
+    "-e" | "--exclude" ) shift; EXCLUDE="$1";;
+    "-n" | "--name" ) shift; NAME="$1";;
+    "-k" | "--kernel" ) shift ; KERNEL="$1";;
+    "-m" | "--kmodpath" ) shift; KMODPATH="$1";;
+    "-L" | "--logdir" ) shift; LOGD="$1";;
     "-s" | "--show" ) SHOW=yes;;
     "-f" | "--force" ) FORCE="yes";;
     "--kmod" ) BUILD=kmod;;
@@ -70,6 +70,7 @@ until [ -z $1 ] ; do
     "--secure" ) shift 
                  SECLEVEL="$1" ;
                  SECURE="-i secure /" ;;
+    "-d" | "--dracutsource" ) shift; DRACUTDIR="$(realpath $1)";;
     "-"*[A-Za-z]*) echo "$(basename "$0"): invalid option -- '$(echo $1 | tr -d '-')'" >&2; exit 1;;
     *)  CFG="$1";;
   esac
@@ -80,24 +81,22 @@ date > ${LOGD}/not_found.log
 . $CONFIG
 
 WORKDIR="$(realpath $WORKDIR)"
-[ "$_LOGD" ]     && LOGD="$(realpath $_LOGD)"
-[ "$_OUTD" ]     && OUTD="$(realpath $_OUTD)"
-[ "$_KMODPATH" ] && KMODPATH="$(realpath $_KMODPATH)"
-[ "$_EXCLUDE" ]  && EXCLUDE="$_EXCLUDE"
-[ "$_NAME" ]     && NAME="$_NAME"
-[ "$_KERNEL" ]   && KERNEL="$_KERNEL"
 
+LOGD="$(realpath $LOGD)"
+OUTD="$(realpath $OUTD)"
 mkdir -p "$LOGD" "$OUTD"
+[ "$DRACUTDIR" ] || DRACUTDIR="${WORKDIR}/dracut"
 [ "$BINBUSYBOX" ] || BINBUSYBOX="${WORKDIR}/busybox/busybox"
-[ "$DRACUTMODDIR" ] || DRACUTMODDIR="${WORKDIR}/dracut/modules.d/"
+[ "$DRACUTMODDIR" ] || DRACUTMODDIR="$DRACUTDIR/modules.d/"
 echo "
 CONFIG=$CONFIG
 WORKDIR=$WORKDIR
 BINBUSYBOX=$BINBUSYBOX
+DRACUTDIR=$DRACUTDIR
 DRACUTMODDIR=$DRACUTMODDIR
 PASSWD=$PASSWD
 SECLEVEL=$SECLEVEL
-EXCLUDE=$EXCLUDE
+EXCLUDE=$EXCLUDEB
 OUTD=$OUTD
 NAME=$NAME
 KERNEL=$KERNEL
@@ -145,16 +144,15 @@ if [ "$SECURE" ] ; then
 fi
 
 if [ $KERNELCFG ] ; then
-    grep -E 'CONFIG_AUFS.*=[ym]' $KERNELCFG && KRNAUFS=yes
-    grep -E 'CONFIG_OVERLAY_FS=[ym]' $KERNELCFG && KRNOVERLAY=yes
-    if [ "$KRNAUFS" ] || [ $KRNOVERLAY ]  ; then
-	echo AUFS: ${KRNAUFS:-no}
-	echo OVERLAY: ${KRNOVERLAY:-}
-    else
-        echo "$KERNEL built with no AUFS or OVERLAYFS, continue?" 
+    KRNAUFS=$(grep -E 'CONFIG_AUFS.*=[ym]' $KERNELCFG)
+    KRNSQFS=$(grep -E 'CONFIG_SQUASHFS.*=[ym]' $KERNELCFG)
+    if [ $(echo "$KRNAUFS" |wc -l) -eq 1 ] ; then
+        echo "$KERNEL built with no AUFS, continue?" 
         echo "(ENTER to continue or ctrl+c to abort)"
-        [ $FORCE ] || read qqq
+        read qqq
     fi
+    echo -e "\n${KRNAUFS}\n\n${KRNSQFS}\n"
+
 else
     echo "Kernel config for $KERNEL not found" 
 fi
@@ -220,9 +218,9 @@ done
 BUILTIN=$(cat /lib/modules/$KERNEL/modules.builtin |while read a ; do basename $a ; done |sed 's/.ko$//')
 
 cd ${WORKDIR} 
-if ! [ -x ./dracut/dracut.sh ] ; then
+if ! [ -x ${DRACUTDIR}/dracut.sh ] ; then
     [ "$FORCE" ] && ./system_dracut.sh ${WORKDIR}
-    if ! [ -x ./dracut/dracut.sh ] ; then
+    if ! [ -x ${DRACUTDIR}/dracut.sh ] ; then
         echo "Warninng! ${WORKDIR}/dracut directory - not found"
         echo "Firs time you must run:" 
         echo "  ${WORKDIR}/make_dracut.sh   - to use git darcut version" 
@@ -230,15 +228,15 @@ if ! [ -x ./dracut/dracut.sh ] ; then
         echo "  ${WORKDIR}/system_dracut.sh - to use system version"
         echo -e "\n$(basename $0) can solve the problem automatically (add -f to $(basename $0) cmdline)"
         cd $RUNPWD
-    exit
+        exit
     fi
 fi
 
 if [ "$BUILD" == "kmod" ] ; then
     parser KM ; parser FS ; parser DM
-    echo "Making UIRD --kmod  $(realpath ./dracut/dracut.sh)..."
+    echo "Making UIRD --kmod  $(realpath $DRACUTDIR/dracut.sh)..."
     uirdfile=${OUTD}/uird.kmod.cpio.xz
-    ./dracut/dracut.sh -l -N -f -m "$DM_base" \
+    ${DRACUTDIR}/dracut.sh -l -N -f -m "$DM_base" \
     -d "$KM" \
     --filesystems "$FS" \
     --kernel-only \
@@ -246,14 +244,14 @@ if [ "$BUILD" == "kmod" ] ; then
 elif [ "$BUILD" == "addon" ] ; then
     echo "Making UIRD --addon, using $(realpath ./dracut/dracut.sh)..."
     uirdfile=${OUTD}/uird.addon.cpio.xz
-    ./dracut/dracut.sh -l -N -f -m "$ExtraDM" \
+    ${DRACUTDIR}/dracut.sh -l -N -f -m "$ExtraDM" \
     --no-kernel \
     --conf ./dracut.conf -v -M $uirdfile  $KERNEL >${LOGD}/dracut_addon.log 2>&1
 else
     parser KM ; parser FS ; parser DM ; parser BIN ; parser INST
     UIRD_BINS="$BIN"
     export UIRD_BINS
-    echo "Making UIRD (${CFG}) using $(realpath ./dracut/dracut.sh)..."
+    echo "Making UIRD (${CFG}) using $(realpath ${DRACUTDIR}/dracut.sh)..."
     uirdfile="${OUTD}/uird.$CFG.cpio.xz"
     echo "-l -N --strip -f"     > ${LOGD}/dracut_run 
     echo "--conf ./dracut.conf" >> ${LOGD}/dracut_run
@@ -274,7 +272,7 @@ else
     if [ $SHOW ] ; then
         cat ${LOGD}/dracut_run
     else
-        cat  ${LOGD}/dracut_run|xargs ./dracut/dracut.sh  >${LOGD}/dracut_uird.log 2>&1
+        cat  ${LOGD}/dracut_run|xargs ${DRACUTDIR}/dracut.sh  >${LOGD}/dracut_uird.log 2>&1
     fi
 fi
 cd $RUNPWD

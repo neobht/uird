@@ -5,3 +5,6 @@
 	path = busybox
 	url = https://github.com/mirror/busybox
 
+[submodule "dracut-ng"]
+	path = dracut-ng
+	url = git@github.com:dracut-ng/dracut-ng.git
