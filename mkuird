@@ -32,7 +32,8 @@ PARAMETERS:
     \"-n | --name\"  - uird name
     \"-L | --logdir\" - directory for logs
     \"-k | --kernel\" - kernel name, to build uird for it
-    \"-m | --kmodpath\" - kernel modules dir path (/lib/modules) 
+    \"-m | --kmodpath\" - kernel modules dir path (/lib/modules)
+    \"-d | --dracutsource\" - dracut source dir path (./dracut-ng)
     \"-f | --force\" - start system_dracut.sh automaticaly (need only with OS dracut) 
     \"--kmod\" - build uird with kernelmodules only
     \"--addon\" - build uird with addon only (see mkuird.cfg, ExtraDM line
@@ -85,7 +86,7 @@ WORKDIR="$(realpath $WORKDIR)"
 LOGD="$(realpath $LOGD)"
 OUTD="$(realpath $OUTD)"
 mkdir -p "$LOGD" "$OUTD"
-[ "$DRACUTDIR" ] || DRACUTDIR="${WORKDIR}/dracut"
+[ "$DRACUTDIR" ] || DRACUTDIR="${WORKDIR}/dracut-ng"
 [ "$BINBUSYBOX" ] || BINBUSYBOX="${WORKDIR}/busybox/busybox"
 [ "$DRACUTMODDIR" ] || DRACUTMODDIR="$DRACUTDIR/modules.d/"
 echo "
