@@ -9,7 +9,6 @@
 [ "$SYSMNT" ] && MEMORY=$SYSMNT || MEMORY=/memory
 if [ -f /secure ]; then
 	SECLEVEL=$(cat /secure)
-	echo "SECLEVEL=$SECLEVEL" | update_initvars
 else
 	SECLEVEL=0
 fi
@@ -27,6 +26,8 @@ export LOCALE=$LANG
 
 # main lib
 . /livekitlib
+
+echo "SECLEVEL=$SECLEVEL" | update_initvars
 
 # additional mount libs
 if ls -1 / |grep -q '^mount_' ; then

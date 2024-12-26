@@ -276,33 +276,28 @@ echolog() {
 }
 export -f echolog
 
-# show information about the debug shell
-show_debug_banner() {
-	echo
-	echo "====="
-	echo ": Debugging started. Here is the root shell for you."
-	echo ": Type your desired commands or hit Ctrl+D to continue booting."
-	echo
-}
 
 # debug_shell
 # executed when debug boot parameter is present
-#
 debug_shell() {
 	if [ "$DEBUG_IS_ENABLED" ]; then
-		plymouth quit
-		show_debug_banner
-		setsid sh -c 'exec sh < /dev/tty1 >/dev/tty1 2>&1'
-		echo
+	    VT="/dev/tty1"
+	    getpar console && VT="/dev/$(getpar console 1 1)"
+	    plymouth quit
+	    echo "===================== DEBUG SHELL MODE ======================="
+	    echo ": Debugging started. Here is the root shell for you."
+	    echo ": Type your desired commands or hit Ctrl+D to continue booting."
+	    setsid sh -c 'exec sh < $VT > $VT 2>&1'
+	    echo
 	fi
 }
 # start shell
 # if $1==help then start shell
 shell_cmd() {
-	[ "$SECLEVEL" -gt 2 ] && return
-	plymouth --ping >/dev/null 2>&1 && plymouth quit
-	ln -s /root/bash_profile /root/.bash_profile 2>/dev/null
-	cat <<EOF >/root/.bashrc
+        [ "$SECLEVEL" -gt 2 ] && return
+        plymouth --ping >/dev/null 2>&1 && plymouth quit
+        ln -s /root/bash_profile /root/.bash_profile 2>/dev/null
+cat << EOF > /root/.bashrc
 # .bashrc
 PATH=.:/:/usr/sbin:/usr/bin:/sbin:/bin
 ENV=/root/.bashrc
@@ -313,23 +308,26 @@ PS1='\[\033[31;1m\][\u@QuickShell \W] # \[\033[m\]'
 setfontkeys
 export USERNAME ENV PATH PS1 LANG
 EOF
-	echo
-	if [ "$1" = "shell" ]; then
-		echo "============== SHELL MODE ============="
-		setsid bash -c 'exec bash autologin < /dev/tty1 >/dev/tty1 2>&1'
-		echo
-	elif [ "$1" = "help" ]; then
-		echo "============== HELP SHELL MODE ============="
-		setsid bash -c 'exec bash autologin < /dev/tty1 >/dev/tty1 2>&1'
-		reboot -f
-	elif [ "$1" = "break" ]; then
-		echo "============== BREAK SHELL MODE ============="
-		DEBUG_IS_ENABLED=1
-		setsid bash -c 'exec bash autologin < /dev/tty1 >/dev/tty1 2>&1'
-		echo
-	fi
+        echo
+        VT="/dev/tty1"
+        getpar console && VT="/dev/$(getpar console 1 1)"
+        if [ "$1" = "shell" ]; then
+                echo "============== SHELL MODE ============="
+                setsid bash -c "exec bash autologin < $VT > $VT 2>&1"
+                echo
+        elif [ "$1" = "help" ]; then
+                echo "============== HELP SHELL MODE ============="
+                setsid bash -c "exec bash autologin < $VT > $VT 2>&1"
+                reboot -f
+        elif [ "$1" = "break" ]; then
+                echo "============== BREAK SHELL MODE ============="
+                DEBUG_IS_ENABLED=1
+                setsid bash -c "exec bash autologin < $VT > $VT 2>&1"
+                echo
+        fi
 }
 export -f shell_cmd
+
 
 # start quickshell
 start_quickshell() {
