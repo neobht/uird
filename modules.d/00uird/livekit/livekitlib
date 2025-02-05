@@ -2367,8 +2367,8 @@ setup_preinit() {
 
 mkimg() {
 	local DIR newimg SIZE FS MNT_DIR PASS KEY FORCE
-	newimg=$1  #new img (or new dir) name
-	MNT_DIR=$2 #mount point
+	newimg=$1  # new img (or new dir) name
+	MNT_DIR=$2 # mount point
 	SIZE=''
 	FS=''
 	KEY=''
@@ -2379,15 +2379,16 @@ mkimg() {
 			local | grep -q "$(echo $str | cut -f1 -d=)=" && eval $str
 		done
 	fi
-	log "mkimg: $FS $SIZE"
+	log "mkimg: $newimg $FS $SIZE"
 	echo ''
 	echo_green_star
 	echolog "$TRY_CREATE $SOURCE $FS ${SIZE}"
-	if $(dirname $newimg | grep -q ^$SYSMNT); then
+	if $(dirname $newimg | grep -q ^${SYSMNT}.*\.img); then
+		# image in the SYSMNT, it is a variation of clean mode
 		DIR=$(dirname $newimg)
 		mkdir -p $DIR
-		SIZE=512
-		FS=btrfs
+		[ -z "$SIZE" ] && SIZE=1024
+		[ -z "$FS" ] && FS=ext4
 	else
 		ANS="y"
 		if ! [ "$(getpar $UIRD_FORCE)_" == "enabled_" -o "$FORCE" == "yes" ]; then
@@ -2400,24 +2401,27 @@ mkimg() {
 			else
 				DIR="$(find $LAYER_BASE -maxdepth 1 -type d | sort | tail -n1)"
 			fi
-			if ! [ "$FS" ]; then
-				echo "$ENTER_FS_TYPE (default ext4): "
-				FS=$(ask_answer "$ENTER_FS_TYPE (default ext4): ")
-				[ "$FS" == "" ] && FS='ext4'
-			fi
-			if ! [ "$SIZE" ]; then
-				maxsize=$(df -m $DIR | tail -n1 | awk '{print $4}')
-				echo "$ENTER_SIZE  (default: 1024, max: $maxsize): "
-				SIZE=$(ask_answer "$ENTER_SIZE (default: 1024, max: $maxsize): ")
-				[ "$SIZE" == "" ] && SIZE='1024'
-			fi
 		fi
 	fi
 	if basename $newimg | grep -E -q '\.img$|\.enc$'; then
+		# create file
+		if ! [ "$FS" ]; then
+			echo "$ENTER_FS_TYPE (default ext4): "
+			FS=$(ask_answer "$ENTER_FS_TYPE (default ext4): ")
+			[ "$FS" == "" ] && FS='ext4'
+		fi
+		if ! [ "$SIZE" ]; then
+			maxsize=$(df -m $DIR | tail -n1 | awk '{print $4}')
+			echo "$ENTER_SIZE  (default: 1024, max: $maxsize): "
+			SIZE=$(ask_answer "$ENTER_SIZE (default: 1024, max: $maxsize): ")
+			[ "$SIZE" == "" ] && SIZE='1024'
+		fi
 		FNAME="$DIR/$(basename $newimg)"
 		dd if=/dev/zero of="$FNAME" bs=1 count=0 seek=${SIZE}M >/dev/null
 		if basename $newimg | grep -q 'enc$'; then
+			# create cryto container
 			if [ -n "$KEY" -a ! -f "$KEY" ]; then
+				# create key file for crypro container
 				EXIST_KEY=$(find_data "$KEY" "/tmp/aeskey")
 				if ! [ -f "$EXIST_KEY" ]; then
 					if $(dirname $KEY | grep -q [[:alnum:]]); then
@@ -2447,9 +2451,8 @@ mkimg() {
 		mkfs.$FS "$FNAME" >/dev/null
 		basename $newimg | grep -q 'enc$' && cryptsetup close uirdnewenc
 		DATA_FROM="$DIR/$(basename $newimg)"
-	elif
-		basename $newimg | grep -qv "\."
-	then
+	elif basename $newimg | grep -qv "\." ; then
+		# container is a dir, create dir
 		mkdir "$DIR/$(basename $newimg)" && DATA_FROM="$DIR/$(basename $newimg)"
 	fi
 }
