@@ -17,7 +17,7 @@ uird_shutdown() {
     savesname=$CHANGESMNT
     savesdir=$(dirname $savesname)
     savesdev=$(df $savesdir | grep /dev | awk '{print $1}')
-    if [ "$(stat -L -c %t $savesdev)" == "fd" ]; then
+    if cryptsetup status $savesdev >/dev/null 2>&1 ; then
         # Find LUKS mount point. It may be /dev/dm-0, or link in /dev/mapper/
         for link in /dev/mapper/* ; do
             if [ "$(realpath $link)" == "$(realpath $savesdev)" ]; then
