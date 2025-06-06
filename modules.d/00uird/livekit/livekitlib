@@ -1595,17 +1595,19 @@ init_network_dev() {
 # Ex.: ip=192.168.0.3:192.168.0.1:255.255.255.0
 init_ifcfg() {
 	debug_log "init_ifcfg" "$*"
+	if ifconfig | grep -q 'inet ' || ip route | grep -q '^default'; then
+		debug_log "Network already configured, skipping"
+		return 0
+	fi
 	local CLIENT GW MASK ETH
 	ifconfig | grep -q 'addr' && return
 	echo_blue_star
 	echolog "$INIT_IFCFG"
 	modprobe af_packet 2>/dev/null
-
 	IP=$(getpar $UIRD_IP 1 1)
 	[ "$IP" = "" ] && IP=::
 	echo $IP | while IFS=":" read CLIENT GW MASK; do
 		ETH=$(init_network_dev)
-
 		# set IP address as given by boot parameter
 		if [ "$CLIENT" != "" -a "$MASK" != "" ]; then
 			ifconfig $ETH "$CLIENT" netmask "$MASK"
@@ -1617,7 +1619,6 @@ init_ifcfg() {
 			ifconfig $ETH up
 			udhcpc -i $ETH -f -q
 		fi
-
 	done
 }
 export -f init_ifcfg
@@ -1763,15 +1764,30 @@ syscp() {
 	debug_log "syscp" "$*"
 	echo_green_star
 	echolog "$SETUP_SYSCP"
-	local SYSCP ARR_SYSCP FILEFROM FILETO FILEFROMTO UNION
-	ARR_SYSCP=$(echo $1 | tr -s ";," "\n" | uniq)
+	local SYSCP FILEFROM FILETO FILEFROMTO UNION
 	for NUMPAR in $(getpar $UIRD_SYSCP); do
 		FILEFROM=$(getpar $UIRD_SYSCP $NUMPAR 1)
 		FILETO=$(getpar $UIRD_SYSCP $NUMPAR 2)
 		mkdir -p ${1}${FILETO}
-		cp -fa ${FILEFROM} ${1}${FILETO}/
 		echo_blue_star
 		echolog "${FILEFROM} -->  ${FILETO}"
+		if  echo "$FILEFROM" | grep -Eiq ^".*tps?://" ; then
+			# URL - try to download
+			init_ifcfg
+			if command -v aria2c >/dev/null 2>&1; then
+				echolog "Downloading $FILEFROM using aria2..."
+				aria2c -x 4 -s 4 -d "${1}${FILETO}" -o "$(basename "$FILEFROM")" "$FILEFROM" || \
+				echolog "uird.syscp: Failed to download with aria2c"
+			elif command -v wget >/dev/null 2>&1; then
+				echolog "Downloading $FILEFROM using wget..."
+				wget -q --show-progress -O "${1}${FILETO}/$(basename "$FILEFROM")" "$FILEFROM" || \
+				echolog "uird.syscp: Failed to download with wget"
+			else
+				echolog "uird.syscp: Error. Neither wget nor aria2c found. Cannot download the file."
+			fi
+		else
+			cp -fa ${FILEFROM} ${1}${FILETO}/ || echolog "uird.syscp: Failed!"
+		fi
 	done
 }
 
@@ -2308,9 +2324,13 @@ copy_to_target() {
 move_run() {
 	ismountpoint "${UNION}/run" && return
 	echo_green_star && echolog "$INITIALIZE /run/initramfs...."
-	mkdir "${UNION}/run" 2>/dev/null # if /run was removed
+	# preserve current  /run
+	mv "${UNION}/run" "${UNION}/run_" 2>/dev/null
+	mkdir "${UNION}/run" 2>/dev/null
 	mount -o move /run "${UNION}/run"
 	mount -o remount,exec "${UNION}/run"
+	[ -d "${UNION}/run_" ] && mv "${UNION}"/run_/* "${UNION}"/run/
+	rmdir "${UNION}/run_" 2>/dev/null
 	mkdir -p "${UNION}/run/initramfs"
 	rm -rf /lib/modules/*
 	rm -rf /lib/firmware/*
