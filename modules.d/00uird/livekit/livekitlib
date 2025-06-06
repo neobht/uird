@@ -1780,7 +1780,7 @@ syscp() {
 				echolog "uird.syscp: Failed to download with aria2c"
 			elif command -v wget >/dev/null 2>&1; then
 				echolog "Downloading $FILEFROM using wget..."
-				wget -q --show-progress -O "${1}${FILETO}/$(basename "$FILEFROM")" "$FILEFROM" || \
+				wget -q -O "${1}${FILETO}/$(basename "$FILEFROM")" "$FILEFROM" || \
 				echolog "uird.syscp: Failed to download with wget"
 			else
 				echolog "uird.syscp: Error. Neither wget nor aria2c found. Cannot download the file."
