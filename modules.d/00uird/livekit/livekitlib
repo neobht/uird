@@ -1759,34 +1759,70 @@ mount_data_source() {
 }
 
 # copy files from UIRD to system
+# or download file to system
 # $1 - union dir
+
 syscp() {
+	[ "$SECLEVEL" -gt 2 ] && return
 	debug_log "syscp" "$*"
 	echo_green_star
 	echolog "$SETUP_SYSCP"
-	local SYSCP FILEFROM FILETO FILEFROMTO UNION
+	local SYSCP FILEFROM FILETO FILEFROM TARGET_PATH
+
 	for NUMPAR in $(getpar $UIRD_SYSCP); do
 		FILEFROM=$(getpar $UIRD_SYSCP $NUMPAR 1)
 		FILETO=$(getpar $UIRD_SYSCP $NUMPAR 2)
-		mkdir -p ${1}${FILETO}
+		local TARGET_PATH="${1}${FILETO}"
+
 		echo_blue_star
-		echolog "${FILEFROM} -->  ${FILETO}"
-		if  echo "$FILEFROM" | grep -Eiq ^".*tps?://" ; then
-			# URL - try to download
+		echolog "${FILEFROM} --> ${FILETO}"
+
+		# Determine download method upfront
+		local DOWNLOAD_CMD=""
+		if echo "$FILEFROM" | grep -Eiq ^".*tps?://"; then
 			init_ifcfg
 			if command -v aria2c >/dev/null 2>&1; then
-				echolog "Downloading $FILEFROM using aria2..."
-				aria2c -x 4 -s 4 -d "${1}${FILETO}" -o "$(basename "$FILEFROM")" "$FILEFROM" || \
-				echolog "uird.syscp: Failed to download with aria2c"
+				DOWNLOAD_CMD="aria2c"
 			elif command -v wget >/dev/null 2>&1; then
-				echolog "Downloading $FILEFROM using wget..."
-				wget -q -O "${1}${FILETO}/$(basename "$FILEFROM")" "$FILEFROM" || \
-				echolog "uird.syscp: Failed to download with wget"
+				DOWNLOAD_CMD="wget"
 			else
 				echolog "uird.syscp: Error. Neither wget nor aria2c found. Cannot download the file."
+				continue
+			fi
+		fi
+
+		if [ -d "$TARGET_PATH" ]; then
+			# Target is a directory
+			if [ -n "$DOWNLOAD_CMD" ]; then
+				# URL download to directory
+				if [ "$DOWNLOAD_CMD" = "aria2c" ]; then
+					aria2c -x 4 -s 4 -d "$TARGET_PATH" -o "$(basename "$FILEFROM")" "$FILEFROM" || \
+					echolog "uird.syscp: Failed to download with aria2c"
+				else
+					wget -q -O "$TARGET_PATH/$(basename "$FILEFROM")" "$FILEFROM" || \
+					echolog "uird.syscp: Failed to download with wget"
+				fi
+			else
+				# Local file copy to directory
+				cp -fa "$FILEFROM" "$TARGET_PATH/" || echolog "uird.syscp: Failed!"
 			fi
 		else
-			cp -fa ${FILEFROM} ${1}${FILETO}/ || echolog "uird.syscp: Failed!"
+			# Target is not a directory (file or doesn't exist)
+			mkdir -p "$(dirname "$TARGET_PATH")"
+
+			if [ -n "$DOWNLOAD_CMD" ]; then
+				# URL download to specific path
+				if [ "$DOWNLOAD_CMD" = "aria2c" ]; then
+					aria2c -x 4 -s 4 -d "$(dirname "$TARGET_PATH")" -o "$(basename "$TARGET_PATH")" "$FILEFROM" || \
+					echolog "uird.syscp: Failed to download with aria2c"
+				else
+					wget -q -O "$TARGET_PATH" "$FILEFROM" || \
+					echolog "uird.syscp: Failed to download with wget"
+				fi
+			else
+				# Local file copy to specific path
+				cp -fa "$FILEFROM" "$TARGET_PATH" || echolog "uird.syscp: Failed!"
+			fi
 		fi
 	done
 }
