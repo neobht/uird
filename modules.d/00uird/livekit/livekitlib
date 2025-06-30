@@ -46,7 +46,10 @@ BIN_LOSETUP=/sbin/losetup.real
 
 FSCHECKED=""
 MOUNTBINDS=""
-LOGFILE=/var/log/uird.dbg.log
+export LOGFILE=/var/log/uird.dbg.log
+
+# fix for long cmdline for util-linux mount command
+export LIBMOUNT_FORCE_MOUNT2=always
 
 f_gettext() {
 	local TEXT='' STR
