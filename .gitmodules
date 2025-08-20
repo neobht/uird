@@ -1,7 +1,7 @@
-[submodule "dracut"]
-	path = dracut
-  url = https://github.com/dracutdevs/dracut.git
 [submodule "busybox"]
 	path = busybox
-	url = https://github.com/mirror/busybox
+	url = git@github.com:mirror/busybox
 
+[submodule "dracut-ng"]
+	path = dracut-ng
+	url = git@github.com:dracut-ng/dracut-ng.git

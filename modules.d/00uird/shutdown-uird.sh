@@ -22,8 +22,8 @@ log='no'
 DEVNULL=''
 DEFSQFSOPT="-b 512K -comp lz4"
 ACTION=$(ps | grep -m1 shutdown | sed 's:.*/shutdown ::' | cut -f1 -d " ") # reboot or halt
-uptime=$(($(cut -f1 -d "." /proc/uptime) / 60))
-[ "$uptime" -lt 2 ] && lowuptime=yes
+uptime=$(cut -f1 -d "." /proc/uptime)
+[ "$uptime" -lt 30 ] && lowuptime=yes
 
 red='\033[0;31m'
 green='\033[0;32m'
@@ -125,11 +125,11 @@ banner() {
 		printf "%*s\n" $[$(("$TERMLEN" + "$len"))/2] "$a"
 
 	done
+	echo -e $black
 	for a in $(seq 70); do
 		echo ''
 		sleep $t
 	done
-	echo -e $black
 }
 
 rebuild() {

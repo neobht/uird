@@ -1,0 +1,75 @@
+#!/bin/bash 
+### Add, replace, remove files from UIRD
+### $0 UIRD.cpio.xz                       - interactive mode
+### $0 UIRD.cpio.xz myfile::/usr/bin/file - add or replace /usr/bin/file in UIRD by myfile
+### $0 UIRD.cpio.xz ::/usr/bin/file       - remove /usr/bin/file
+### $0 UIRD.cpio.xz ::/usr/bin/file myfile::/usr/bin/file - more than one actions
+
+unset UIRD
+unset INTERACTIVE
+cmdline="$@"
+
+echo_exit() {
+        echo -e "$1"  
+        echo "exitcode: $2"
+        exit $2 
+}
+
+run (){
+    echo "$@"
+    $@
+}
+
+[ "$1" ] || cat $0 |egrep '^### '
+[ "$1" ] || exit
+[ -f "$1" ] || echo_exit "$1 not a filem must be uird" ${LINENO}
+UIRD="$(realpath $1)"
+shift
+[ "$1" ] || INTERACTIVE='yes'
+
+TMPD=$(mktemp -d)
+trap "rm -rf $TMPD" EXIT
+pushd $TMPD >/dev/null
+xz -dc $UIRD  | cpio -i -d -H newc --no-absolute-filenames
+popd >/dev/null
+
+NEWUIRD=${UIRD}.$(date +%M%S)
+
+if [ "$INTERACTIVE" ] ; then 
+    echo -e "\n\t$UIRD 
+unpacket to: 
+\t$TMPD
+modify and push ENTER to pack it to: 
+\t$NEWUIRD
+"
+    read qqq
+else
+    while [ $1 ] ; do
+        IF=$(realpath $(echo $1 |cut -f1 -d ':') 2>/dev/null)
+        OF=$(echo $1 |cut -f3 -d ':')
+        if [ "$IF" ] ; then
+            mkdir -p "${TMPD}/$(dirname $OF)"
+            if [ -d "$IF" ] ; then
+                run cp -fax "$IF" ${TMPD}${OF}/
+            elif [ -f "$IF" ] ; then
+                run cp -fp "$IF" ${TMPD}${OF}
+            fi
+        else
+            if [ -d "$OF" ] ; then
+                run rm -rf ${TMPD}${OF}
+            elif [ -f "$OF" ] ; then
+                run rm -f ${TMPD}${OF}
+            fi
+        fi
+        shift
+        unset IF OF
+    done
+fi
+
+echo "Modified: $(date -R)" >> ${TMPD}/uird_version
+echo "$0 $cmdline" >> ${TMPD}/uird_version
+
+pushd $TMPD >/dev/null
+find . |cpio -o -H newc |xz --check=crc32 --x86 --lzma2 > "$NEWUIRD"
+popd >/dev/null
+echo "$NEWUIRD"

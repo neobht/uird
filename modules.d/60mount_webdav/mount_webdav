@@ -1,0 +1,37 @@
+# $1 server
+# $2 mount point
+# $3 file with parameners
+mount_webdav() {
+  local LOGIN='' PASS='' SERVER PROT='' MNT_OPTS=''
+  MNT_OPTS='ro'
+  PROT='https'
+  PARSED=$(echo $1 | tail -n1 | sed 's#.*webdav://\(.*\):\(.*\)@\(.*\)#\1\n\2\n\3#')
+  LOGIN=$(echo "$PARSED" | sed -n '1p')
+  PASS=$(echo "$PARSED" | sed -n '2p')
+  SERVER=$(echo "$PARSED" | sed -n '3p')
+  if [ "$3" ]; then
+    for str in $(sed -n '2,$p' $3); do
+      local | grep -q "$(echo $str | cut -f1 -d=)=" && eval $str
+    done
+  fi
+  mkdir -p $2 1>&2
+  mkdir -p ${SYSMNT}/davfs_cache 1>&2
+  mkdir -p /etc/davfs2 1>&2
+  echo "$2 $LOGIN $PASS" >/etc/davfs2/secrets
+  chmod 600 /etc/davfs2/secrets
+  cat <<EOF >/etc/davfs2/davfs2.conf
+dav_user        root
+dav_group       root
+buf_size        128               # KiByte
+ask_auth        1
+cache_dir       ${SYSMNT}/davfs_cache
+cache_size      100                # MiByte
+EOF
+  sleep 1
+  yes | mount.davfs ${PROT}://${SERVER} $2 1>&2
+  sleep 10
+  echo $2
+  #elif echo -e "${LOGIN}\n${PASS}\ny\n" |mount.davfs   ${PROT}://$(dirname ${SERVER}) $2 -o ${MNT_OPTS//+/,} 1>&2; then
+}
+
+init_ifcfg 1>&2

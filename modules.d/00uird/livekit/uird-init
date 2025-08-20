@@ -6,11 +6,11 @@
 
 # getty -t 100 -n -l /bin/autologin 9600 tty11 linux &
 
+# getty -t 100 -n -l /bin/autologin 9600 tty11 linux &
 [ -f /etc/initvars ] && . /etc/initvars
 [ "$SYSMNT" ] && MEMORY=$SYSMNT || MEMORY=/memory
 if [ -f /secure ]; then
 	SECLEVEL=$(cat /secure)
-	echo "SECLEVEL=$SECLEVEL" >>/etc/initvars
 else
 	SECLEVEL=0
 fi
@@ -26,11 +26,21 @@ CMDLINE_LANG=$(echo -n " " | cat - /proc/cmdline 2>/dev/null | tr -s ";" "," | g
 export LANG=$LANG
 export LOCALE=$LANG
 
+# main lib
 . /livekitlib
-setfontkeys
 
+echo "SECLEVEL=$SECLEVEL" | update_initvars
+
+# additional mount libs
+if ls -1 / |grep -q '^mount_' ; then
+	for lib in /mount_* ; do
+		source $lib
+	done
+fi
+
+setfontkeys
 #Messages
-HEADER_START=$($GETTEXT "Starting UIRD init <http://magos-linux.ru>")
+HEADER_START=$($GETTEXT "Starting UIRD")
 HEADER_END=$($GETTEXT "UIRD init is finished, starting")
 MNT_REFRESH=$($GETTEXT "Updating directory /mnt")
 HELP_SYSTEM=$($GETTEXT "UIRD help system")
@@ -50,6 +60,10 @@ LAYER_HOMES=$MEMORY/layer-homes
 LAYER_MOUNTS=$MEMORY/layer-mounts
 MOUNTDIR=$LAYER_BASE
 
+header "${HEADER_START}!"
+echo "<http://magos-linux.ru>"
+cat /uird_version
+
 echo "0" >/proc/sys/kernel/printk
 
 debug_start
@@ -57,21 +71,13 @@ debug_shell
 
 [ -d /lib/modules/"$(uname -r)" ] || [ -d /lib64/modules/"$(uname -r)" ] || (echolog "$NO_MODULES" && exit 1)
 
-debug_shell
-
 init_devs
 debug_shell
-
 mkdir -p $MEMORY /tmp
-
 cfg_parser_pre
 old_pars_compat
 short_pars_compat
 BREAKSTEP="$(getpar $UIRD_BREAK 1 1)"
-
-header $HEADER_START
-header "[ $(cat /uird_version) $LANG]"
-
 # print help
 if cat /tmp/basecfg | grep -q help; then
 	plymouth quit
@@ -110,26 +116,21 @@ if cat /tmp/basecfg | grep -q help; then
 	shell_cmd "help"
 fi
 debug_shell
-
 #get livekitname
 [ -z $LIVEKITNAME ] && LIVEKITNAME=$(basename $BASECFG)
-sed -i "s:LIVEKITNAME.*:LIVEKITNAME=$LIVEKITNAME:" /etc/initvars
-
+echo "LIVEKITNAME=$LIVEKITNAME" | update_initvars
 #Waits partitions initialization. It need for  cardreaders with some empty slots
 SCANTIMES=$(getpar scantimeout 1 1 | sed -r 's/[^0-9]*([0-9]+).*/\1/')
-[ -z "SCANTIMES" ] && "SCANTIMES"=10
+[ -z "$SCANTIMES" ] && SCANTIMES=10
 while [ "$(cat /proc/partitions | tail -n1 | awk '{print $1}')0" -le 10 ]; do
 	sleep 0.3
 	SCANTIMES=$(($SCANTIMES - 1))
 	[ "$SCANTIMES" -lt '1' ] && break
 done
-
 #start uird.scan
 uird_scan
-
 # start quickshell
 start_quickshell
-debug_shell
 
 # Resume from swsuspend
 resume_from_suspend
@@ -219,8 +220,6 @@ debug_shell
 
 #echo_green_star
 #echolog "Обновление файла /etc/fstab"
-#touch $UNION/etc/fstab >/dev/null
-#fstab_update $UNION
 echo_green_star
 echolog $MNT_REFRESH
 rmdir $UNION/mnt/* 2>/dev/null

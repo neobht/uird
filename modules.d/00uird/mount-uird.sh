@@ -5,15 +5,10 @@
 
 type getarg >/dev/null 2>&1 || . /lib/dracut-lib.sh
 
-mount_root() {
 
-	#    /usr/bin/busybox --install
+if ! getargbool 0 nouird; then
+    mount_root() {
 	. /uird-init
-
-}
-
-mount_root
-
-#if [ -n "$root" -a -z "${root%%uird:*}" ]; then
-#    mount_root
-#fi
+    }
+    mount_root
+fi

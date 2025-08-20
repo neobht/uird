@@ -33,7 +33,6 @@ mount_cycle() {
 			rmdir $DIR 2>/dev/null
 		)
 	done
-
 }
 
 find_markers() {

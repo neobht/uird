@@ -21,10 +21,10 @@ uird.mode=machines                  - включение режима сохра
                                     и создает файл /.savetomodule с имененм модуля внутри.
 
 uird.mode=toxzm                     - режим сохранения в модуль полностью реализованный в uird.
-									Это альтернатива machines и сохранению в модуль, которым 
-									требовались скрипты в системе (80-savetomodule в MagOS). 
-									Режим полностью перекрывает возможности как machines так и 
-									сохранения в один модуль.
+                                    Это альтернатива machines и сохранению в модуль, которым 
+                                    требовались скрипты в системе (80-savetomodule в MagOS). 
+                                    Режим полностью перекрывает возможности как machines так и 
+                                    сохранения в один модуль.
 
 
 uird.mode=toxzm
@@ -141,14 +141,14 @@ ADDFILTER1='.wh.*'
 Такой режим также позволяет совмещать монтируемые модули и сохранение теней.
 
 XZM0='system.xzm'
-MODE0=copy                
+MODE0=copy
 REBUILD0=yes
 ADDFILTER0=''
 DROPFILTER0='/home'
 MAXCOPYSIZE='50'
 
 XZMh=home.xzm 
-MODEh=mount                
+MODEh=mount
 REBUILDh=yes
 ADDFILTERh='/home'
 DROPFILTERh=''

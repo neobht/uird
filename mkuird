@@ -22,7 +22,7 @@ print(crypt.crypt('"$1"', '\$6\${}\$'.format(randomsalt)))"
 HLP() {
 echo "$(basename $0) - script for build UIRD
 USAGE: 
-	$(basename $0) <internal config file name> <parameters>
+    $(basename $0) <internal config file name> <parameters>
 PARAMETERS:
     \"-h | --help\" - this help 
     \"-s | --show\" - show dracut cmdline, but not run dracut
@@ -32,7 +32,8 @@ PARAMETERS:
     \"-n | --name\"  - uird name
     \"-L | --logdir\" - directory for logs
     \"-k | --kernel\" - kernel name, to build uird for it
-    \"-m | --kmodpath\" - kernel modules dir path (/lib/modules) 
+    \"-m | --kmodpath\" - kernel modules dir path (/lib/modules)
+    \"-d | --dracutsource\" - dracut source dir path (./dracut-ng)
     \"-f | --force\" - start system_dracut.sh automaticaly (need only with OS dracut) 
     \"--kmod\" - build uird with kernelmodules only
     \"--addon\" - build uird with addon only (see mkuird.cfg, ExtraDM line
@@ -70,6 +71,7 @@ until [ -z $1 ] ; do
     "--secure" ) shift 
                  SECLEVEL="$1" ;
                  SECURE="-i secure /" ;;
+    "-d" | "--dracutsource" ) shift; DRACUTDIR="$(realpath $1)";;
     "-"*[A-Za-z]*) echo "$(basename "$0"): invalid option -- '$(echo $1 | tr -d '-')'" >&2; exit 1;;
     *)  CFG="$1";;
   esac
@@ -80,15 +82,18 @@ date > ${LOGD}/not_found.log
 . $CONFIG
 
 WORKDIR="$(realpath $WORKDIR)"
+
 LOGD="$(realpath $LOGD)"
 OUTD="$(realpath $OUTD)"
 mkdir -p "$LOGD" "$OUTD"
+[ "$DRACUTDIR" ] || DRACUTDIR="${WORKDIR}/dracut-ng"
 [ "$BINBUSYBOX" ] || BINBUSYBOX="${WORKDIR}/busybox/busybox"
-[ "$DRACUTMODDIR" ] || DRACUTMODDIR="${WORKDIR}/dracut/modules.d/"
+[ "$DRACUTMODDIR" ] || DRACUTMODDIR="$DRACUTDIR/modules.d/"
 echo "
 CONFIG=$CONFIG
 WORKDIR=$WORKDIR
 BINBUSYBOX=$BINBUSYBOX
+DRACUTDIR=$DRACUTDIR
 DRACUTMODDIR=$DRACUTMODDIR
 PASSWD=$PASSWD
 SECLEVEL=$SECLEVEL
@@ -101,20 +106,20 @@ LOGD=$LOGD
 "
 
 if ! [ -x "$BINBUSYBOX" ] ; then
-	echo "Busybox binary not found"
-	exit 1
+    echo "Busybox binary not found"
+    exit 1
 else 
-	export BINBUSYBOX
+    export BINBUSYBOX
 fi
 
 [ -d  $(realpath ${KMODPATH}/$KERNEL 2>/dev/null) ] && ln -s $(realpath ${KMODPATH}/$KERNEL) /lib/modules/$KERNEL
 if ! [ -d /lib/modules/$KERNEL -o -L /lib/modules/$KERNEL  ] ; then
-	echo "Kernel modules for $KERNEL were not found"
-	exit 1
+    echo "Kernel modules for $KERNEL were not found"
+    exit 1
 fi
 
 if ! depmod -A "$KERNEL" ; then
-	echo  "depmod error..."
+    echo  "depmod error..."
 fi
 
 if [ -f /lib/modules/$KERNEL/build/.config ] ;then
@@ -124,41 +129,41 @@ elif [ -f "/boot/config-$KERNEL" ] ; then
 fi
 
 if [ $PASSWD ] ; then
-	hash=$(getHash "$PASSWD")
-	[ -z "$hash" ] && exit ${LINENO}
-	sed -i /^root:/d ${WORKDIR}/secure/etc/shadow
-	echo "root:$hash:16704:0:99999:7:::" >> ${WORKDIR}/secure/etc/shadow
-	sed -i s/root:[!]*:/root:x:/ ${WORKDIR}/secure/etc/passwd
+    hash=$(getHash "$PASSWD")
+    [ -z "$hash" ] && exit ${LINENO}
+    sed -i /^root:/d ${WORKDIR}/secure/etc/shadow
+    echo "root:$hash:16704:0:99999:7:::" >> ${WORKDIR}/secure/etc/shadow
+    sed -i s/root:[!]*:/root:x:/ ${WORKDIR}/secure/etc/passwd
 fi
 
 if [ "$SECURE" ] ; then
-	if [ "$SECLEVEL" ] ; then
-		echo "$SECLEVEL" > ${WORKDIR}/secure/secure
-	else
-		echo '0' > ${WORKDIR}/secure/secure
-	fi
+    if [ "$SECLEVEL" ] ; then
+        echo "$SECLEVEL" > ${WORKDIR}/secure/secure
+    else
+        echo '0' > ${WORKDIR}/secure/secure
+    fi
 fi
 
 if [ $KERNELCFG ] ; then
- 	KRNAUFS=$(grep -E 'CONFIG_AUFS.*=[ym]' $KERNELCFG)
-	KRNSQFS=$(grep -E 'CONFIG_SQUASHFS.*=[ym]' $KERNELCFG)
-	if [ $(echo "$KRNAUFS" |wc -l) -eq 1 ] ; then
-	    echo "$KERNEL built with no AUFS, continue?" 
-	    echo "(ENTER to continue or ctrl+c to abort)"
-	    read qqq
-	fi
-	echo -e "\n${KRNAUFS}\n\n${KRNSQFS}\n"
+    KRNAUFS=$(grep -E 'CONFIG_AUFS.*=[ym]' $KERNELCFG)
+    KRNSQFS=$(grep -E 'CONFIG_SQUASHFS.*=[ym]' $KERNELCFG)
+    if [ $(echo "$KRNAUFS" |wc -l) -eq 1 ] ; then
+        echo "$KERNEL built with no AUFS, continue?" 
+        echo "(ENTER to continue or ctrl+c to abort)"
+        read qqq
+    fi
+    echo -e "\n${KRNAUFS}\n\n${KRNSQFS}\n"
 
 else
-	echo "Kernel config for $KERNEL not found" 
+    echo "Kernel config for $KERNEL not found" 
 fi
 
 EXCLUDE=$(echo "$EXCLUDE" |sed "s/,/|/g")
 OMIT=$(echo "$EXCLUDE" |sed "s/|/ /g")
 
 if ! [ -f $WORKDIR/configs/uird_configs/$CFG ]; then
-	echo "$WORKDIR/configs/uird_configs/$CFG is not exist"
-	exit 3
+    echo "$WORKDIR/configs/uird_configs/$CFG is not exist"
+    exit 3
 fi
 
 
@@ -173,20 +178,20 @@ echo "Not found: $1 - $2" >> ${LOGD}/not_found.log
 testMOd () {
 mod=$2 ; type=$1 
 if [ "$type" == "KM" -o "$type" == "FS" ] ;then
-		if echo $mod | grep -E -q "^=" ; then 
-			return 0 
-		elif /sbin/modinfo $mod -k $KERNEL -n 2>/dev/null |grep -q $KERNEL >/dev/null 2>&1 ; then
-			return 0
-		elif for  a in $BUILTIN;do echo $a  ; done |grep -q $mod ; then
-			echo "Built in kernel: $type - $mod"
-			return 1
-		fi
+        if echo $mod | grep -E -q "^=" ; then 
+            return 0 
+        elif /sbin/modinfo $mod -k $KERNEL -n 2>/dev/null |grep -q $KERNEL >/dev/null 2>&1 ; then
+            return 0
+        elif for  a in $BUILTIN;do echo $a  ; done |grep -q $mod ; then
+            echo "Built in kernel: $type - $mod"
+            return 1
+        fi
 elif [ "$type" == "BIN" ] ;then
-		which $mod >/dev/null 2>&1 && 	return 0
+        which $mod >/dev/null 2>&1 &&   return 0
 elif [ "$type" == "DM" ] ;then
-		ls -1 ${DRACUTMODDIR}/ |grep -E -q "..${mod}$" && return 0
+        ls -1 ${DRACUTMODDIR}/ |grep -E -q "..${mod}$" && return 0
 elif [ $type == "INST" ] ;then
-		[ -f "$mod" ] && return 0
+        [ -f "$mod" ] && return 0
 fi
 notfound $type  $mod 
 return 1
@@ -196,17 +201,17 @@ parser () {
 PREFIX=$1
 for item in $(cat $CONFIG |grep ^$1 |awk -F= '{print $1}') ; do
 if echo "$item" | grep -E -q "$EXCLUDE" ; then 
-	echo "excluded all: $item"
-	continue
+    echo "excluded all: $item"
+    continue
 fi
 for   mod in ${!item} ; do
-	if echo "$mod" | grep -E -q  "$EXCLUDE" ; then 
-		echo "excluded: ${PREFIX} - $mod"
-		continue
-	fi
-	if testMOd $PREFIX $mod ; then 
-			eval $PREFIX="\" \${$PREFIX} $mod \"" 
-	fi
+    if echo "$mod" | grep -E -q  "$EXCLUDE" ; then 
+        echo "excluded: ${PREFIX} - $mod"
+        continue
+    fi
+    if testMOd $PREFIX $mod ; then 
+            eval $PREFIX="\" \${$PREFIX} $mod \"" 
+    fi
 done
 done
 }
@@ -214,62 +219,62 @@ done
 BUILTIN=$(cat /lib/modules/$KERNEL/modules.builtin |while read a ; do basename $a ; done |sed 's/.ko$//')
 
 cd ${WORKDIR} 
-if ! [ -x ./dracut/dracut.sh ] ; then
+if ! [ -x ${DRACUTDIR}/dracut.sh ] ; then
     [ "$FORCE" ] && ./system_dracut.sh ${WORKDIR}
-    if ! [ -x ./dracut/dracut.sh ] ; then
+    if ! [ -x ${DRACUTDIR}/dracut.sh ] ; then
         echo "Warninng! ${WORKDIR}/dracut directory - not found"
         echo "Firs time you must run:" 
-        echo "	${WORKDIR}/make_dracut.sh	- to use git darcut version" 
+        echo "  ${WORKDIR}/make_dracut.sh   - to use git darcut version" 
         echo "or"
-        echo "	${WORKDIR}/system_dracut.sh	- to use system version"
+        echo "  ${WORKDIR}/system_dracut.sh - to use system version"
         echo -e "\n$(basename $0) can solve the problem automatically (add -f to $(basename $0) cmdline)"
         cd $RUNPWD
-	exit
+        exit
     fi
 fi
 
 if [ "$BUILD" == "kmod" ] ; then
-	parser KM ; parser FS ; parser DM
-	echo "Making UIRD --kmod  $(realpath ./dracut/dracut.sh)..."
-	uirdfile=${OUTD}/uird.kmod.cpio.xz
-	./dracut/dracut.sh -l -N -f -m "$DM_base" \
-	-d "$KM" \
-	--filesystems "$FS" \
-	--kernel-only \
-	--conf ./dracut.conf -v -M $uirdfile  $KERNEL >${LOGD}/dracut_kmod.log 2>&1
+    parser KM ; parser FS ; parser DM
+    echo "Making UIRD --kmod  $(realpath $DRACUTDIR/dracut.sh)..."
+    uirdfile=${OUTD}/uird.kmod.cpio.xz
+    ${DRACUTDIR}/dracut.sh -l -N -f -m "$DM_base" \
+    -d "$KM" \
+    --filesystems "$FS" \
+    --kernel-only \
+    --conf ./dracut.conf -v -M $uirdfile  $KERNEL >${LOGD}/dracut_kmod.log 2>&1
 elif [ "$BUILD" == "addon" ] ; then
-	echo "Making UIRD --addon, using $(realpath ./dracut/dracut.sh)..."
-	uirdfile=${OUTD}/uird.addon.cpio.xz
-	./dracut/dracut.sh -l -N -f -m "$ExtraDM" \
-	--no-kernel \
-	--conf ./dracut.conf -v -M $uirdfile  $KERNEL >${LOGD}/dracut_addon.log 2>&1
+    echo "Making UIRD --addon, using $(realpath ./dracut/dracut.sh)..."
+    uirdfile=${OUTD}/uird.addon.cpio.xz
+    ${DRACUTDIR}/dracut.sh -l -N -f -m "$ExtraDM" \
+    --no-kernel \
+    --conf ./dracut.conf -v -M $uirdfile  $KERNEL >${LOGD}/dracut_addon.log 2>&1
 else
-	parser KM ; parser FS ; parser DM ; parser BIN ; parser INST
-	UIRD_BINS="$BIN"
-	export UIRD_BINS
-	echo "Making UIRD (${CFG}) using $(realpath ./dracut/dracut.sh)..."
-	uirdfile="${OUTD}/uird.$CFG.cpio.xz"
-	echo "-l -N --strip -f"		> ${LOGD}/dracut_run 
-	echo "--conf ./dracut.conf"	>> ${LOGD}/dracut_run
-	echo "-m \"$DM\""		>> ${LOGD}/dracut_run	
-	echo "-d \"$KM\""		>> ${LOGD}/dracut_run
-	echo "-I \"$INST\""		>> ${LOGD}/dracut_run
-	echo "--filesystems \"$FS\""	>> ${LOGD}/dracut_run
-	echo "--omit-drivers \"$OMIT\""	>> ${LOGD}/dracut_run
-	echo "-i initrd /"		>> ${LOGD}/dracut_run
-	echo "-i configs /"		>> ${LOGD}/dracut_run
-	echo "-i keys /"		>> ${LOGD}/dracut_run
-	echo "$ADDLOCALES"		>> ${LOGD}/dracut_run
-	echo "$SECURE"          >> ${LOGD}/dracut_run
-	echo "--kernel-cmdline \"uird.basecfg=/uird_configs/$CFG\""	>> ${LOGD}/dracut_run
-	echo "-v -M $uirdfile $KERNEL"	>> ${LOGD}/dracut_run
-	sed -i 's/"\ */"/g' ${LOGD}/dracut_run
-	sed -i '/^[[:space:]]*$/d'  ${LOGD}/dracut_run 
-	if [ $SHOW ] ; then
-		cat ${LOGD}/dracut_run
-	else
-		cat  ${LOGD}/dracut_run|xargs ./dracut/dracut.sh  >${LOGD}/dracut_uird.log 2>&1
-	fi
+    parser KM ; parser FS ; parser DM ; parser BIN ; parser INST
+    UIRD_BINS="$BIN"
+    export UIRD_BINS
+    echo "Making UIRD (${CFG}) using $(realpath ${DRACUTDIR}/dracut.sh)..."
+    uirdfile="${OUTD}/uird.$CFG.cpio.xz"
+    echo "-l -N --strip -f"     > ${LOGD}/dracut_run 
+    echo "--conf ./dracut.conf" >> ${LOGD}/dracut_run
+    echo "-m \"$DM\""       >> ${LOGD}/dracut_run   
+    echo "-d \"$KM\""       >> ${LOGD}/dracut_run
+    echo "-I \"$INST\""     >> ${LOGD}/dracut_run
+    echo "--filesystems \"$FS\""    >> ${LOGD}/dracut_run
+    echo "--omit-drivers \"$OMIT\"" >> ${LOGD}/dracut_run
+    echo "-i initrd /"      >> ${LOGD}/dracut_run
+    echo "-i configs /"     >> ${LOGD}/dracut_run
+    echo "-i keys /"        >> ${LOGD}/dracut_run
+    echo "$ADDLOCALES"      >> ${LOGD}/dracut_run
+    echo "$SECURE"          >> ${LOGD}/dracut_run
+    echo "--kernel-cmdline \"uird.basecfg=/uird_configs/$CFG\"" >> ${LOGD}/dracut_run
+    echo "-v -M $uirdfile $KERNEL"  >> ${LOGD}/dracut_run
+    sed -i 's/"\ */"/g' ${LOGD}/dracut_run
+    sed -i '/^[[:space:]]*$/d'  ${LOGD}/dracut_run 
+    if [ $SHOW ] ; then
+        cat ${LOGD}/dracut_run
+    else
+        cat  ${LOGD}/dracut_run|xargs ${DRACUTDIR}/dracut.sh  >${LOGD}/dracut_uird.log 2>&1
+    fi
 fi
 cd $RUNPWD
 [ "$KMODPATH" -a -L "/lib/modules/$KERNEL"  ]  && rm /lib/modules/$KERNEL
