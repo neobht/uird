@@ -1,0 +1,27 @@
+From 87441fe5f5ec99dcfffdb5935139ad8c55839066 Mon Sep 17 00:00:00 2001
+From: betcher <a.betkher@rosa.ru>
+Date: Thu, 9 Oct 2025 23:13:15 +0700
+Subject: [PATCH] Hide udevadm warning message
+
+---
+ modules.d/99base/init.sh | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/modules.d/99base/init.sh b/modules.d/99base/init.sh
+index 74d16237..3210bacf 100755
+--- a/modules.d/99base/init.sh
++++ b/modules.d/99base/init.sh
+@@ -300,8 +300,8 @@ done
+     emergency_shell
+ }
+ 
+-udevadm control --exit
+-udevadm info --cleanup-db
++udevadm control --exit 2>/dev/null
++udevadm info --cleanup-db 2>/dev/null
+ 
+ debug_off # Turn off debugging for this section
+ 
+-- 
+2.51.0
+
