@@ -67,7 +67,14 @@ install() {
 	for _m in $_filter; do
 		ln_r /bin/kmod "/sbin/$_m"
 	done
-	echo "version: $(date +%Y%m%d), built for kernel: $kernel" >$initdir/uird_version
+	echo     "Build: $(date +%Y%m%d), kernel:  $kernel" >$initdir/uird_version
+	if git rev-parse --git-dir > /dev/null 2>&1; then
+	    hash="$(git log -1 --format='%h')"
+	    date="$(git log -1 --format='%cd' --date=short | tr -d -)"
+	    branch="$(git rev-parse --abbrev-ref HEAD)"
+	    origin="$(git remote get-url origin)"
+	    echo "Git:   ${date}, version: ${branch}@${hash} <${origin}>" >> $initdir/uird_version
+	fi
 	inst_hook cmdline 95 "$moddir/parse-root-uird.sh"
 	inst_hook mount 99 "$moddir/mount-uird.sh"
 	inst_hook shutdown 99 "$moddir/shutdown-uird.sh"
