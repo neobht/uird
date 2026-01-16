@@ -290,10 +290,11 @@ debug_shell() {
 	    echo "===================== DEBUG SHELL MODE ======================="
 	    echo ": Debugging started. Here is the root shell for you."
 	    echo ": Type your desired commands or hit Ctrl+D to continue booting."
-	    setsid sh -c 'exec sh < $VT > $VT 2>&1'
+	    setsid sh -c "exec sh < $VT > $VT 2>&1"
 	    echo
 	fi
 }
+
 # start shell
 # if $1==help then start shell
 shell_cmd() {
