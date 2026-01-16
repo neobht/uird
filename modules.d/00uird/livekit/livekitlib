@@ -286,7 +286,7 @@ debug_shell() {
 	if [ "$DEBUG_IS_ENABLED" ]; then
 	    VT="/dev/tty1"
 	    getpar console && VT="/dev/$(getpar console 1 1)"
-	    plymouth quit
+	    plymouth --ping >/dev/null 2>&1 && plymouth quit 
 	    echo "===================== DEBUG SHELL MODE ======================="
 	    echo ": Debugging started. Here is the root shell for you."
 	    echo ": Type your desired commands or hit Ctrl+D to continue booting."
