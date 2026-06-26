@@ -207,6 +207,7 @@ if [ "$(getpar $UIRD_MODE 1 1)" == "toxzm" ]; then
 fi
 
 # init aufs/overlay union
+uird_chain "$LAYER_BASE"
 init_union LCHANGES="$CHANGES" LUNION="$UNION" LBASE="$LAYER_BASE" LBUNDLES="$BUNDLES" LCP2RAM="$COPY2RAM" LCACHE="$LAYER_CACHE"
 debug_shell
 

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 1.1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-26 15:47+0700\n"
+"POT-Creation-Date: 2026-06-26 15:23+0700\n"
 "PO-Revision-Date: 2015-10-20 00:00+0700\n"
 "Last-Translator: Anton Goroshkin <neobht@gmail.com>\n"
 "Language-Team: Russian <http://magos-linux.ru>\n"
@@ -162,188 +162,184 @@ msgstr ""
 "[E]rase (стереть все и продолжить) ?"
 
 #: стандартный ввод:110
-msgid "Processing uird.chain"
-msgstr "Обработка uird.chain"
-
-#: стандартный ввод:111
 msgid "uird.chain setting up failed"
 msgstr "Обработка uird.chain завершилась ошибкой"
 
-#: стандартный ввод:112
+#: стандартный ввод:111
 msgid "[S]hutdown, [R]eboot, [C]ontinue ?"
 msgstr ""
 "[S]hutdown (завершить), [R]eboot (перезагрузить), [C]ontinue (продолжить) ? "
 
-#: стандартный ввод:114
+#: стандартный ввод:113
 msgid "Password for encrypted FS:"
 msgstr "Пароль для шифрованной ФС:"
 
-#: стандартный ввод:115
+#: стандартный ввод:114
 msgid "Password for LUKS partition:"
 msgstr "Пароль для раздела LUKS:"
 
-#: стандартный ввод:117
+#: стандартный ввод:116
 msgid "Trying to create"
 msgstr "Пробуем создать"
 
-#: стандартный ввод:118
+#: стандартный ввод:117
 msgid "was not found, create it?"
 msgstr "не найден, создать?"
 
-#: стандартный ввод:119
+#: стандартный ввод:118
 msgid "enter FS type"
 msgstr "введите тип ФС"
 
-#: стандартный ввод:120
+#: стандартный ввод:119
 msgid "enter new image size Mb"
 msgstr "введите размер образа в Mb"
 
-#: стандартный ввод:121
+#: стандартный ввод:120
 msgid "enter password"
 msgstr "введите пароль"
 
-#: стандартный ввод:123
+#: стандартный ввод:122
 msgid "Remounting media for saves..."
 msgstr "Монтируем устройства заново"
 
-#: стандартный ввод:124
+#: стандартный ввод:123
 msgid "Remount complete"
 msgstr "Монтирование завершено"
 
-#: стандартный ввод:125
+#: стандартный ввод:124
 msgid "no such file!"
 msgstr "нет такого файла"
 
-#: стандартный ввод:126
+#: стандартный ввод:125
 msgid "The system is ready to save changes to the"
 msgstr "Система готова для записи изменений в"
 
-#: стандартный ввод:127
+#: стандартный ввод:126
 msgid "Saving changes..."
 msgstr "Сохраняются системные изменния"
 
-#: стандартный ввод:128
+#: стандартный ввод:127
 msgid "Merging old module and session changes, it may take a long time"
 msgstr ""
 "Объединяются предыдуший модуль с текущими изменениями, это может быть не "
 "быстро"
 
-#: стандартный ввод:129
+#: стандартный ввод:128
 msgid "UIRD shutdown started!"
 msgstr "UIRD: Система сохранения в модуль запущена"
 
-#: стандартный ввод:130
+#: стандартный ввод:129
 msgid "Umount"
 msgstr "Размонтирование"
 
-#: стандартный ввод:131
+#: стандартный ввод:130
 msgid "Please enter password for LUKS partition"
 msgstr "Введите пароль для раздела LUKS"
 
-#: стандартный ввод:132
+#: стандартный ввод:131
 msgid "Waiting for"
 msgstr "Ожидаем инициализацию"
 
-#: стандартный ввод:133
+#: стандартный ввод:132
 msgid "Luks setup - error!, try again"
 msgstr "Ошибка подключения раздела LUKS, попробуйте еще раз"
 
-#: стандартный ввод:134
+#: стандартный ввод:133
 msgid "Complete!"
 msgstr "Готово"
 
-#: стандартный ввод:135
+#: стандартный ввод:134
 msgid "Old module exists..."
 msgstr "Предыдущий модуль существует..."
 
-#: стандартный ввод:136
+#: стандартный ввод:135
 msgid "Please wait. Preparing excludes for module"
 msgstr "Готовятся исключения для модуля. Пожалуйста ждите"
 
-#: стандартный ввод:137
+#: стандартный ввод:136
 msgid "Please wait. Saving changes to module"
 msgstr "Изменения сохраняются в модуль. Ждите"
 
-#: стандартный ввод:138
+#: стандартный ввод:137
 msgid "System changes was not saved to"
 msgstr "Не удалось сохранить изменения в"
 
-#: стандартный ввод:139
+#: стандартный ввод:138
 msgid "No such directory:"
 msgstr "Нет такого каталога:"
 
-#: стандартный ввод:140
+#: стандартный ввод:139
 msgid "Remount RO:"
 msgstr "Перемонтируется только для чтения (RO)"
 
-#: стандартный ввод:141
+#: стандартный ввод:140
 msgid "is not crypto swap, [C]ontinue, [A]bort"
 msgstr "не шифрованный swap, форматировать? [C]ontinue, [A]bort"
 
-#: стандартный ввод:2817
+#: стандартный ввод:2814
 msgid "Starting freemedia...."
 msgstr "Отключаются источники (freemedia)..."
 
-#: стандартный ввод:2818
+#: стандартный ввод:2815
 msgid "Media"
 msgstr "Ресурс"
 
-#: стандартный ввод:2819
+#: стандартный ввод:2816
 msgid "is not free"
 msgstr "не удалось отключить"
 
-#: стандартный ввод:2820
+#: стандартный ввод:2817
 msgid "add the udev rules to remount sources"
 msgstr "создаются правила UDEV для повторного монтирования источников"
 
-#: стандартный ввод:2821
+#: стандартный ввод:2818fuz
 msgid "Can't unmount"
 msgstr "Невозможно размонтировать"
 
-#: стандартный ввод:2972
+#: стандартный ввод:2969
 msgid "Starting UIRD"
 msgstr "Запускается UIRD"
 
-#: стандартный ввод:2973
+#: стандартный ввод:2970
 msgid "UIRD init is finished, starting"
 msgstr "UIRD init завершил работу, запускается"
 
-#: стандартный ввод:2974
+#: стандартный ввод:2971
 msgid "Updating directory /mnt"
 msgstr "Обновление директории /mnt"
 
-#: стандартный ввод:2975
+#: стандартный ввод:2972
 msgid "UIRD help system"
 msgstr "Справка по UIRD"
 
-#: стандартный ввод:2976
+#: стандартный ввод:2973
 msgid "No modules found for current kernel"
 msgstr "Модули для текущего ядра не найдены"
 
-#: стандартный ввод:2977
+#: стандартный ввод:2974
 msgid "RAM disk size"
 msgstr "Размер RAM диска"
 
-#: стандартный ввод:3471
+#: стандартный ввод:3468
 msgid "Seting up CHANGES to XZM mode"
 msgstr "Включение режима сохранения в модуль \"toxzm\""
 
-#: стандартный ввод:3472
+#: стандартный ввод:3469
 msgid "File or dir for toxzm mode not found"
 msgstr "Файл или каталог для режима \"toxzm\" не найден"
 
-#: стандартный ввод:3473
+#: стандартный ввод:3470
 msgid "Toxzm  mode disabled!!!"
 msgstr "Режим \"toxzm\" отключен!!!"
 
-#: стандартный ввод:3474
+#: стандартный ввод:3471
 msgid "Parsing"
 msgstr "Разбирается"
 
-#: стандартный ввод:3475
+#: стандартный ввод:3472
 msgid "wrong value - "
 msgstr "неверное значение - "
 
-#: стандартный ввод:3476
+#: стандартный ввод:3473
 msgid "created, trying to setting up CHANGES to XZM mode again"
 msgstr "создан, повторная попытка включения режима \"toxzm\""

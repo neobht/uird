@@ -107,6 +107,10 @@ INITIALIZE=$($GETTEXT "initializing")
 FREE_SPACE_LESS_THEN_CHECK="    $($GETTEXT "Free space less then CHECKSPASE")"
 FREE_SPACE_LESS_THEN_CHECK_ASK="    $($GETTEXT "[S]hutdown, [R]eboot, [C]ontinue, [E]rase-and-continue ?")"
 
+SETUP_UIRD_CHAIN=$($GETTEXT "Processing uird.chain")
+UIRD_CHAIN_ERROR="    "$($GETTEXT "uird.chain setting up failed")
+UIRD_CHAIN_ERROR_ASK="    "$($GETTEXT "[S]hutdown, [R]eboot, [C]ontinue ?")
+
 ENC_PASS=$($GETTEXT "Password for encrypted FS:")
 LUKS_PASS=$($GETTEXT "Password for LUKS partition:")
 
@@ -174,6 +178,7 @@ PART_IS_NOT_CRYPTO_SWAP=" $($GETTEXT "is not crypto swap, [C]ontinue, [A]bort")"
 # uird.silent                - no output
 # uird.hide                  - не перемонтировать $SYSMNT из rootfs initrd в системный rootfs
 # uird.mntlinks              - coздавать ссылки live, livemedia, livedata в /mnt
+# uird.chain                 - использовать список зависимых модулей из указанного модуля для формирования uird.load
 
 [ -f "/uird_configs/uird_aliases" ] && . /uird_configs/uird_aliases
 [ -z $UIRD_BASECFG ] && UIRD_BASECFG=uird.basecfg
@@ -215,6 +220,8 @@ PART_IS_NOT_CRYPTO_SWAP=" $($GETTEXT "is not crypto swap, [C]ontinue, [A]bort")"
 [ -z $UIRD_SILENT ] && UIRD_SILENT=uird.silent
 [ -z $UIRD_HIDE ] && UIRD_HIDE=uird.hide
 [ -z $UIRD_MNTLINKS ] && UIRD_MNTLINKS=uird.mntlinks
+[ -z $UIRD_CHAIN ] && UIRD_CHAIN=uird.chain
+
 
 # =================================================================
 # debug and output functions
@@ -2250,6 +2257,7 @@ find_modules() {
 # $1 = layer directory
 
 list_modules() {
+	local target_module
 	debug_log "list_modules" "$*"
 	local LOAD NOLOAD MODNAME LINE
 	LOAD=$(echo $(getpar $UIRD_LOAD [[:digit:]]) | sed 's/ /|/g')
@@ -2262,6 +2270,77 @@ list_modules() {
 		fi
 	done
 }
+
+# $1 layer to find target module
+uird_chain(){
+	debug_log "uird_chain" "$*"
+	getpar "$UIRD_CHAIN" >/dev/null || return 0
+	echo_green_star
+	echolog "$SETUP_UIRD_CHAIN"
+	set_chain(){
+		echo '.' > /tmp/parameters/uird.load/1
+		target_module=$(list_modules "$1" | grep "$(getpar $UIRD_CHAIN 1 1)")
+
+		if [ -z "$target_module" ] ; then
+			echolog "Cannot find target module: $(getpar $UIRD_CHAIN 1 1)" 1>&2
+			return 1
+		elif [ $(echo "$target_module" | wc -w) -gt 1 ] ; then
+			echolog "More then one target module found using pattern: $(getpar $UIRD_CHAIN 1 1)" 1>&2
+			return 1
+		else
+			chain_files=$(unsquashfs -l "$target_module" | grep '/var/lib/.*/.*/stack.order$' | sed 's/^squashfs-root\///')
+
+			if [ -z "$chain_files" ]; then
+				echolog "No stack.order files found in $target_module" 1>&2
+				return 1
+			fi
+
+			chain_modules=$(for file in $chain_files ; do
+				unsquashfs -cat "$file" "$target_module" 2>/dev/null
+				done | grep -v '^$' | sort -u)
+			
+			if [ -n "$chain_modules" ] ; then
+				rm -f /tmp/parameters/uird.load/*
+				n=1
+				for a in $chain_modules ; do
+					echo "$a" > "/tmp/parameters/uird.load/$n"
+					n=$(( n + 1 ))
+				done
+				for b in $(getpar $UIRD_CHAIN) ; do
+					getpar "$UIRD_CHAIN" "$b" > "/tmp/parameters/uird.load/$n"
+					n=$(( n + 1 ))
+				done
+				return 0
+			else
+				echolog "No modules found in stack.order files" 1>&2
+				return 1
+			fi
+		fi
+	}
+
+	if set_chain "$1" ; then
+		return 0
+	else
+		echolog "$red$UIRD_CHAIN_ERROR$default" 1>&2
+		ANS=$(ask_answer "${UIRD_CHAIN_ERROR}, ${UIRD_CHAIN_ERROR_ASK}")
+		case "$ANS" in
+		"S" | "s")
+			poweroff -f
+			;;
+		"R" | "r")
+			reboot -f
+			;;
+		"C" | "c")
+			return 0
+			;;
+		*)
+			shell_cmd "shell"
+			;;
+		esac
+		return 1
+	fi
+}
+
 
 # $1 copy target dir
 # $2... marker files (dirs), it may be /proc/PID
@@ -2537,7 +2616,8 @@ setup_rootfs() {
 	[ "_$swap" == "_" ] && swap="0"
 	if [ "$FSTYPE" == 'tmpfs' ]; then
 		[ "$SIZE" == 'auto' ] && SIZE="$(expr \( $RAM + $SWAP \) \* 70 \/ $RAM)%"
-		mount -t tmpfs -o "size=${SIZE%%%}%" tmpfs $MEMORY
+		mount -t
+		 tmpfs -o "size=${SIZE%%%}%" tmpfs $MEMORY
 	elif [ "$FSTYPE" == 'zram' ]; then
 		[ $SIZE == 'auto' ] && SIZE=90%
 		modprobe -q zram num_devices=2 2>/dev/null
@@ -2563,37 +2643,67 @@ setup_rootfs() {
 
 }
 
+
 unsquashfs() {
-	local force='' filexzm='' destdir
+	local force='' filexzm='' destdir catfile='' docat=false dolist=false ret=0
 	log "using unsquashfs function, not binary"
 	destdir=$(pwd)
-	for a in "$@"; do
-		[ -f "$a" ] && filexzm="$a"
-	done
-	set -- $(getopt "fd:" "$@")
-	while [ ! -z "$1" ]; do
+
+	while [ $# -gt 0 ]; do
 		case "$1" in
+		-cat)
+			docat=true
+			catfile="$2"
+			shift
+			;;
+		-l)
+			dolist=true
+			;;
 		-f)
 			force="f"
-			shift
 			;;
 		-d)
 			destdir="$2"
-			shift 2
+			shift
 			;;
-		*) break ;;
+		-*)
+			;;
+		*)
+			if [ -f "$1" ]; then
+				filexzm="$1"
+			fi
+			;;
 		esac
+		shift
 	done
-	if ! [ -f $filexzm ]; then
-		echolog " $filexzm -- no such file"
-		return
+	
+	if ! [ -f "$filexzm" ]; then
+		echolog " $filexzm -- no such file" 1>&2
+		return 1
 	fi
+	
 	mkdir -p /tmp/tmpmntdir
 	mount_device "$filexzm" /tmp/tmpmntdir
-	cp -a"$force" /tmp/tmpmntdir/. ${destdir}/
-	[ $? != 0 ] && echolog "ERROR: $0 $@"
-	umount /tmp/tmpmntdir
+
+	if [ $? -ne 0 ]; then
+		echolog "ERROR: failed to mount $filexzm" 1>&2
+		rm -rf /tmp/tmpmntdir
+		return 1
+	fi
+	
+	if [ "$docat" = true ] && [ -n "$catfile" ]; then
+		[ -f "/tmp/tmpmntdir/$catfile" ] && cat "/tmp/tmpmntdir/$catfile"
+	elif [ "$dolist" = true ]; then
+		(cd /tmp/tmpmntdir && find . -type f -o -type d | sed 's/^\./squashfs-root/')
+	else
+		cp -a"$force" /tmp/tmpmntdir/. "${destdir}/"
+		ret=$?
+		[ $ret != 0 ] && echolog "ERROR: $0 $@" 1>&2
+	fi
+	
+	umount /tmp/tmpmntdir 2>/dev/null
 	rm -rf /tmp/tmpmntdir
+	return $ret
 }
 
 ask_answer() {
@@ -2601,6 +2711,7 @@ ask_answer() {
 	if plymouth --ping 2>/dev/null; then
 		ANSWER=$(plymouth ask-question --prompt="$1")
 	else
+		echo "$1" >/dev/console 1>&2
 		read ANSWER
 	fi
 	echo "$ANSWER"
@@ -2611,6 +2722,7 @@ ask_pass() {
 	if plymouth --ping 2>/dev/null; then
 		ANSWER=$(plymouth ask-for-password --prompt="$1")
 	else
+		echo "$1" >/dev/console 1>&2
 		read -s ANSWER
 	fi
 	echo "$ANSWER"
@@ -2650,8 +2762,8 @@ expand_part() {
 # check $1  to false value (no, 0, false, disable)
 # if $1 empty return 0
 check_true() {
-	[ -z "$1" ] && return
-	[ "$1" ] || return
+	[ -z "$1" ] && return 0
+	[ "$1" ] || return 0
 	[ "$1" == 'no' ] && return 1
 	[ "$1" == 'false' ] && return 1
 	[ "$1" == 'disable' ] && return 1

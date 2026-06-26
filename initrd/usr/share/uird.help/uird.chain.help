@@ -1,0 +1,15 @@
+****************************************************************************************************
+uird.chain=   - generator of uird.load based on the list of "parent" modules for the specified module.
+                Other parameters except the first one will be simply added to uird.load.
+                Files with dependency lists should be named stack.order and searched by the mask
+                '/var/lib/.*/.*/stack.order$'.
+                For example /var/lib/dnf2mod/task-plasma6/stack.order
+
+Examples:
+uird.chain=plasma - find module in layer-base containing substring "plasma", write
+                    "plasma" to uird.load, as well as all modules specified in found
+                    dependencies.
+
+uird.scan=basesys,patches,kmod - find module with substring "basesys" in name, write all dependencies
+                    found in the module to uird.load, as well as add basesys, patches, kmod
+****************************************************************************************************
