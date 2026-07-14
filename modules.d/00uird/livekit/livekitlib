@@ -2616,8 +2616,7 @@ setup_rootfs() {
 	[ "_$swap" == "_" ] && swap="0"
 	if [ "$FSTYPE" == 'tmpfs' ]; then
 		[ "$SIZE" == 'auto' ] && SIZE="$(expr \( $RAM + $SWAP \) \* 70 \/ $RAM)%"
-		mount -t
-		 tmpfs -o "size=${SIZE%%%}%" tmpfs $MEMORY
+		mount -t tmpfs -o "size=${SIZE%%%}%" tmpfs $MEMORY
 	elif [ "$FSTYPE" == 'zram' ]; then
 		[ $SIZE == 'auto' ] && SIZE=90%
 		modprobe -q zram num_devices=2 2>/dev/null
