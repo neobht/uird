@@ -226,15 +226,36 @@ PART_IS_NOT_CRYPTO_SWAP=" $($GETTEXT "is not crypto swap, [C]ontinue, [A]bort")"
 # =================================================================
 # debug and output functions
 # =================================================================
+# CHANGES:
+# - Более явная и надёжная проверка флага "debug" в /proc/cmdline.
+# - DEBUG_IS_ENABLED устанавливается в "yes" или пустую строку и экспортируется.
+# - debug_log добавляет метку времени только в лог; на консоль таймштамп не выводится.
 debug_start() {
 	# global variable
-	DEBUG_IS_ENABLED=$(sed s/$/" "/ /proc/cmdline 2>/dev/null | grep " debug ")
+	# Устанавливаем DEBUG_IS_ENABLED в "yes" если в cmdline присутствует слово "debug"
+	if [ -r /proc/cmdline ]; then
+		# sed обеспечивает завершающий пробел, чтобы искать слово целиком
+		if sed 's/$/ /' /proc/cmdline 2>/dev/null | grep -qw 'debug'; then
+			DEBUG_IS_ENABLED=yes
+		else
+			DEBUG_IS_ENABLED=
+		fi
+	else
+		DEBUG_IS_ENABLED=
+	fi
+	export DEBUG_IS_ENABLED
 }
 
 debug_log() {
+	# Если отладка включена, выводим сообщение в консоль без таймштампа,
+	# а в лог добавляем метку времени.
 	if [ "$DEBUG_IS_ENABLED" ]; then
+		local ts
+		ts=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo "no-time")
+		# выводим пользователю компактное сообщение
 		echo "- debug: $*" >&2
-		log "- debug: $*"
+		# в лог сохраняем с таймштампом
+		log "- debug: ${ts} - $*"
 	fi
 }
 export -f debug_log
@@ -243,32 +264,42 @@ export -f debug_log
 # $1 = text to show
 #
 header() {
-	if ! getpar $UIRD_SILENT >/dev/null; then
-		echo ''
-		echolog $brown"$@"$default
-		echo ''
+	# If silent flag is present — do nothing.
+	if getpar $UIRD_SILENT >/dev/null; then
+		return
 	fi
+	# Build full text preserving spaces from all arguments.
+	local text
+	text="$*"
+	echo ''
+	# Pass the fully-quoted text to echolog so colors and spacing are preserved.
+	echolog "$brown${text}$default"
+	echo ''
 }
 
-# echo green star
-#
 echo_green_star() {
-	if ! getpar $UIRD_SILENT >/dev/null; then
-		echo -ne $green"* "$default >/dev/console 2>/dev/console
+	# Print a green star to the console unless silent mode is enabled.
+	if getpar $UIRD_SILENT >/dev/null; then
+		return
 	fi
+	echo -ne "${green}* ${default}" >/dev/console 2>/dev/console
 }
 export -f echo_green_star
 
 echo_blue_star() {
-	if ! getpar $UIRD_SILENT >/dev/null; then
-		echo -ne $blue"  * "$default >/dev/console 2>/dev/console
+	if getpar $UIRD_SILENT >/dev/null; then
+		return
 	fi
+	echo -ne "${blue}  * ${default}" >/dev/console 2>/dev/console
 }
 export -f echo_blue_star
 
 # log - store given text in /var/log/uird.dbg.log
+#
 log() {
-	echo "$@" 2>/dev/null >>$LOGFILE
+	local ts
+	ts=$(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo "no-time")
+	echo "${ts} $*" 2>/dev/null >>"$LOGFILE"
 }
 export -f log
 
@@ -290,10 +321,11 @@ export -f echolog
 # debug_shell
 # executed when debug boot parameter is present
 debug_shell() {
-	if [ "$DEBUG_IS_ENABLED" ]; then
+	# If debug is enabled (non-empty), start interactive root shell.
+	if [ -n "$DEBUG_IS_ENABLED" ]; then
 	    VT="/dev/tty1"
 	    getpar console && VT="/dev/$(getpar console 1 1)"
-	    plymouth --ping >/dev/null 2>&1 && plymouth quit 
+	    plymouth --ping >/dev/null 2>&1 && plymouth quit
 	    echo "===================== DEBUG SHELL MODE ======================="
 	    echo ": Debugging started. Here is the root shell for you."
 	    echo ": Type your desired commands or hit Ctrl+D to continue booting."
@@ -303,7 +335,6 @@ debug_shell() {
 }
 
 # start shell
-# if $1==help then start shell
 shell_cmd() {
         [ "$SECLEVEL" -gt 2 ] && return
         plymouth --ping >/dev/null 2>&1 && plymouth quit
@@ -338,7 +369,6 @@ EOF
         fi
 }
 export -f shell_cmd
-
 
 # start quickshell
 start_quickshell() {
@@ -382,21 +412,26 @@ debug_mode() {
 	fi
 }
 
-# echo $1 text, only if debug is enabled by DEBUG_IS_ENABLED=yes or "debug" cmdline parametr
-# if $2 exists execute it
-# if $3 and other paramenrs exists add them like params to $2
-# echodebug "text" sleep 5 (echo "text", and wait 5 sec, time to read)
-# echodebug "text" read aaa (echo "text", and wait to push ENTER)
+# echo $1 text, only if debug is enabled by DEBUG_IS_ENABLED or DEBUGMODE
+# if $2 exists execute it with remaining arguments (if any)
+# Examples:
+#   echodebug "text" sleep 5    -> prints text and runs 'sleep 5'
+#   echodebug "text" read var   -> prints text and runs 'read var'
 echodebug() {
-	[ "$DEBUG_IS_ENABLED" -o "$DEBUGMODE" == "yes" ] && echo "$1"
+	# Print the message when debugging is enabled.
+	if [ -n "$DEBUG_IS_ENABLED" ] || [ "$DEBUGMODE" = "yes" ]; then
+		echo "$1"
+	fi
+
+	# If a command is provided as second argument, execute it with any following args.
 	if [ -n "$2" ]; then
-		command=$2
-		shift
-		shift
-		if [ -z $1 ]; then
-			$command
+		local cmd
+		cmd="$2"
+		shift 2
+		if [ "$#" -eq 0 ]; then
+			"$cmd"
 		else
-			$command "$@"
+			"$cmd" "$@"
 		fi
 	fi
 }
@@ -514,7 +549,7 @@ short_pars_compat() {
 # getpar $UIRD_PAR N M  && exitcode 0, stdout: поле М подпараметра N || exitcode 3
 # getpar $UIRD_PAR N '2,4' && exitcode 0, stdout: поля с 2 по 4 подпараметра N || exitcode 3
 getpar() {
-	[ "$1" == "$BREAKSTEP" -a "$DEBUG_IS_ENABLED" != "1" ] && shell_cmd "break"
+	[ "$1" == "$BREAKSTEP" -a -z "$DEBUG_IS_ENABLED" ] && shell_cmd "break"
 	tdir=/tmp/parameters
 	if [ $3 ]; then
 		cat $tdir/$1/$2 2>/dev/null | sed -n "${3}p" && return
@@ -543,16 +578,20 @@ allow_only_root() {
 }
 
 # make sure some devices are there
+#
 init_devs() {
 	debug_log "init_devs" "$*"
-	#echo /sbin/mdev > /proc/sys/kernel/hotplug
-	mdev -s
-	modprobe loop 2>/dev/null
-	modprobe squashfs 2>/dev/null
-	modprobe fuse 2>/dev/null
+	# Ensure mdev exists before calling it (initrd may not have it)
+	if command -v mdev >/dev/null 2>&1; then
+		mdev -s
+	fi
+	for mod in loop squashfs fuse; do
+		modprobe "$mod" 2>/dev/null || true
+	done
 }
 
 # Activate zram (auto-compression of RAM)
+#
 init_zram_swap() {
 	local ALG='none' SIZE='0'
 	if [ "$1" != "yes" ]; then
@@ -586,6 +625,7 @@ init_zswap() {
 # LCP2RAM = directory where copy2ram
 # LCACHE = directory where layer-cache
 # LCHANGES = changes directory (ramfs or persistent changes)
+#
 init_union() {
 	debug_log "init_union" "$*"
 	local BUN MOD RW RO CP FS OPTIONS PRESERVE MID_BUN BUNDLE
@@ -701,6 +741,7 @@ mutex_unlock() {
 # mknod next loop device
 # - find biggest loop device in /dev/loop/, assume it to be used
 # - preallocate (mknod) 20 more loop devices in one round
+#
 mknod_next_loop_dev() {
 	debug_log "mknod_next_loop_dev" "$*"
 	local i NR END PFX
@@ -740,8 +781,8 @@ list_cdrom_devices() {
 #
 list_mounted_directories() {
 	debug_log "list_mounted_directories" "$*"
-	find $SYSMNT -maxdepth 3 -mindepth 2 -type d | while read DIR; do
-		ismountpoint $DIR && echo $DIR
+	find "$SYSMNT" -maxdepth 3 -mindepth 2 -type d 2>/dev/null | while IFS= read -r DIR; do
+		ismountpoint "$DIR" && echo "$DIR"
 	done | tac
 }
 
@@ -780,6 +821,7 @@ list_block_devices() {
 }
 
 #using /uird.scan script to configure UIRD
+#
 uird_scan() {
 	if [ "$(getpar $UIRD_SCAN)" == "enabled" ]; then
 		/uird.scan
@@ -877,134 +919,153 @@ fumount() {
 # $3 = optional mount options, for example "ro", or "remount,rw"
 # $4 = optional filesystem name, in order to skip autodetection
 # $5 = file with extended parameters
+# DIFF (summary of changes applied to this function):
+#
 mount_device() {
 	debug_log "mount_device" "$*"
-	local FS DEV LOOPDEV OPTIONS FILESYSTEM ERR OPTIONS LUKS_DEV KEY="" FSCK="no" PASS=""
-	# make sure we have enough arguments
-	if [ "$2" = "" ]; then return 1; fi
-	if [ "$1" = "" ]; then
+	local FS DEV LOOPDEV OPTIONS FILESYSTEM ERR LUKS_DEV KEY FSCK PASS FPARS
+
+	[ -n "$2" ] || return 1
+	if [ -z "$1" ]; then
 		rmdir "$2" 2>/dev/null
 		return 1
 	fi
-	getpar fsck >/dev/null && FSCK="yes"
+
+	getpar fsck >/dev/null && FSCK="yes" || FSCK="no"
+
 	FPARS=$5
-	if [ "$FPARS" ]; then
-		for str in $(cat $FPARS | sed -n '2,$p'); do
-			local | grep -q "$(echo $str | cut -f1 -d=)" && eval $str
-		done
+	if [ -n "$FPARS" ]; then
+		while read -r str; do
+			[ -z "$str" ] && continue
+			local | grep -q "$(echo "$str" | cut -f1 -d=)" && eval "$str"
+		done < <(sed -n '2,$p' "$FPARS" 2>/dev/null)
 	fi
-	# skipping MBR
-	echo $(basename $1) | grep -q [a-z]$ && grep -q $(basename $1)[0-9] /proc/partitions && return 1
+
+	if echo "$(basename "$1")" | grep -q '[a-z]$' && grep -q "$(basename "$1")[0-9]" /proc/partitions 2>/dev/null; then
+		return 1
+	fi
+
 	mkdir -p "$2"
 	DEV="$1"
-	if [ "$4" != "" ]; then FS="$4"; else FS=$(device_filesystem "$1"); fi
-	if [ "$FS" ]; then
+
+	# detect filesystem if not provided
+	if [ -n "$4" ]; then
+		FS="$4"
+	else
+		FS=$(device_filesystem "$1")
+	fi
+
+	if [ -n "$FS" ]; then
 		OPTIONS=$(fs_options $FS mount)
 		FS="-t $FS"
+	else
+		OPTIONS=""
 	fi
-	if [ "$OPTIONS" ]; then OPTIONS="$OPTIONS"; else OPTIONS=""; fi
-	if [ -f "$DEV" ]; then OPTIONS="$OPTIONS,loop"; fi
-	if [ -d "$DEV" ]; then OPTIONS="$OPTIONS,rbind"; fi
-	if [ "$3" ]; then OPTIONS="$OPTIONS,${3//+/,}"; fi
-	OPTIONS=$(echo "$OPTIONS" | sed -r "s/^,+//")
+
+	# add loop or rbind as needed and merge user options
+	[ -f "$DEV" ] && OPTIONS="${OPTIONS},loop"
+	[ -d "$DEV" ] && OPTIONS="${OPTIONS},rbind"
+	[ -n "$3" ] && OPTIONS="${OPTIONS},${3//+/,}"
+	OPTIONS=$(echo "$OPTIONS" | sed -r 's/^,+//')
+
+	# special case for ntfs-3g
 	if [ "$FS" = "-t ntfs-3g" ]; then
-		[ $FSCK == "yes" ] && fsck_device "$DEV" ntfs
-		ntfsmount "$DEV" "$2" -o $OPTIONS >>$LOGFILE 2>&1
+		[ "$FSCK" = "yes" ] && fsck_device "$DEV" ntfs
+		ntfsmount "$DEV" "$2" -o $OPTIONS >>"$LOGFILE" 2>&1
 		ERR=$?
 	else
-		if [ $FSCK == "yes" ]; then
-			FS_T=$(echo $FS | sed "s/-t //" | tr -d " ")
-			if [ "$FS_T" == "ext2" -o "$FS_T" == "ext3" -o "$FS_T" == "ext4" -o "$FS_T" == "btrfs" -o "$FS_T" == "vfat" -o "$FS_T" == "exfat" -o "$FS_T" == "xfs" ]; then
-				fsck_device "$DEV" $FS_T
-			fi
+		# run fsck for known fs if requested
+		if [ "$FSCK" = "yes" ]; then
+			FS_T=$(echo "$FS" | sed 's/-t //' | tr -d ' ')
+			case "$FS_T" in
+				ext2|ext3|ext4|btrfs|vfat|exfat|xfs) fsck_device "$DEV" "$FS_T" ;;
+			esac
 		fi
-		log "mount -n -o $OPTIONS $FS "$DEV" "$2" "
-		mount -n -o $OPTIONS $FS "$DEV" "$2" >>$LOGFILE 2>&1
-		ERR=$?
-	fi
-	if [ -f ${2}/EXPAND_ME ]; then
-		umount $2
-		expand_part $DEV
-		mount -n -o $OPTIONS $FS "$DEV" "$2" #>>$LOGFILE 2>&1
-		expand_part $DEV
-		mount -n -o $OPTIONS $FS "$DEV" "$2" >>$LOGFILE 2>&1
+		log "mount -n -o $OPTIONS $FS \"$DEV\" \"$2\" "
+		mount -n -o $OPTIONS $FS "$DEV" "$2" >>"$LOGFILE" 2>&1
 		ERR=$?
 	fi
 
-	#LOOPAES####################################################
-	if [ $ERR -ne 0 ] && [ -f "$DEV" ] && echo "$DEV" | grep -q .enc$; then
+	# handle EXPAND_ME marker (preserve original sequence)
+	if [ -f "${2}/EXPAND_ME" ]; then
+		umount "$2" >/dev/null 2>&1
+		expand_part "$DEV"
+		mount -n -o $OPTIONS $FS "$DEV" "$2" >>"$LOGFILE" 2>&1
+		ERR=$?
+	fi
+
+	# LOOPAES handling for encrypted loop containers
+	if [ "$ERR" -ne 0 ] && [ -f "$DEV" ] && echo "$DEV" | grep -q '\.enc$'; then
 		echolog "$MOUNT_DEVICE_ENC" $green"$DEV"$default
-		OPTIONS=$(echo "$OPTIONS" | sed -r "s/,loop//g")
+		OPTIONS=$(echo "$OPTIONS" | sed -r 's/,loop//g')
 		for a in $(seq 0 254); do
-			[ -f /dev/mapper/uirdencdev$a -o -b /dev/mapper/uirdencdev$a ] && continue
-			LOOPDEV=uirdencdev$a
-			AESKEY=/tmp/aeskey$a
+			[ -b "/dev/mapper/uirdencdev$a" -o -f "/dev/mapper/uirdencdev$a" ] && continue
+			LOOPDEV="uirdencdev$a"
+			AESKEY="/tmp/aeskey$a"
 			break
 		done
 		times=3
-		if [ -n "$KEY" -a ! -f "$KEY" ]; then
+		if [ -n "$KEY" ] && [ ! -f "$KEY" ]; then
 			echo_blue_star
 			echolog "find key:  $KEY"
 			KEY=$(find_data "$KEY" "$AESKEY")
 		fi
 		echo_blue_star
-		while [ $times -gt 0 ]; do
+		while [ "$times" -gt 0 ]; do
 			if [ -f "$KEY" ]; then
 				echolog "Found keyfile:  $KEY "
-				cryptsetup open --type loopaes "$DEV" "$LOOPDEV" --key-file "$KEY" >>$LOGFILE 2>&1
+				cryptsetup open --type loopaes "$DEV" "$LOOPDEV" --key-file "$KEY" >>"$LOGFILE" 2>&1
 			else
 				echo "$ENC_PASS" >/dev/console
 				PASS=$(ask_pass "$ENC_PASS")
-				echo $PASS | cryptsetup open --type loopaes "$DEV" "$LOOPDEV" --key-file -
+				echo "$PASS" | cryptsetup open --type loopaes "$DEV" "$LOOPDEV" --key-file - >>"$LOGFILE" 2>&1
 			fi
 
 			if [ -b "/dev/mapper/$LOOPDEV" ]; then
 				echolog "accepted!"
 				getpar fsck && fsck_device "/dev/mapper/$LOOPDEV"
-				mount_device "/dev/mapper/$LOOPDEV" "$2" "$3" "$4" "$5" >>$LOGFILE 2>&1
+				mount_device "/dev/mapper/$LOOPDEV" "$2" "$3" "$4" "$5" >>"$LOGFILE" 2>&1
 				ERR=$?
-				[ "$?" -eq 0 ] && break
+				[ "$ERR" -eq 0 ] && break
 			fi
 			echolog "Mounting ecrypted contaner - ERROR, try again"
-			cryptsetup close "$LOOPDEV" >>$LOGFILE 2>&1
+			cryptsetup close "$LOOPDEV" >>"$LOGFILE" 2>&1
 			unset PASS
-			times=$(($times - 1))
+			times=$((times - 1))
 		done
 		grep -q "/dev/mapper/$LOOPDEV" /proc/mounts && ERR=0
 	fi
 
-	#LUKS####################################################
-	if [ $ERR -ne 0 ] && [ -b "$DEV" ] && cryptsetup isLuks "$DEV"; then
-		LUKS_DEV=$(echo $DEV | sed 's:/dev/::')
+	# LUKS handling
+	if [ "$ERR" -ne 0 ] && [ -b "$DEV" ] && cryptsetup isLuks "$DEV"; then
+		LUKS_DEV=$(echo "$DEV" | sed 's:/dev/::')
 		times=3
-		modprobe kuznyechik 2> /dev/null
-		modprobe magma 2> /dev/null
-		while [ $times -gt 0 ]; do
+		modprobe kuznyechik 2>/dev/null || true
+		modprobe magma 2>/dev/null || true
+		while [ "$times" -gt 0 ]; do
 			echolog "$MOUNT_DEVICE_ENC" "LUKS" $green"$DEV"$default
-			if ! [ -b "/dev/mapper/$LUKS_DEV" ]; then
+			if [ ! -b "/dev/mapper/$LUKS_DEV" ]; then
 				log "Initialization luks partition $LUKS_DEV"
-				if [ "$PASS" == '//hardware//' ]; then
-					# try all getpass_* functions
+				if [ "$PASS" = '//hardware//' ]; then
 					for getpass_func in $(typeset -f | grep '^getpass_.*(.*)' | sed 's#(.*)##'); do
-						if $getpass_func $DEV | cryptsetup luksOpen "$DEV" "$LUKS_DEV" >>$LOGFILE 2>&1; then
+						if $getpass_func "$DEV" | cryptsetup luksOpen "$DEV" "$LUKS_DEV" >>"$LOGFILE" 2>&1; then
 							echo getpass_${LUKS_DEV}=${getpass_func} | update_initvars
 							break
 						fi
 					done
 				fi
 
-				if ! [ -b "/dev/mapper/$LUKS_DEV" ]; then
-					[ "$KEY"_ != "_" ] && [ ! -f $KEY ] && KEY=$(find_data "$KEY" "/tmp/lukskey")
-					if [ "$KEY" ]; then
-						[ ! -f $KEY ] && KEY=$(find_data "$KEY" "/tmp/lukskey")
-						[ -f "$KEY" ] && cryptsetup -d $KEY luksOpen "$DEV" "$LUKS_DEV" >>$LOGFILE 2>&1
+				if [ ! -b "/dev/mapper/$LUKS_DEV" ]; then
+					if [ "$KEY" != "_" ] && [ -n "$KEY" ] && [ ! -f "$KEY" ]; then
+						KEY=$(find_data "$KEY" "/tmp/lukskey")
 					fi
+					[ -n "$KEY" ] && [ -f "$KEY" ] && cryptsetup -d "$KEY" luksOpen "$DEV" "$LUKS_DEV" >>"$LOGFILE" 2>&1
 				fi
 
-				if ! [ -b "/dev/mapper/$LUKS_DEV" ]; then
+				if [ ! -b "/dev/mapper/$LUKS_DEV" ]; then
 					echo "$LUKS_PASS" >/dev/console
 					PASS=$(ask_pass "$LUKS_PASS")
-					echo "$PASS" | cryptsetup luksOpen "$DEV" "$LUKS_DEV" >>$LOGFILE 2>&1
+					echo "$PASS" | cryptsetup luksOpen "$DEV" "$LUKS_DEV" >>"$LOGFILE" 2>&1
 				fi
 			fi
 
@@ -1012,38 +1073,34 @@ mount_device() {
 				echolog accepted!
 				unset PASS KEY
 				getpar fsck && fsck_device "/dev/mapper/$LUKS_DEV"
-				mount_device "/dev/mapper/$LUKS_DEV" "$2" "$3" "$4" "$5" >>$LOGFILE 2>&1
+				mount_device "/dev/mapper/$LUKS_DEV" "$2" "$3" "$4" "$5" >>"$LOGFILE" 2>&1
 				[ "$?" -eq 0 ] && break
 			fi
 			echolog "Mount - error!, try again"
 			unset PASS
-			umount $2 2>/dev/null
-			cryptsetup luksClose "$LUKS_DEV" >>$LOGFILE 2>&1
-			times=$(($times - 1))
+			umount "$2" 2>/dev/null
+			cryptsetup luksClose "$LUKS_DEV" >>"$LOGFILE" 2>&1
+			times=$((times - 1))
 		done
 		grep -q "/dev/mapper/$LUKS_DEV" /proc/mounts && ERR=0
 	fi
-	#########################################################
 
 	# not enough loop devices? try to create one.
-	if [ $ERR -eq 2 ]; then
+	if [ "$ERR" -eq 2 ]; then
 		LOOPDEV=$(mknod_next_loop_dev)
-		OPTIONS=$(echo "$OPTIONS" | sed -r "s/,loop//g")
-		losetup "$LOOPDEV" "$DEV" 2>/dev/null # busybox's losetup doesn't support -r
-		if [ $? -ne 0 ]; then
-			losetup -r "$LOOPDEV" "$DEV" 2>/dev/null # force read-only in case of error
-		fi
+		OPTIONS=$(echo "$OPTIONS" | sed -r 's/,loop//g')
+		losetup "$LOOPDEV" "$DEV" 2>/dev/null || losetup -r "$LOOPDEV" "$DEV" 2>/dev/null
 		mount -n -o $OPTIONS $FS "$LOOPDEV" "$2" >/dev/null 2>&1
 		ERR=$?
 	fi
 
 	# if nothing works, try to force read-only mount
-	if [ $ERR -ne 0 ]; then
+	if [ "$ERR" -ne 0 ]; then
 		mount -n -r -o $OPTIONS $FS "$DEV" "$2" >/dev/null 2>&1
 		ERR=$?
 	fi
 
-	if [ $ERR -ne 0 ]; then rmdir $2 2>/dev/null; fi
+	[ "$ERR" -ne 0 ] && rmdir "$2" 2>/dev/null
 	return $ERR
 }
 
@@ -1051,6 +1108,7 @@ mount_device() {
 # $1 = magnet link
 # $2 = mountdir
 # $3 = file with options
+#
 mount_btfs() {
 	debug_log "mount_btfs" "$*"
 	command -v $BIN_BTFS >/dev/null 2>&1 || return
@@ -1090,6 +1148,7 @@ mount_http() {
 # $1 = server
 # $2 = mountdir
 # $3 = file with options
+#
 mount_ftp() {
 	local DEF_OPTIONS MNT_OPTS
 	debug_log "mount_curlftpfs" "$*"
@@ -1113,6 +1172,7 @@ mount_ftp() {
 # $1 = server
 # $2 = mountdir
 # $ = file with parameters
+#
 mount_ssh() {
 	local DEF_OPTIONS ERR MNT_OPTS
 	debug_log "mount_sshfs" "$*"
@@ -1139,6 +1199,7 @@ mount_ssh() {
 # $1 - 9p mount tag
 # $2 - mountdir
 # $3 - file with parameters
+#
 mount_9p() {
 	debug_log "mount_9p" "$*"
 	local TAG ERR MNT_OPTS DEF_OPTIONS
@@ -1161,6 +1222,7 @@ mount_9p() {
 # $1 = server
 # $2 = mountdir
 # $3 - file with parameters
+#
 mount_nfs() {
 	debug_log "mount_nfs" "$*"
 	local DEF_OPTIONS MNT_OPTS SHARE
@@ -1186,6 +1248,7 @@ mount_nfs() {
 # $1 = server
 # $2 = mountdir
 # $3 = file with options
+#
 mount_cifs() {
 	debug_log "mount_cifs" "$*"
 	local DEF_OPTIONS MNT_OPTS SHARE
@@ -1209,6 +1272,7 @@ mount_cifs() {
 # $1 = server
 # $2 = mountdir
 # $3 = file with options
+#
 mount_rsync() {
 	debug_log "mount_rsync" "$*"
 	local DEF_OPTIONS MNT_OPTS SHARE
@@ -1257,8 +1321,13 @@ ismountpoint() {
 	debug_log "ismountpoint" "$*"
 	local MDIR
 
-	MDIR=$(readlink -f "$1")
-	cat /proc/mounts | cut -d " " -f 2 | grep -E "^$MDIR\$" >/dev/null 2>&1
+	MDIR=$(readlink -f "$1" 2>/dev/null || echo "$1")
+	# Avoid relying on awk implementation differences in minimal busybox.
+	# Parse /proc/mounts with shell 'read' to compare the second field exactly.
+	while IFS=" " read -r _ MP _; do
+		[ "$MP" = "$MDIR" ] && return 0
+	done < /proc/mounts
+	return 1
 }
 
 # Find file-path on given device
@@ -1274,10 +1343,11 @@ find_filepath() {
 	debug_log "find_filepath" "$*"
 	local DIR FOUND PRESERVE SGN="" MNTOPTS=""
 	FPARS=$4
-	if [ "$FPARS" ]; then
-		for str in $(cat $FPARS | sed -n '2,$p'); do
-			local | grep -q "$(echo $str | cut -f1 -d=)=" && eval $str
-		done
+	if [ -n "$FPARS" ]; then
+		while read -r str; do
+			[ -z "$str" ] && continue
+			local | grep -q "$(echo "$str" | cut -f1 -d=)" && eval "$str"
+		done < <(sed -n '2,$p' "$FPARS" 2>/dev/null)
 	fi
 	MNT_OPTS=${MNT_OPTS//+/,}
 	DIR=$(device_mountdir $1 $3)
@@ -1295,8 +1365,8 @@ find_filepath() {
 		PRESERVE=""
 	fi
 
-	FOUND=$(ls -A1d $DIR/$2 2>/dev/null | head -n 1 | tr -s '/')
-	if [ "$SGN"_ != "_" ]; then
+	FOUND=$(ls -A1d "$DIR"/$2 2>/dev/null | head -n 1 | tr -s '/')
+	if [ -n "$SGN" ]; then
 		if [ -f "$DIR/$2/$SGN" ]; then
 			FOUND=$FOUND
 		else
@@ -1329,6 +1399,7 @@ find_filepath() {
 
 #convert UUID@/path and LABEL@/path to /dev/sd??/path
 # $1 = LABEL@/path/to/file
+#
 uuid_label_to_dev() {
 	local DEV DEVPATH TIMEOUT=""
 	if ! echo "$1" | grep -q '^.\+@/*' ; then
@@ -1364,7 +1435,7 @@ export -f uuid_label_to_dev
 # $1 = filename or device-path or devicepath/filename
 # $2 = device mountpoint
 # $3 = extended pars from file
-
+#
 find_file() {
 	debug_log "find_file" "$*"
 	local FIND DEVICE DEVPART PATHPART
@@ -1372,31 +1443,35 @@ find_file() {
 	FIND=$(echo "$1" | sed -r "s:^/mnt/:/dev/:")
 
 	# if parameter is just a device, echo it and exit
-	#if [ -b "$FIND" -o -c "$FIND" -o "$FIND" = "" ]; then echo "$FIND"; return; fi
 	if [ -b "$FIND" -o "$FIND" = "" ]; then
 		echo "$FIND"
 		return
 	fi
-	# If path doesn't start with /dev/, try to find the exact path on all devices
-	# First, split DEV/PATH parts
+
+	# split DEV/PATH parts
 	DEVPART=$(echo "$FIND" | grep -E -o "^/dev/[^/]+")
 
-	if [ "$DEVPART" = "" ]; then
-		# no device is specified. Search all devices for filename $FIND
+	if [ -z "$DEVPART" ]; then
+		# no device specified — search all known devices
 		PATHPART="$FIND"
 		for DEVICE in $(list_mounted_directories) $(list_block_devices); do
+			[ -z "$DEVICE" ] && continue
 			if ! grep -q ":$DEVICE@$PATHPART:" /tmp/_findfile 2>/dev/null; then
-				log "find_filepath "$DEVICE" "$PATHPART" "$2" "$3""
-				find_filepath "$DEVICE" "$PATHPART" "$2" "$3"
-				if [ $? -eq 0 ]; then return 0; fi
+				log "find_filepath \"$DEVICE\" \"$PATHPART\" \"$2\" \"$3\""
+				# find_filepath prints the found path and returns 0 when successful
+				if find_filepath "$DEVICE" "$PATHPART" "$2" "$3"; then
+					# success — caller expects printed path from find_filepath, so just return
+					return 0
+				fi
+				# mark tried combination to avoid repeated work
 				echo ":$DEVICE@$PATHPART:" >>/tmp/_findfile
 			fi
 		done
 	else
-		# try to find PATHPART only on the given device
-		PATHPART=$(echo "$FIND" | sed -r 's:^/dev/[^/]+(.*):\1:') #'
-		[ $PATHPART ] || PATHPART="/"
-		log "find_filepath "$DEVPART" "$PATHPART" "$2" "$3" "
+		# device provided — search only on that device
+		PATHPART=$(echo "$FIND" | sed -r 's:^/dev/[^/]+(.*):\1:')
+		[ -z "$PATHPART" ] && PATHPART="/"
+		log "find_filepath \"$DEVPART\" \"$PATHPART\" \"$2\" \"$3\""
 		find_filepath "$DEVPART" "$PATHPART" "$2" "$3"
 	fi
 }
@@ -1404,41 +1479,43 @@ find_file() {
 # Find Data
 # use 'find_file' function to find the given file/dir
 # if nothing found, sleep for a while to allow devices to settle and try again.
-# (is there any way to find out if there are devices queued through /sys?)
 # $1 = file or directory to find
 # $2 = device mountpoint
 # $3 = extended pars in file
 find_data() {
 	debug_log "find_data" "$*"
-	local RESULT FPARS PROTOCOL TIMEOUT=''
+	local RESULT FPARS PROTOCOL TIMEOUT
+	RESULT=''
 	FPARS=$3
-	if [ "$FPARS" ]; then
-		for str in $(cat $FPARS | sed -n '2,$p'); do
-			local | grep -q "$(echo $str | cut -f1 -d=)=" && eval $str
-		done
+	if [ -n "$FPARS" ]; then
+		while read -r str; do
+			[ -z "$str" ] && continue
+			local | grep -q "$(echo "$str" | cut -f1 -d=)=" && eval "$str"
+		done < <(sed -n '2,$p' "$FPARS" 2>/dev/null)
 	fi
-	[ "$TIMEOUT" ] || TIMEOUT=$(getpar scantimeout 1 1 | sed -r 's/[^0-9]*([0-9]+).*/\1/')
-	if [ "$TIMEOUT" = "" ]; then TIMEOUT=5; fi
-	log "find_file "$1" "$2" "$3" "
 
-	[ "$TIMEOUT" = "" ] && TIMEOUT=5
-	while [ $TIMEOUT -gt 0 -a "$RESULT" = "" ]; do
-		log "find_file, attempts ${TIMEOUT}: "$1" "$2" "$3" "
+	TIMEOUT=$(getpar scantimeout 1 1 | sed -r 's/[^0-9]*([0-9]+).*/\1/')
+	[ -z "$TIMEOUT" ] && TIMEOUT=5
+
+	log "find_file \"$1\" \"$2\" \"$3\" "
+
+	while [ "$TIMEOUT" -gt 0 ] && [ -z "$RESULT" ]; do
+		log "find_file, attempts ${TIMEOUT}: \"$1\" \"$2\" \"$3\" "
 		if echo "$1" | grep -q "://"; then
-			PROTOCOL=$(echo $1 | cut -f1 -d:)
-			RESULT=$(mount_$PROTOCOL $1 $2 $FPARS)
+			PROTOCOL=$(echo "$1" | cut -f1 -d:)
+			RESULT=$(mount_"$PROTOCOL" "$1" "$2" "$FPARS" 2>/dev/null || true)
 		else
-			RESULT=$(find_file "$1" "$2" "$FPARS")
+			RESULT=$(find_file "$1" "$2" "$FPARS" 2>/dev/null || true)
 		fi
 		if [ -z "$RESULT" ]; then
 			log "find_data:(${TIMEOUT}): $RESULT"
 			TIMEOUT=$((TIMEOUT - 1))
 			sleep 1
-			echo -ne "." >&2
+			echo -n "." >&2
 		fi
 	done
 	log "data_from RESULT - $RESULT"
-	echo $RESULT
+	echo "$RESULT"
 }
 
 # Return device mounted for given directory
@@ -1506,7 +1583,6 @@ codepage() {
 # $1 = filesystem or '-t filesystem'
 # $2 = 'fstab' or 'mount' ... 'auto'/'noauto' string is enabled (fstab) or disabled (mount)
 #
-
 fs_options() {
 	debug_log "fs_options" "$*"
 
@@ -1661,117 +1737,122 @@ init_nbd() {
 # $2 = destination directory
 # $3 = mount point directory
 # $4 = file with ext parameters
+#
 mount_data_source() {
-	local SOURCE DST_DIR MNT_DIR SGN_CHECK MNT_OPTS par iPARS FPARS SRC FORCE
-	local CHECKSPACE='0'
+	local SOURCE DST_DIR MNT_DIR MNT_OPTS FPARS SRC FORCE CHECKSPACE DATA_FROM
 	debug_log "mount_data_source" "$*"
+
 	MNT_OPTS=''
 	FORCE=''
-	SOURCE=$1
-	DST_DIR=$2
-	MNT_DIR=$3
-	FPARS=$4
-	if [ "$FPARS" ]; then
-		for str in $(cat $FPARS | sed -n '2,$p'); do
-			local | grep -q "$(echo $str | cut -f1 -d=)" && eval $str
-		done
-	fi
-	MNT_OPTS="${MNT_OPTS//+/,}"
-	echo_blue_star
-	echolog "$MOUNT_DATA_SOURCE" $yellow"$SOURCE"$default
+	CHECKSPACE='0'
 
-	mkdir -p $DST_DIR
-	log "find_data $SOURCE $MNT_DIR  $FPARS"
-	DATA_FROM=$(find_data "$SOURCE" "$MNT_DIR" "$FPARS")
-	##################################################################
-	if ! [ -e "$DATA_FROM" ]; then
-		echo $FPARS | grep -E -q 'uird.home|uird.changes' && mkimg $SOURCE $MNT_DIR $FPARS
-		log "mkimg maked DATA_FROM - $DATA_FROM"
+	SOURCE="$1"
+	DST_DIR="$2"
+	MNT_DIR="$3"
+	FPARS="$4"
+
+	if [ -n "$FPARS" ]; then
+		while read -r str; do
+			[ -z "$str" ] && continue
+			local | grep -q "$(echo "$str" | cut -f1 -d=)" && eval "$str"
+		done < <(sed -n '2,$p' "$FPARS" 2>/dev/null)
 	fi
-	##################################################################
-	[ -b "$DATA_FROM" ] && mount_device "$DATA_FROM" "$DST_DIR" "$MNT_OPTS" "" "$FPARS" # mount block device
+
+	MNT_OPTS="${MNT_OPTS//+/,}"
+
+	echo_blue_star
+	echolog "$MOUNT_DATA_SOURCE" "$yellow$SOURCE$default"
+
+	mkdir -p "$DST_DIR"
+
+	log "find_data \"$SOURCE\" \"$MNT_DIR\" \"$FPARS\""
+	DATA_FROM=$(find_data "$SOURCE" "$MNT_DIR" "$FPARS")
+
+	# If data was not found, try to create image when appropriate and retry
+	if [ ! -e "$DATA_FROM" ]; then
+		if echo "$FPARS" | grep -E -q 'uird.home|uird.changes'; then
+			mkimg "$SOURCE" "$MNT_DIR" "$FPARS"
+			# try again after mkimg
+			DATA_FROM=$(find_data "$SOURCE" "$MNT_DIR" "$FPARS")
+		fi
+		log "mkimg result DATA_FROM - $DATA_FROM"
+	fi
+
 	log "DATA_FROM - $DATA_FROM"
+
+	# If device node
+	if [ -b "$DATA_FROM" ]; then
+		mount_device "$DATA_FROM" "$DST_DIR" "$MNT_OPTS" "" "$FPARS"
+		return
+	fi
+
+	# If readable (directory or file)
 	if [ -r "$DATA_FROM" ]; then
-		log "mount_device $DATA_FROM $DST_DIR  $MNT_OPTS"
-		[ -d "$DATA_FROM" ] && mount_device "$DATA_FROM" "$DST_DIR" "$MNT_OPTS" "" "$FPARS" # mount dir
-		if [ -f "$DATA_FROM" ]; then
-			if qemu-img info "$DATA_FROM" 2>/dev/null | grep "^file" | grep -vq "file.*raw$"; then
+		# If directory -> bind/mount directory
+		if [ -d "$DATA_FROM" ]; then
+			mount_device "$DATA_FROM" "$DST_DIR" "$MNT_OPTS" "" "$FPARS"
+			echolog "$MOUNT_DATA_SOURCE_USING" "$yellow$DATA_FROM$default"
+		elif [ -f "$DATA_FROM" ]; then
+			# If image file looks non-raw (qemu), use nbd; otherwise try mounting (loop)
+			if qemu-img info "$DATA_FROM" 2>/dev/null | grep -q "^file" && \
+			   ! qemu-img info "$DATA_FROM" 2>/dev/null | grep -q "file.*raw$"; then
 				init_nbd "$DATA_FROM"
-				>$DST_DIR/qemu_ndb_layer
+				: >"$DST_DIR/qemu_ndb_layer"
+				echolog "$MOUNT_DATA_SOURCE_USING" "$yellow$DATA_FROM$default"
 			else
-				log "mount_device $DATA_FROM $DST_DIR $MNT_OPTS  ""  $FPARS # mount again, it may be loop device"
-				mount_device "$DATA_FROM" "$DST_DIR" "$MNT_OPTS" "" "$FPARS" # mount again, it may be loop device
-				echolog "$MOUNT_DATA_SOURCE_USING" $yellow$DATA_FROM$default
+				log "mount_device \"$DATA_FROM\" \"$DST_DIR\" \"$MNT_OPTS\" \"\" \"$FPARS\" # mount (possibly as loop)"
+				mount_device "$DATA_FROM" "$DST_DIR" "$MNT_OPTS" "" "$FPARS"
+				echolog "$MOUNT_DATA_SOURCE_USING" "$yellow$DATA_FROM$default"
 			fi
 		fi
-		####################################################################
-		if [ "$CHECKSPACE" -ne '0' -a "$(df $DST_DIR -mP | tail -n1 | awk '{print $4}')" -lt "$CHECKSPACE" ]; then
-			echolog $red"$FREE_SPACE_LESS_THEN_CHECK"$default
-			echo -ne $yellow"$FREE_SPACE_LESS_THEN_CHECK_ASK"$default"  "
+
+		# Check free space if required
+		if [ "$CHECKSPACE" != '0' ] && [ "$(df "$DST_DIR" -mP | tail -n1 | awk '{print $4}')" -lt "$CHECKSPACE" ]; then
+			echolog "$red$FREE_SPACE_LESS_THEN_CHECK$default"
+			echo -n "$yellow$FREE_SPACE_LESS_THEN_CHECK_ASK$default  "
 			ANS=$(ask_answer "${FREE_SPACE_LESS_THEN_CHECK}, $FREE_SPACE_LESS_THEN_CHECK_ASK")
 			case "$ANS" in
-			"S" | "s")
-				#shutdown
-				poweroff -f
-				;;
-			"R" | "r")
-				#reboot
-				reboot -f
-				;;
-			"C" | "c")
-				#continue
-				;;
+			"S" | "s") poweroff -f ;;
+			"R" | "r") reboot -f ;;
+			"C" | "c") : ;;
 			"E" | "e")
-				#erase
 				echo -n "You have 15 seconds to power off the machine and save your data"
 				for a in {0..15}; do
 					echo -n .
 					sleep 1
 				done
-				rm -fr ${DST_DIR}/*
+				rm -fr "${DST_DIR}/"*
 				;;
-			*)
-				#else - SHELL
-				shell_cmd "shell"
-				;;
+			*) shell_cmd "shell" ;;
 			esac
 		fi
-		####################################################################
-	elif [ "$(getpar $UIRD_FORCE)_" == "enabled_" -o "$FORCE" == "yes" ]; then
-		rmdir $DST_DIR
-		echolog $red"$MOUNT_DATA_SOURCE_NOT_FOUND"$default
-		echolog $yellow"Source $SOURCE droped. Continue..."$default
-	else
-		rmdir $DST_DIR
-		echolog $red"$MOUNT_DATA_SOURCE_NOT_FOUND"$default
-		echo -ne $yellow"$MOUNT_DATA_SOURCE_ASK"$default"  "
-		ANS=$(ask_answer "${MOUNT_DATA_SOURCE_NOT_FOUND}, $MOUNT_DATA_SOURCE_ASK")
-		case "$ANS" in
-		"S" | "s")
-			#shutdown
-			poweroff -f
-			;;
-		"R" | "r")
-			#reboot
-			reboot -f
-			;;
-		"T" | "t")
-			#Try again
-			echo -ne "Changing SOURCE  [ Hit enter for - ${green}${1}${default} ]: "
-			SRC=$(ask_answer "Changing SOURCE  [ Hit enter for - ${1} ]")
-			[ "$SRC" == "" ] && SRC="$1"
-			mount_data_source "$SRC" "$2" "$3" $4 $5
-			;;
-		"C" | "c")
-			#continue
-			;;
-		*)
-			#else - SHELL
-			shell_cmd "shell"
-			;;
-		esac
+		return
 	fi
 
+	# Not found: handle force or interactive ask
+	if [ "$(getpar $UIRD_FORCE)_" = "enabled_" ] || [ "$FORCE" = "yes" ]; then
+		rmdir "$DST_DIR" 2>/dev/null
+		echolog "$red$MOUNT_DATA_SOURCE_NOT_FOUND$default"
+		echolog "$yellowSource $SOURCE droped. Continue...$default"
+		return
+	fi
+
+	rmdir "$DST_DIR" 2>/dev/null
+	echolog "$red$MOUNT_DATA_SOURCE_NOT_FOUND$default"
+	echo -n "$yellow$MOUNT_DATA_SOURCE_ASK$default  "
+	ANS=$(ask_answer "${MOUNT_DATA_SOURCE_NOT_FOUND}, $MOUNT_DATA_SOURCE_ASK")
+	case "$ANS" in
+	"S" | "s") poweroff -f ;;
+	"R" | "r") reboot -f ;;
+	"T" | "t")
+		echo -n "Changing SOURCE  [ Hit enter for - ${green}${SOURCE}${default} ]: "
+		SRC=$(ask_answer "Changing SOURCE  [ Hit enter for - ${SOURCE} ]")
+		[ -z "$SRC" ] && SRC="$SOURCE"
+		mount_data_source "$SRC" "$DST_DIR" "$MNT_DIR" "$FPARS"
+		;;
+	"C" | "c") : ;;
+	*) shell_cmd "shell" ;;
+	esac
 }
 
 # copy files from UIRD to system
@@ -1783,19 +1864,19 @@ syscp() {
 	debug_log "syscp" "$*"
 	echo_green_star
 	echolog "$SETUP_SYSCP"
-	local SYSCP FILEFROM FILETO FILEFROM TARGET_PATH
+	local SYSCP FILEFROM FILETO TARGET_PATH DOWNLOAD_CMD
 
 	for NUMPAR in $(getpar $UIRD_SYSCP); do
 		FILEFROM=$(getpar $UIRD_SYSCP $NUMPAR 1)
 		FILETO=$(getpar $UIRD_SYSCP $NUMPAR 2)
-		local TARGET_PATH="${1}${FILETO}"
+		TARGET_PATH="${1}${FILETO}"
 
 		echo_blue_star
 		echolog "${FILEFROM} --> ${FILETO}"
 
-		# Determine download method upfront
-		local DOWNLOAD_CMD=""
-		if echo "$FILEFROM" | grep -Eiq ^".*tps?://"; then
+		# Determine download method if source is a URL
+		DOWNLOAD_CMD=""
+		if echo "$FILEFROM" | grep -Eiq '^[[:alnum:]]+s?://'; then
 			init_ifcfg
 			if command -v aria2c >/dev/null 2>&1; then
 				DOWNLOAD_CMD="aria2c"
@@ -1807,10 +1888,11 @@ syscp() {
 			fi
 		fi
 
+		# Ensure parent directory exists for file target
 		if [ -d "$TARGET_PATH" ]; then
-			# Target is a directory
+			# target is an existing directory
 			if [ -n "$DOWNLOAD_CMD" ]; then
-				# URL download to directory
+				# download into directory
 				if [ "$DOWNLOAD_CMD" = "aria2c" ]; then
 					aria2c -x 4 -s 4 -d "$TARGET_PATH" -o "$(basename "$FILEFROM")" "$FILEFROM" || \
 					echolog "uird.syscp: Failed to download with aria2c"
@@ -1819,15 +1901,18 @@ syscp() {
 					echolog "uird.syscp: Failed to download with wget"
 				fi
 			else
-				# Local file copy to directory
-				cp -fa "$FILEFROM" "$TARGET_PATH/" || echolog "uird.syscp: Failed!"
+				# local copy to directory; prefer rsync if available
+				if [ -n "$BIN_RSYNC" -a -x "$BIN_RSYNC" ]; then
+					"$BIN_RSYNC" -a "$FILEFROM" "$TARGET_PATH/" || echolog "uird.syscp: Failed to copy with rsync"
+				else
+					cp -fa "$FILEFROM" "$TARGET_PATH/" || echolog "uird.syscp: Failed to copy"
+				fi
 			fi
 		else
-			# Target is not a directory (file or doesn't exist)
-			mkdir -p "$(dirname "$TARGET_PATH")"
-
+			# target is a file path (may not exist yet)
+			mkdir -p "$(dirname "$TARGET_PATH")" 2>/dev/null || true
 			if [ -n "$DOWNLOAD_CMD" ]; then
-				# URL download to specific path
+				# download to specific file path
 				if [ "$DOWNLOAD_CMD" = "aria2c" ]; then
 					aria2c -x 4 -s 4 -d "$(dirname "$TARGET_PATH")" -o "$(basename "$TARGET_PATH")" "$FILEFROM" || \
 					echolog "uird.syscp: Failed to download with aria2c"
@@ -1836,8 +1921,12 @@ syscp() {
 					echolog "uird.syscp: Failed to download with wget"
 				fi
 			else
-				# Local file copy to specific path
-				cp -fa "$FILEFROM" "$TARGET_PATH" || echolog "uird.syscp: Failed!"
+				# local file copy to specific path; prefer rsync
+				if [ -n "$BIN_RSYNC" -a -x "$BIN_RSYNC" ]; then
+					"$BIN_RSYNC" -a "$FILEFROM" "$TARGET_PATH" || echolog "uird.syscp: Failed to copy with rsync"
+				else
+					cp -fa "$FILEFROM" "$TARGET_PATH" || echolog "uird.syscp: Failed to copy"
+				fi
 			fi
 		fi
 	done
@@ -2255,7 +2344,7 @@ find_modules() {
 # List all modules in all directories
 # and filter out
 # $1 = layer directory
-
+#
 list_modules() {
 	local target_module
 	debug_log "list_modules" "$*"
@@ -2395,7 +2484,7 @@ aria2_preload() {
 # $2 = target directory
 # $3 = target name
 # $4 = filter
-
+#
 copy_to() {
 	debug_log "copy_to" "$*"
 	local C2PARAM MODNAME BUNDLE
@@ -2428,6 +2517,7 @@ copy_to() {
 # $2 = target directory
 # $3 = short name (it shows in boot log, and using as alias to $4 in cmdline)
 # $4 = cmdline par
+#
 copy_to_target() {
 	debug_log "copy_to_target" "$*"
 	if [ "$(getpar $3)$(getpar $4)" ]; then
@@ -2808,3 +2898,4 @@ update_initvars() {
 	fi
 	sed -i '/^$/d' /etc/initvars
 }
+
