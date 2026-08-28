@@ -1,6 +1,7 @@
 #!/bin/bash
 # Author: Alexander Betkher <http://magos-linux.ru>
-# Author: Deep, мать его, seek...
+# Author: Deep..., мать его, ...seek
+
 
 # Если передан аргумент, используем его как имя папки, иначе "dracut"
 if [ -n "$1" ]; then
