@@ -65,7 +65,7 @@ done
 
 create_link "$(which dracut-install)" "${WORKDIR}"
 # имя как в исходниках dracut
-create_link "$(which dracut)" "${WORKDIR}.sh"
+create_link "$(which dracut)" "${WORKDIR}/dracut.sh"
 
 # Создаем ссылки на модули
 # Сначала системные модули
