@@ -64,7 +64,8 @@ for a in init logger functions ; do
 done
 
 create_link "$(which dracut-install)" "${WORKDIR}"
-create_link "$(which dracut)" "${WORKDIR}"
+# имя как в исходниках dracut
+create_link "$(which dracut)" "${WORKDIR}.sh"
 
 # Создаем ссылки на модули
 # Сначала системные модули
