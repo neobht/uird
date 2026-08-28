@@ -36,14 +36,8 @@ mkdir -p "${WORKDIR}/dracut.conf.d" "${WORKDIR}/modules.d"
 create_link() {
     local target="$1"
     local link_dir="$2"
-    
-    if [ "$USE_RELATIVE" = 'yes' ]; then
-        # Вычисляем относительный путь с помощью realpath
-        local relative_path=$(realpath --relative-to="$link_dir" "$target" 2>/dev/null)
-        ln -s "$relative_path" "${link_dir}/"
-    else
-        ln -s "$target" "${link_dir}/"
-    fi
+    local relative_path=$(realpath --relative-to="$link_dir" "$target" 2>/dev/null)
+    ln -s "$relative_path" "${link_dir}/"
 }
 
 # Создаем ссылки на файлы dracut
