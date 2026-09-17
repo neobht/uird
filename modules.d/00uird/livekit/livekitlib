@@ -2861,6 +2861,12 @@ expand_part() {
 		mount -o rw ${device}$partition /tmp/tmpmnt 1>&2
 		btrfs filesystem resize max /tmp/tmpmnt 1>&2
 		;;
+	fat|vfat|msdos|exfat)
+		if which fatresize >/dev/null 2>&1; then
+			fatresize -s 100% ${device}$partition 1>&2 || return
+		fi
+		mount -o rw ${device}$partition /tmp/tmpmnt 1>&2
+		;;
 	*) return ;;
 	esac
 	rm -f /tmp/tmpmnt/EXPAND_ME 1>&2
