@@ -2551,50 +2551,71 @@ move_run() {
 	cp -a /{bin,dev,etc,li,root,sbin,usr,var,shut}* "${UNION}/run/initramfs/"
 }
 
+# Process INI file and apply settings to system files
+# Also runs preinit scripts if configured
 setup_preinit() {
-	local FNAME FMODE runscript str
+	local FNAME FMODE FEXEC nv runscript
 	INIGZFILE=$MEMORY/$LIVEKITNAME.ini.gz
-	# OS.ini processing
-	if [ -f $MEMORY/$LIVEKITNAME.ini.gz ]; then
+
+	# Process INI file if exists
+	if [ -f "$INIGZFILE" ]; then
 		FNAME="/dev/null"
 		FMOD=""
-		zcat $INIGZFILE | while read a; do
-			echo "$a" | grep -E -q '^[[:space:]]*#|^[[:space:]]*$' && continue
-			if echo "$a" | grep -q "^\[.*\][[:space:]]*"; then
-				FNAME=$(echo "$a" | tr '[]' '|' | awk -F'|' '{print $2}' | sed s-^/--)
+		FEXEC=""
+
+		zcat "$INIGZFILE" | while IFS= read -r a; do
+			# Skip comments and empty lines
+			echo "$a" | grep -qE '^[[:space:]]*#|^[[:space:]]*$' && continue
+
+			if echo "$a" | grep -q '^\[.*\][[:space:]]*'; then
+				# Section header: [filename|mode|exec]
+				FNAME=$(echo "$a" | tr '[]' '|' | awk -F'|' '{print $2}' | sed 's|^/||')
 				FMOD=$(echo "$a" | tr '[]' '|' | awk -F'|' '{print $3}' | tr -d ' ')
 				FEXEC=$(echo "$a" | tr '[]' '|' | awk -F'|' '{print $4}')
-				[ ! -z "$FEXEC" ] && echo "$FEXEC  $FNAME" >>/tmp/exec
-				if [ ! -z "$FMOD" ]; then
+
+				[ -n "$FEXEC" ] && echo "$FEXEC $FNAME" >> /tmp/exec
+
+				if [ -n "$FMOD" ]; then
 					mkdir -p "$(dirname "$FNAME")"
 					[ -e "$FNAME" ] || touch "$FNAME"
 					chmod "$FMOD" "$FNAME"
 				fi
-			elif echo "$a" | grep -q "^-"; then
-				nv="$(echo "$a" | sed 's/^-//')"
-				sed -i /^"$nv"$/d "$FNAME"
-			elif echo "$a" | grep -q "^|"; then
-				echo "$a" | sed 's/^|//' >>"$FNAME"
-			elif echo "$a" | grep -q "^+"; then
-				nv="$(echo "$a" | sed 's/^+//')"
-				grep -q "$nv" "$FNAME" || echo "$nv" >>"$FNAME"
+
+			elif echo "$a" | grep -q '^[-]'; then
+				# Remove lines matching pattern
+				nv=$(echo "$a" | sed 's/^-//')
+				sed -i "/^${nv}$/d" "$FNAME"
+
+			elif echo "$a" | grep -q '^|'; then
+				# Append line unconditionally
+				echo "$a" | sed 's/^|//' >> "$FNAME"
+
+			elif echo "$a" | grep -q '^+'; then
+				# Add line if not exists
+				nv=$(echo "$a" | sed 's/^+//')
+				grep -q "$nv" "$FNAME" || echo "$nv" >> "$FNAME"
+
 			else
-				nv=$(echo $a | awk -F= '{print $1}')
-				[ "$nv" = "" ] && continue
-				if ! grep -q "^[[:space:]]*$nv=" "$FNAME" 2>/dev/null; then
-					grep -q "^$a$" "$FNAME" 2>/dev/null || echo "$a" >>"$FNAME"
+				# Key=value
+				nv=$(echo "$a" | awk -F= '{print $1}')
+				[ -z "$nv" ] && continue
+
+				if ! grep -q "^${nv}=" "$FNAME" 2>/dev/null; then
+					grep -q "^${a}$" "$FNAME" 2>/dev/null || echo "$a" >> "$FNAME"
 				else
-					sed -i 's|'"^[[:space:]]*$nv=.*$"'|'"$a"'|' "$FNAME"
+					sed -i "s|^${nv}=.*$|${a}|" "$FNAME"
 				fi
 			fi
 		done
 	fi
-	#run preinit scripts
+
+	# Run preinit scripts
 	[ -f /tmp/exec ] && . /tmp/exec
-	if getpar $UIRD_PREINIT && check_true $(getpar $UIRD_PREINIT 1 1); then
-		for NUMPAR in $(getpar $UIRD_PREINIT); do
-			runscript="$(getpar $UIRD_PREINIT $NUMPAR 1)"
-			[ -x "$runscript" ] && /bin/bash $runscript
+
+	if getpar "$UIRD_PREINIT" >/dev/null && check_true "$(getpar "$UIRD_PREINIT" 1 1)"; then
+		for NUMPAR in $(getpar "$UIRD_PREINIT"); do
+			runscript="$(getpar "$UIRD_PREINIT" "$NUMPAR" 1)"
+			[ -x "$runscript" ] && /bin/bash "$runscript"
 		done
 	fi
 }
@@ -2860,21 +2881,35 @@ check_true() {
 	return 0
 }
 
+# Setup union filesystem (aufs/overlay) and load kernel module
+# Returns: filesystem name (aufs or overlay)
 setup_union() {
 	local UNION_FS
-	if [ "$(getpar $UIRD_UNION 1 1)" == 'auto' ]; then
-		modprobe aufs 2>/dev/null
-		if cat /proc/filesystems | grep -q "aufs"; then
+
+	if [ "$(getpar $UIRD_UNION 1 1)" = "auto" ]; then
+		# Try aufs first
+		modprobe -q aufs 2>/dev/null
+		if grep -q aufs /proc/filesystems 2>/dev/null; then
 			echo "aufs"
-			return
-		else
-			UNION_FS='overlay'
+			return 0
 		fi
+
+		# Fallback to overlay
+		UNION_FS="overlay"
 	else
 		UNION_FS="$(getpar $UIRD_UNION 1 1)"
-		[ -z $UNION_FS ] && UNION_FS='aufs'
+		[ -z "$UNION_FS" ] && UNION_FS="aufs"
 	fi
-	modprobe "$UNION_FS" 2>/dev/null
+
+	# Load module
+	modprobe -q "$UNION_FS" 2>/dev/null
+
+	# Verify support (optional but safer)
+	if ! grep -q "$UNION_FS" /proc/filesystems 2>/dev/null; then
+		echolog "Union FS '$UNION_FS' not supported by kernel"
+		return 1
+	fi
+
 	echo "$UNION_FS"
 }
 
@@ -2889,13 +2924,20 @@ getpass_lspci() {
 
 update_initvars() {
 	local str nv
-	read str
-	nv=$(echo $str | awk -F= '{print $1}')
-	if ! grep -q "^[[:space:]]*$nv=" /etc/initvars 2>/dev/null; then
-		grep -q "^$str$" /etc/initvars 2>/dev/null || echo "$str" >>/etc/initvars
+	read str || return 0
+	[ -z "$str" ] && return 0
+
+	nv=$(echo "$str" | awk -F= '{print $1}')
+	[ -z "$nv" ] && return 1
+
+	[ -f /etc/initvars ] || : > /etc/initvars
+
+	if grep -q "^${nv}=" /etc/initvars 2>/dev/null; then
+		sed -i "s|^${nv}=.*$|${str}|" /etc/initvars
 	else
-		sed -i 's|'"^[[:space:]]*$nv=.*$"'|'"$str"'|' /etc/initvars
+		echo "$str" >> /etc/initvars
 	fi
+
 	sed -i '/^$/d' /etc/initvars
 }
 
