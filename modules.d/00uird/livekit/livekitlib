@@ -119,6 +119,8 @@ NOT_FOUND_CREATE=$($GETTEXT "was not found, create it?")
 ENTER_FS_TYPE=$($GETTEXT "enter FS type")
 ENTER_SIZE=$($GETTEXT "enter new image size Mb")
 ENTER_PASSWORD=$($GETTEXT "enter password")
+STARTING_COPY_TO=$($GETTEXT "Starting copy to:)")
+
 # text for shutdown
 REMOUNT_FOR_SAVES=$($GETTEXT "Remounting media for saves...")
 REMOUNT_COMPLETE=$($GETTEXT "Remount complete")
@@ -2504,10 +2506,11 @@ copy_to() {
 	}
 	for BUNDLE in $fullist; do
 		[ "$C2PARAM" ] && ! [ "$(echo $BUNDLE | grep -E -i "$C2PARAM")" ] && continue
-		echolog $yellow"  $3 $blue<- $purple$(basename "$BUNDLE")"$green
+		echolog $yellow"  $3 $blue<- $purple$(basename "$BUNDLE")"$default
 		(c2 "$1" "$2" "$BUNDLE") &
 		PIDSS="$PIDSS /proc/$!"
 	done
+	echolog $green"  ${STARTING_COPY_TO}: $yellow ${3} ( $2 )"$default
 	copy_timer $2 $PIDSS
 	#wait
 }
