@@ -6,3 +6,4 @@ secure/secure
 secure/etc/shadow
 dracut
 bysybox
+.aider*

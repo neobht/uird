@@ -45,7 +45,12 @@ for a in init logger functions ; do
     ln -sf "/usr/lib/dracut/dracut-${a}.sh" "${WORKDIR}"
 done
 
+ln -sf "/usr/lib/dracut/dracut-util" "${WORKDIR}/"
+
+ln -sf "$(which lsinitrd)" "${WORKDIR}"/lsinitrd.sh
+
 ln -sf "$(which dracut-install)" "${WORKDIR}/"
+
 # имя как в исходниках dracut
 ln -sf "$(which dracut)" "${WORKDIR}/dracut.sh"
 
