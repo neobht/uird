@@ -119,7 +119,7 @@ NOT_FOUND_CREATE=$($GETTEXT "was not found, create it?")
 ENTER_FS_TYPE=$($GETTEXT "enter FS type")
 ENTER_SIZE=$($GETTEXT "enter new image size Mb")
 ENTER_PASSWORD=$($GETTEXT "enter password")
-STARTING_COPY_TO=$($GETTEXT "Starting copy to:)")
+STARTING_COPY_TO=$($GETTEXT "Starting copy to")
 
 # text for shutdown
 REMOUNT_FOR_SAVES=$($GETTEXT "Remounting media for saves...")
