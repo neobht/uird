@@ -203,8 +203,8 @@ msgid "enter password"
 msgstr "введите пароль"
 
 #: ⁨стандартный ввод⁩:122
-msgid "Starting copy to:"
-msgstr "Начинаем копирование в:"
+msgid "Starting copy to"
+msgstr "Начинаем копирование в"
 
 #: ⁨стандартный ввод⁩:125
 msgid "Remounting media for saves..."
